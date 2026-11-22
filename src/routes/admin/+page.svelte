@@ -57,7 +57,7 @@
               <span>{link.shortUrl.replace(/^https?:\/\//, '')}</span>
             </a>
             <span class:enabled={link.isActive} class="state-indicator">
-              {link.isActive ? links.enabled : links.inactive}
+              {link.isActive ? links.active : links.inactive}
             </span>
           </li>
         {/each}
@@ -123,7 +123,7 @@
   .card-action {
     margin-top: auto;
     padding-top: 10px;
-    color: #64806b;
+    color: var(--muted);
     font-size: 13px;
   }
   @media (max-width: 760px) {

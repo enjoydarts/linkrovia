@@ -96,6 +96,14 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     });
     expect(wrongMethod.status()).toBe(405);
 
+    await page.goto('/admin');
+    const recentLink = page
+      .getByRole('region', { name: 'Recent links' })
+      .getByRole('listitem')
+      .filter({ hasText: 'A fixture link' });
+    await expect(recentLink.getByText('Active', { exact: true })).toBeVisible();
+    await recentLink.getByRole('link', { name: /A fixture link/ }).click();
+
     await page.locator('[name=active]').uncheck();
     await Promise.all([
       page.waitForResponse(
@@ -110,6 +118,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     expect((await request.get('/ci-link', { maxRedirects: 0 })).status()).toBe(
       404,
     );
+    await page.goto('/admin');
+    await expect(
+      recentLink.getByText('Inactive', { exact: true }),
+    ).toBeVisible();
   });
 
   await test.step('issue and revoke a read-only API key', async () => {
