@@ -63,6 +63,7 @@ describe('link JSON payloads', () => {
       id: 'link-id',
       hostname: 'go.example.org',
       createdAt: 1,
+      utmConfigJson: null,
     };
     expect(
       parseLinkPayload({ updatedAt: 2, isActive: false }, current),
@@ -223,5 +224,22 @@ describe('read-only link simulation', () => {
     ).toMatchObject({
       fieldErrors: { region: expect.any(Array), at: expect.any(Array) },
     });
+  });
+
+  it('reports the same stored campaign query as the effective destination', () => {
+    const parsed = parseSimulationInput({ at: 20 });
+    if (!('input' in parsed)) throw new Error('Invalid simulation fixture');
+    const result = simulateTarget(
+      {
+        ...link,
+        destinationUrl: 'https://example.org/default?old=1#section',
+        utmConfigJson: '{"default":{"utm_medium":"mail"}}',
+      },
+      [],
+      parsed.input,
+    );
+    expect(result.destinationUrl).toBe(
+      'https://example.org/default?old=1&utm_medium=mail#section',
+    );
   });
 });

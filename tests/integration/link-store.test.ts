@@ -5,6 +5,7 @@ import {
   createLink,
   getLink,
   listLinks,
+  listLinkRules,
   updateLink,
 } from '../../src/lib/server/links/store';
 import { resolveShortLink } from '../../src/lib/server/links/redirect';
@@ -117,6 +118,56 @@ describe('link management and delivery', () => {
     expect(
       (await listLinks(db, { tag: 'latest' })).links.map(({ id }) => id),
     ).toEqual([link.id]);
+  });
+
+  it('applies snapshotted UTM values to the selected destination without forwarding visitor query parameters', async () => {
+    const db = platform.env.DB;
+    const created = await createLink(db, null, {
+      ...draft,
+      slug: 'utm-snapshot',
+      utmConfigJson: JSON.stringify({ default: { utm_source: 'original' } }),
+      rules: [
+        {
+          priority: 0,
+          isActive: true,
+          conditions: [{ type: 'country', operator: 'eq', value: 'JP' }],
+          destinationUrl: 'https://example.org/jp?label=a%20b#section',
+        },
+      ],
+    });
+    if (!created.ok) throw new Error(created.code);
+    const [rule] = await listLinkRules(db, created.id);
+    const link = await getLink(db, created.id);
+    if (!link || !rule) throw new Error('Missing test link or rule');
+    expect(
+      await updateLink(db, null, link.id, link.updatedAt, {
+        ...draft,
+        slug: 'utm-snapshot',
+        utmConfigJson: JSON.stringify({
+          default: { utm_source: 'release' },
+          rules: { [rule.id]: { utm_source: 'japan' } },
+        }),
+      }),
+    ).toMatchObject({ ok: true });
+
+    const request = new Request(
+      'https://go.example.com/utm-snapshot?utm_source=visitor&other=private',
+    );
+    expect(
+      await resolveShortLink(db, 'go.example.com', 'utm-snapshot', request),
+    ).toMatchObject({
+      status: 302,
+      location: 'https://example.com/a?selected=1&utm_source=release#more',
+    });
+    expect(
+      await resolveShortLink(db, 'go.example.com', 'utm-snapshot', request, {
+        country: 'JP',
+      }),
+    ).toMatchObject({
+      status: 302,
+      location: 'https://example.org/jp?label=a%20b&utm_source=japan#section',
+      matchedRuleId: rule.id,
+    });
   });
 
   it('serves expired links as 410 and keeps draft domains and protected links private', async () => {

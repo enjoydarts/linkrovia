@@ -11,12 +11,14 @@ import {
   normalizeRegion,
   operatingSystems,
 } from '../targeting/visitor';
+import { applyUtmConfig } from '../utm';
 import { isEpochSecond, isObject, type FieldErrors } from './api-input';
 import { listLinkRules } from './store';
 
 type SimulationInput = { visitor: VisitorContext; at: number };
 type SimulationLink = {
   destinationUrl: string;
+  utmConfigJson?: string | null;
   isActive: number;
   domainActive: number;
   connectionStatus: string;
@@ -132,7 +134,11 @@ export function simulateTarget(
   }
   return {
     matchedRuleId: destination.matchedRuleId,
-    destinationUrl: destination.url.href,
+    destinationUrl: applyUtmConfig(
+      destination.url,
+      link.utmConfigJson ?? null,
+      destination.matchedRuleId,
+    ).href,
     fallbackUsed: destination.matchedRuleId === null,
     reasonCodes: [
       destination.matchedRuleId === null
@@ -150,7 +156,8 @@ export async function simulateLink(
 ) {
   const link = await db
     .prepare(
-      `SELECT l.destination_url AS destinationUrl, l.is_active AS isActive,
+      `SELECT l.destination_url AS destinationUrl, l.utm_config_json AS utmConfigJson,
+            l.is_active AS isActive,
             d.is_active AS domainActive, d.connection_status AS connectionStatus,
             l.starts_at AS startsAt, l.expires_at AS expiresAt,
             l.consumed_at AS consumedAt, l.protection_mode AS protectionMode

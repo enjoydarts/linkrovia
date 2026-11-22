@@ -1,6 +1,7 @@
 import { dev } from '$app/env';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { setupComplete } from '$lib/server/auth/setup';
+import { getSignInMethods, passkeyRp } from '$lib/server/auth/passkeys';
 import {
   authenticate,
   createSession,
@@ -33,6 +34,7 @@ export const load = (async ({ locals, url }) => {
     config.enabled && (status === 'ready' || status === 'test');
   return {
     locale: locals.locale,
+    ...(await getSignInMethods(db, passkeyRp(url, { development: dev }))),
     turnstile: canRenderWidget ? { siteKey: config.siteKey } : null,
   };
 }) satisfies PageServerLoad;
@@ -45,6 +47,9 @@ export const actions = {
     if (!db) return fail(503, { code: 'unavailable' });
     if (!(await setupComplete(db)))
       return fail(409, { code: 'setup_required' });
+    if (!(await getSignInMethods(db, null)).passwordAvailable) {
+      return fail(403, { code: 'invalid_credentials' });
+    }
     if (!(await allowAuthAttempt(event, 'login')))
       return fail(429, { code: 'rate_limit' });
     const form = await readSmallForm(request);

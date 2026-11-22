@@ -5,7 +5,7 @@
 - Node.js 26.13.1
 - npm 12.2.3
 
-The repository's `.node-version` and `package.json` record the required versions.
+The repository pins the required versions in `.node-version` and `package.json`. If your Node.js installation bundled an earlier npm release, install the pinned version with `npm install --global npm@12.2.3`.
 
 ## Local setup
 
@@ -18,7 +18,7 @@ npm run db:migrate:local
 npm run db:seed:local
 ```
 
-Before starting the server, set a private setup token of at least 32 characters as `SETUP_TOKEN` in `.dev.vars`. The example file shows a command for generating one. Run `npm run dev`, open <http://localhost:5173/setup>, and follow the prompts to create the owner account.
+Before starting the server, set a private setup token of at least 32 characters as `SETUP_TOKEN` in `.dev.vars`. The example file shows a command for generating one. Run `npm run dev`, open <http://localhost:5173/setup>, and follow the prompts to create the owner account. Use that same hostname for subsequent administration. Local passkey registration uses `localhost`; older password accounts can continue signing in with their passwords.
 
 The development server is available at <http://localhost:5173>. Its health endpoint is <http://localhost:5173/health> and returns `{"status":"ok"}` when the local D1 database is ready.
 
@@ -63,4 +63,4 @@ GitHub Actions runs on pushes to `main` and pull requests. It uses read-only rep
 
 ## Cloudflare runtime verification
 
-Local tests cover owner setup, login, session revocation, and D1 persistence. The password flow uses scrypt. Its execution cost and the browser-led deployment flow still require validation on Cloudflare Workers Free.
+Local tests cover owner setup, passkey registration and sign-in, session revocation, and D1 persistence. New production setups use passkeys. Existing password accounts retain their scrypt sign-in. The browser-led deployment path, production Turnstile validation, and execution time still require verification on Cloudflare Workers Free.

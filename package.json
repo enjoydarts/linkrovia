@@ -23,7 +23,10 @@
     "timezone:generate": "node scripts/generate-timezones.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "5.3.0",
     "@js-temporal/polyfill": "^0.5.1",
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.1.0",
     "bowser": "2.15.0",
     "drizzle-orm": "0.45.4"
   },

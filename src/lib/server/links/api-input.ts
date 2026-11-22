@@ -1,6 +1,7 @@
 import { isValidSlug } from '../security/slug';
 import { parseDestinationUrl } from '../security/url-policy';
 import { parseConditions } from '../targeting';
+import { parseUtmConfig } from '../utm';
 import type {
   LinkFilter,
   LinkInput,
@@ -144,6 +145,7 @@ const linkFields = new Set([
   'expiresAt',
   'tags',
   'rules',
+  'utmConfig',
 ]);
 type ParsedLinkPayload =
   | { input: LinkInput; expected: number | undefined }
@@ -208,6 +210,20 @@ export function parseLinkPayload(
   if (current && (!isEpochSecond(expected) || expected < 0))
     fieldErrors.updatedAt = ['Provide the current updatedAt value.'];
 
+  let utmConfigJson: string | null | undefined;
+  if (Object.hasOwn(value, 'utmConfig')) {
+    if (value.utmConfig === null) {
+      utmConfigJson = null;
+    } else {
+      const config = parseUtmConfig(value.utmConfig);
+      if (config) utmConfigJson = JSON.stringify(config);
+      else
+        fieldErrors.utmConfig = [
+          'Provide UTM values for the default destination or matching rule IDs.',
+        ];
+    }
+  }
+
   let rules: LinkRuleInput[] | undefined;
   if (Object.hasOwn(value, 'rules')) {
     if (!Array.isArray(value.rules) || value.rules.length > 20) {
@@ -239,6 +255,7 @@ export function parseLinkPayload(
       expiresAt: expiresAt as number | null,
       tags: tags!,
       rules,
+      ...(utmConfigJson !== undefined && { utmConfigJson }),
     },
   };
 }

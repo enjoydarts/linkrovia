@@ -1,11 +1,10 @@
-const maxFormBytes = 8192;
-
 export function requireSameOrigin(request: Request, url: URL): boolean {
   return request.headers.get('origin') === url.origin;
 }
 
 export async function readSmallForm(
   request: Request,
+  maxBytes = 8192,
 ): Promise<URLSearchParams | null> {
   const contentType = request.headers
     .get('content-type')
@@ -25,7 +24,7 @@ export async function readSmallForm(
       const { value, done } = await reader.read();
       if (done) return new URLSearchParams(body + decoder.decode());
       bytes += value.byteLength;
-      if (bytes > maxFormBytes) {
+      if (bytes > maxBytes) {
         await reader.cancel();
         return null;
       }

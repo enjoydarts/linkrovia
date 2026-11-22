@@ -11,7 +11,9 @@ export const handle: Handle = async ({ event, resolve }) => {
   const id = event.route.id;
   const management =
     id === '/setup' ||
+    id?.startsWith('/setup/') ||
     id === '/login' ||
+    id?.startsWith('/login/') ||
     id === '/logout' ||
     id === '/admin' ||
     id?.startsWith('/admin/');

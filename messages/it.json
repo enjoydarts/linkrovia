@@ -35,7 +35,18 @@
   "admin.security": "Sicurezza",
   "admin.apiKeys": "Chiavi API",
   "admin.signOut": "Esci",
+  "admin.recent": "Link recenti",
   "admin.title": "Panoramica",
   "admin.welcome": "La tua istanza Linkrovia è pronta per essere gestita.",
-  "admin.account": "Accesso effettuato come"
+  "admin.account": "Accesso effettuato come",
+  "passkey.create": "Crea una passkey",
+  "passkey.login": "Accedi con una passkey",
+  "passkey.createHelp": "Quando richiesto, usa il blocco schermo, l’impronta digitale o una chiave di sicurezza.",
+  "passkey.loginHelp": "Quando richiesto, scegli una passkey sul tuo dispositivo.",
+  "passkey.unavailable": "Le passkey non sono disponibili in questo browser o con questa connessione. Usa una connessione sicura e un browser supportato.",
+  "passkey.cancelled": "La richiesta è stata annullata o non è stata completata. Controlla il dispositivo e riprova.",
+  "passkey.password": "Usa la password",
+  "passkey.busy": "Operazione in corso…",
+  "passkey.javascript": "Abilita JavaScript per usare una passkey.",
+  "passkey.noMethods": "Nessun metodo di accesso è disponibile con questa connessione."
 }

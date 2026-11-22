@@ -11,6 +11,9 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fixtureSetupToken } from '../tests/fixtures/setup.mjs';
 
 const require = createRequire(import.meta.url);
+const port = process.env.LINKROVIA_E2E_PORT ?? '4173';
+const host = process.env.LINKROVIA_E2E_HOST ?? '127.0.0.1';
+if (!/^\d{1,5}$/.test(port)) throw new Error('Invalid test server port.');
 const wrangler = join(
   dirname(require.resolve('wrangler/package.json')),
   'bin/wrangler.js',
@@ -18,6 +21,7 @@ const wrangler = join(
 const vite = join(dirname(require.resolve('vite/package.json')), 'bin/vite.js');
 mkdirSync('.wrangler', { recursive: true });
 const directory = mkdtempSync(resolve('.wrangler/e2e-'));
+const generated = mkdtempSync(resolve('.svelte-kit-e2e-'));
 const state = join(directory, 'state');
 const config = join(directory, 'wrangler.jsonc');
 
@@ -58,11 +62,13 @@ try {
 
   const server = spawn(
     process.execPath,
-    [vite, 'dev', '--host', '127.0.0.1', '--port', '4173', '--strictPort'],
+    [vite, 'dev', '--host', host, '--port', port, '--strictPort'],
     {
       stdio: 'inherit',
       env: {
         ...process.env,
+        LINKROVIA_E2E_OUT_DIR: join(generated, 'kit'),
+        LINKROVIA_E2E_VITE_CACHE: join(generated, 'vite'),
         LINKROVIA_E2E_WRANGLER_CONFIG: config,
         LINKROVIA_E2E_WORKER_STATE: join(state, 'v3'),
       },
@@ -76,4 +82,5 @@ try {
   });
 } finally {
   rmSync(directory, { recursive: true, force: true });
+  rmSync(generated, { recursive: true, force: true });
 }

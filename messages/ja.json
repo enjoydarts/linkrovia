@@ -35,7 +35,18 @@
   "admin.security": "セキュリティ",
   "admin.apiKeys": "API キー",
   "admin.signOut": "ログアウト",
+  "admin.recent": "最近のリンク",
   "admin.title": "概要",
   "admin.welcome": "Linkrovia を管理できます。",
-  "admin.account": "ログイン中のアカウント"
+  "admin.account": "ログイン中のアカウント",
+  "passkey.create": "パスキーを作成",
+  "passkey.login": "パスキーでログイン",
+  "passkey.createHelp": "確認画面が表示されたら、端末の画面ロック、指紋、またはセキュリティキーを使用してください。",
+  "passkey.loginHelp": "確認画面が表示されたら、端末のパスキーを選択してください。",
+  "passkey.unavailable": "このブラウザーまたは接続ではパスキーを利用できません。安全な接続と対応ブラウザーを使用してください。",
+  "passkey.cancelled": "パスキーの操作がキャンセルされたか、完了できませんでした。端末を確認して再試行してください。",
+  "passkey.password": "パスワードを使用",
+  "passkey.busy": "処理中…",
+  "passkey.javascript": "パスキーを使うには JavaScript を有効にしてください。",
+  "passkey.noMethods": "この接続で利用できるログイン方法がありません。"
 }

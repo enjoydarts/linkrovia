@@ -35,7 +35,18 @@
   "admin.security": "Security",
   "admin.apiKeys": "API keys",
   "admin.signOut": "Sign out",
+  "admin.recent": "Recent links",
   "admin.title": "Overview",
   "admin.welcome": "Your Linkrovia instance is ready to manage.",
-  "admin.account": "Signed in as"
+  "admin.account": "Signed in as",
+  "passkey.create": "Create a passkey",
+  "passkey.login": "Sign in with a passkey",
+  "passkey.createHelp": "Use your device’s screen lock, fingerprint, or security key when prompted.",
+  "passkey.loginHelp": "Choose a passkey on your device when prompted.",
+  "passkey.unavailable": "Passkey authentication is unavailable in this browser or on this connection. Use a secure connection and a supported browser.",
+  "passkey.cancelled": "The passkey request was cancelled or could not be completed. Check your device and try again.",
+  "passkey.password": "Continue with password",
+  "passkey.busy": "Working…",
+  "passkey.javascript": "Enable JavaScript to use a passkey.",
+  "passkey.noMethods": "No sign-in method is available on this connection."
 }

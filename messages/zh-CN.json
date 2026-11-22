@@ -35,7 +35,18 @@
   "admin.security": "安全",
   "admin.apiKeys": "API 密钥",
   "admin.signOut": "退出登录",
+  "admin.recent": "最近的链接",
   "admin.title": "概览",
   "admin.welcome": "您可以开始管理 Linkrovia 实例。",
-  "admin.account": "当前登录账户"
+  "admin.account": "当前登录账户",
+  "passkey.create": "创建通行密钥",
+  "passkey.login": "使用通行密钥登录",
+  "passkey.createHelp": "出现提示时，请使用设备屏幕锁定、指纹或安全密钥。",
+  "passkey.loginHelp": "出现提示时，请选择设备上的通行密钥。",
+  "passkey.unavailable": "此浏览器或连接无法使用通行密钥。请使用安全连接和受支持的浏览器。",
+  "passkey.cancelled": "通行密钥操作已取消或无法完成。请检查设备后重试。",
+  "passkey.password": "使用密码",
+  "passkey.busy": "正在处理…",
+  "passkey.javascript": "请启用 JavaScript 以使用通行密钥。",
+  "passkey.noMethods": "此连接没有可用的登录方式。"
 }

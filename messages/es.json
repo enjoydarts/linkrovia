@@ -35,7 +35,18 @@
   "admin.security": "Seguridad",
   "admin.apiKeys": "Claves API",
   "admin.signOut": "Cerrar sesión",
+  "admin.recent": "Enlaces recientes",
   "admin.title": "Resumen",
   "admin.welcome": "Tu instancia de Linkrovia está lista para administrarse.",
-  "admin.account": "Sesión iniciada como"
+  "admin.account": "Sesión iniciada como",
+  "passkey.create": "Crear una clave de acceso",
+  "passkey.login": "Iniciar sesión con clave de acceso",
+  "passkey.createHelp": "Cuando se solicite, usa el bloqueo de pantalla, la huella digital o una llave de seguridad.",
+  "passkey.loginHelp": "Cuando se solicite, elige una clave de acceso de tu dispositivo.",
+  "passkey.unavailable": "Las claves de acceso no están disponibles en este navegador o conexión. Usa una conexión segura y un navegador compatible.",
+  "passkey.cancelled": "La solicitud se canceló o no pudo completarse. Comprueba tu dispositivo e inténtalo de nuevo.",
+  "passkey.password": "Usar contraseña",
+  "passkey.busy": "Procesando…",
+  "passkey.javascript": "Activa JavaScript para usar una clave de acceso.",
+  "passkey.noMethods": "No hay ningún método de acceso disponible en esta conexión."
 }

@@ -5,6 +5,7 @@ import {
   type TargetingRule,
   type VisitorCloudflareMetadata,
 } from '../targeting';
+import { applyUtmConfig } from '../utm';
 import type { RedirectType } from './store';
 
 type RedirectLink = {
@@ -15,6 +16,7 @@ type RedirectLink = {
   expiresAt: number | null;
   protectionMode: string;
   rulesJson: string;
+  utmConfigJson: string | null;
 };
 
 export type ShortLinkResponse =
@@ -37,7 +39,7 @@ export async function resolveShortLink(
   const link = await db
     .prepare(
       `SELECT l.id, l.destination_url AS destinationUrl, l.redirect_type AS redirectType,
-            l.starts_at AS startsAt, l.expires_at AS expiresAt, l.protection_mode AS protectionMode,
+            l.starts_at AS startsAt, l.expires_at AS expiresAt, l.protection_mode AS protectionMode, l.utm_config_json AS utmConfigJson,
             (SELECT json_group_array(json_object(
               'id', r.id, 'priority', r.priority, 'isActive', r.is_active,
               'conditionsJson', r.conditions_json, 'ruleType', r.rule_type,
@@ -64,7 +66,11 @@ export async function resolveShortLink(
   if (!destination) return { status: 404 };
   return {
     status: link.redirectType,
-    location: destination.url.href,
+    location: applyUtmConfig(
+      destination.url,
+      link.utmConfigJson,
+      destination.matchedRuleId,
+    ).href,
     linkId: link.id,
     matchedRuleId: destination.matchedRuleId,
   };

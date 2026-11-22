@@ -13,6 +13,7 @@ import {
 import { allowAuthAttempt } from '$lib/server/security/rate-limit';
 import { readSmallForm, requireSameOrigin } from '$lib/server/security/request';
 import { normalizeHostname } from '$lib/server/security/url-policy';
+import { passkeyRp } from '$lib/server/auth/passkeys';
 import {
   getTurnstileConfig,
   turnstileConfigurationStatus,
@@ -30,17 +31,32 @@ const cookieOptions = {
 
 export const load = (async ({ cookies, locals, url }) => {
   const locale = locals.locale;
+  const methods = {
+    passkeyAvailable: !!passkeyRp(url, { development: dev }),
+    passwordAvailable: dev,
+  };
   const db = locals.env.DB;
-  if (!db) return { locale, step: 'configuration', turnstile: null } as const;
+  if (!db)
+    return {
+      locale,
+      ...methods,
+      step: 'configuration',
+      turnstile: null,
+    } as const;
   if (await setupComplete(db))
     error(410, messagesFor(locale)['setup.completed']);
 
   const secret = locals.env.SETUP_TOKEN;
   if (!secret || secret.trim().length < 32 || secret.length > 512) {
-    return { locale, step: 'configuration', turnstile: null } as const;
+    return {
+      locale,
+      ...methods,
+      step: 'configuration',
+      turnstile: null,
+    } as const;
   }
   if (await verifySetupProof(cookies.get(setupProofCookie), secret)) {
-    return { locale, step: 'owner', turnstile: null } as const;
+    return { locale, ...methods, step: 'owner', turnstile: null } as const;
   }
   const config = await getTurnstileConfig(db);
   const status = turnstileConfigurationStatus({
@@ -53,6 +69,7 @@ export const load = (async ({ cookies, locals, url }) => {
     config.enabled && (status === 'ready' || status === 'test');
   return {
     locale,
+    ...methods,
     step: 'token',
     turnstile: canRenderWidget ? { siteKey: config.siteKey } : null,
   } as const;
@@ -97,6 +114,7 @@ export const actions = {
     redirect(303, '/setup');
   },
   register: async (event) => {
+    if (!dev) return fail(403, { code: 'unavailable' });
     const { request, url, cookies, locals } = event;
     if (!requireSameOrigin(request, url)) return fail(403, { code: 'csrf' });
     const db = locals.env.DB;

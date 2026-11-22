@@ -5,6 +5,7 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  cacheDir: process.env.LINKROVIA_E2E_VITE_CACHE,
   server: {
     fs: {
       deny: [
@@ -25,6 +26,7 @@ export default defineConfig({
       ignored: [
         '**/.local/**',
         '**/.wrangler/**',
+        '**/.svelte-kit-e2e-*/**',
         '**/test-results/**',
         '**/tests/**',
       ],
@@ -33,6 +35,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     sveltekit({
+      outDir: process.env.LINKROVIA_E2E_OUT_DIR ?? '.svelte-kit',
       preprocess: vitePreprocess(),
       alias: { $lib: 'src/lib' },
       adapter: adapter({

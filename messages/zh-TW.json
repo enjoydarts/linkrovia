@@ -35,7 +35,18 @@
   "admin.security": "安全性",
   "admin.apiKeys": "API 金鑰",
   "admin.signOut": "登出",
+  "admin.recent": "最近的連結",
   "admin.title": "總覽",
   "admin.welcome": "您可以開始管理 Linkrovia 執行個體。",
-  "admin.account": "目前登入帳戶"
+  "admin.account": "目前登入帳戶",
+  "passkey.create": "建立通行金鑰",
+  "passkey.login": "使用通行金鑰登入",
+  "passkey.createHelp": "出現提示時，請使用裝置螢幕鎖定、指紋或安全金鑰。",
+  "passkey.loginHelp": "出現提示時，請選擇裝置上的通行金鑰。",
+  "passkey.unavailable": "此瀏覽器或連線無法使用通行金鑰。請使用安全連線與支援的瀏覽器。",
+  "passkey.cancelled": "通行金鑰操作已取消或無法完成。請檢查裝置後重試。",
+  "passkey.password": "使用密碼",
+  "passkey.busy": "處理中…",
+  "passkey.javascript": "請啟用 JavaScript 以使用通行金鑰。",
+  "passkey.noMethods": "此連線沒有可用的登入方式。"
 }

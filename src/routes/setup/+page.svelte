@@ -1,5 +1,7 @@
 <script lang="ts">
   import { messagesFor } from '$lib/i18n/locale';
+  import AuthFrame from '$lib/components/auth/AuthFrame.svelte';
+  import PasskeyForm from '$lib/components/auth/PasskeyForm.svelte';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
   import type { PageProps } from './$types';
 
@@ -26,23 +28,11 @@
 </script>
 
 <svelte:head><title>{messages['setup.title']} · Linkrovia</title></svelte:head>
-<main
-  class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-12"
+<AuthFrame
+  title={messages['setup.title']}
+  description={messages['setup.subtitle']}
 >
   <div class="space-y-8">
-    <header class="space-y-2">
-      <p
-        class="text-sm font-semibold tracking-wide text-blue-700 dark:text-blue-400"
-      >
-        Linkrovia
-      </p>
-      <h1 class="text-3xl font-semibold tracking-tight">
-        {messages['setup.title']}
-      </h1>
-      <p class="text-neutral-600 dark:text-neutral-300">
-        {messages['setup.subtitle']}
-      </p>
-    </header>
     {#if data.step === 'token'}
       <section class="space-y-5">
         <h2 class="text-xl font-semibold">{messages['setup.step1']}</h2>
@@ -90,57 +80,70 @@
     {:else if data.step === 'owner'}
       <section class="space-y-5">
         <h2 class="text-xl font-semibold">{messages['setup.step2']}</h2>
-        <p>{messages['setup.ownerHelp']}</p>
-        <form method="POST" action="?/register" class="space-y-5">
-          <div class="space-y-2">
-            <label for="email" class="block font-medium">
-              {messages['auth.email']}
-            </label><input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autocomplete="email"
-              class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
-            />
-          </div>
-          <div class="space-y-2">
-            <label for="password" class="block font-medium">
-              {messages['auth.password']}
-            </label><input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autocomplete="new-password"
-              class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
-            />
-          </div>
-          <div class="space-y-2">
-            <label for="confirmPassword" class="block font-medium">
-              {messages['auth.confirmPassword']}
-            </label><input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              required
-              autocomplete="new-password"
-              class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
-            />
-          </div>
-          {#if errorMessage}<p
-              role="alert"
-              class="text-red-700 dark:text-red-400"
-            >
-              {errorMessage}
-            </p>{/if}
-          <button
-            class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
-            type="submit"
-          >
-            {messages['setup.register']}
-          </button>
-        </form>
+        {#if data.passkeyAvailable}<PasskeyForm
+            mode="setup"
+            locale={data.locale}
+          />{/if}
+        {#if data.passwordAvailable}
+          <details open={!data.passkeyAvailable} class="space-y-5">
+            <summary class="cursor-pointer font-medium">
+              {messages['passkey.password']}
+            </summary>
+            <p>{messages['setup.ownerHelp']}</p>
+            <form method="POST" action="?/register" class="space-y-5">
+              <div class="space-y-2">
+                <label for="email" class="block font-medium">
+                  {messages['auth.email']}
+                </label><input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autocomplete="email"
+                  class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+                />
+              </div>
+              <div class="space-y-2">
+                <label for="password" class="block font-medium">
+                  {messages['auth.password']}
+                </label><input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  autocomplete="new-password"
+                  class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+                />
+              </div>
+              <div class="space-y-2">
+                <label for="confirmPassword" class="block font-medium">
+                  {messages['auth.confirmPassword']}
+                </label><input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  autocomplete="new-password"
+                  class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+                />
+              </div>
+              {#if errorMessage}<p
+                  role="alert"
+                  class="text-red-700 dark:text-red-400"
+                >
+                  {errorMessage}
+                </p>{/if}
+              <button
+                class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+                type="submit"
+              >
+                {messages['setup.register']}
+              </button>
+            </form>
+          </details>
+        {:else if !data.passkeyAvailable}<p role="alert">
+            {messages['passkey.noMethods']}
+          </p>{/if}
       </section>
     {:else}
       <p>{messages['setup.configuration']}</p>
@@ -152,4 +155,4 @@
       </a>
     {/if}
   </div>
-</main>
+</AuthFrame>

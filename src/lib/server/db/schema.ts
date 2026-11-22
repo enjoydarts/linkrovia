@@ -517,3 +517,57 @@ export const domainConnectionOperations = sqliteTable(
     ),
   ],
 );
+
+export const passkeyCredentials = sqliteTable(
+  'passkey_credentials',
+  {
+    credentialId: text('credential_id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    rpId: text('rp_id').notNull(),
+    origin: text('origin').notNull(),
+    publicKey: text('public_key').notNull(),
+    signCount: integer('sign_count').notNull(),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    check(
+      'passkey_sign_count_range',
+      sql`${table.signCount} BETWEEN 0 AND 4294967295`,
+    ),
+    index('passkey_credentials_user').on(table.userId),
+  ],
+);
+
+export const passkeyChallenges = sqliteTable(
+  'passkey_challenges',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    challenge: text('challenge').notNull().unique(),
+    flow: text('flow', { enum: ['owner', 'login'] }).notNull(),
+    rpId: text('rp_id').notNull(),
+    origin: text('origin').notNull(),
+    proofHash: text('proof_hash'),
+    ownerId: text('owner_id'),
+    ownerEmail: text('owner_email'),
+    ownerLocale: text('owner_locale'),
+    expiresAt: integer('expires_at').notNull(),
+  },
+  (table) => [
+    check('passkey_challenges_flow', sql`${table.flow} IN ('owner', 'login')`),
+    check(
+      'passkey_challenges_owner_binding',
+      sql`
+      (${table.flow} = 'owner' AND ${table.proofHash} IS NOT NULL
+        AND ${table.ownerId} IS NOT NULL AND ${table.ownerEmail} IS NOT NULL AND ${table.ownerLocale} IS NOT NULL)
+      OR
+      (${table.flow} = 'login' AND ${table.proofHash} IS NULL
+        AND ${table.ownerId} IS NULL AND ${table.ownerEmail} IS NULL AND ${table.ownerLocale} IS NULL)
+    `,
+    ),
+    index('passkey_challenges_expiry').on(table.expiresAt),
+  ],
+);

@@ -20,14 +20,19 @@ export type LinkInput = {
   expiresAt: number | null;
   tags: string[];
   rules?: LinkRuleInput[];
+  utmConfigJson?: string | null;
 };
 
-export type LinkSummary = Omit<LinkInput, 'slug' | 'rules'> & {
+export type LinkSummary = Omit<
+  LinkInput,
+  'slug' | 'rules' | 'utmConfigJson'
+> & {
   id: string;
   hostname: string;
   slug: string;
   createdAt: number;
   updatedAt: number;
+  utmConfigJson: string | null;
 };
 
 type LinkRow = Omit<LinkSummary, 'isActive' | 'tags'> & {
@@ -57,7 +62,7 @@ const linkFields = `
   l.id, l.domain_id AS domainId, d.hostname, l.slug, l.destination_url AS destinationUrl,
   l.title, l.redirect_type AS redirectType, l.is_active AS isActive,
   l.created_at AS createdAt, l.updated_at AS updatedAt, l.starts_at AS startsAt,
-  l.expires_at AS expiresAt,
+  l.expires_at AS expiresAt, l.utm_config_json AS utmConfigJson,
   (SELECT json_group_array(t.name ORDER BY t.name COLLATE NOCASE)
    FROM link_tags lt JOIN tags t ON t.id = lt.tag_id WHERE lt.link_id = l.id) AS tags
 `;
@@ -277,8 +282,8 @@ export async function createLink(
     const [insert] = await db.batch([
       db
         .prepare(
-          `INSERT INTO links (id, domain_id, slug, destination_url, title, redirect_type, is_active, starts_at, expires_at, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(domain_id, slug) DO NOTHING`,
+          `INSERT INTO links (id, domain_id, slug, destination_url, title, redirect_type, is_active, starts_at, expires_at, created_by, utm_config_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(domain_id, slug) DO NOTHING`,
         )
         .bind(
           id,
@@ -291,6 +296,7 @@ export async function createLink(
           input.startsAt,
           input.expiresAt,
           actorId,
+          input.utmConfigJson ?? null,
         ),
       writeAudit(db, audit, actorId, 'link.created', id),
       ...tagStatements(db, audit, id, input.tags),
@@ -323,7 +329,13 @@ export async function updateLink(
     db
       .prepare(
         `UPDATE links SET domain_id = ?, slug = ?, destination_url = ?, title = ?, redirect_type = ?,
-        is_active = ?, starts_at = ?, expires_at = ?, updated_at = MAX(unixepoch(), updated_at + 1)
+        is_active = ?, starts_at = ?, expires_at = ?,
+        utm_config_json = CASE
+          WHEN ? THEN ?
+          WHEN ? AND json_valid(utm_config_json) THEN json_remove(utm_config_json, '$.rules')
+          ELSE utm_config_json
+        END,
+        updated_at = MAX(unixepoch(), updated_at + 1)
        WHERE id = ? AND updated_at = ? AND deleted_at IS NULL
          AND NOT EXISTS (SELECT 1 FROM links other WHERE other.domain_id = ? AND other.slug = ? AND other.id <> ?)`,
       )
@@ -336,6 +348,9 @@ export async function updateLink(
         Number(input.isActive),
         input.startsAt,
         input.expiresAt,
+        Number(input.utmConfigJson !== undefined),
+        input.utmConfigJson ?? null,
+        Number(input.rules !== undefined),
         id,
         expected,
         input.domainId,

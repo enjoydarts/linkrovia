@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Brand from '$lib/components/Brand.svelte';
   import { locales, localeNames, messagesFor } from '$lib/i18n/locale';
   import type { PageProps } from './$types';
 
@@ -11,23 +12,29 @@
   <meta name="description" content={messages['home.description']} />
 </svelte:head>
 
-<main
-  class="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-8 px-6 py-12"
->
-  <div class="space-y-3">
-    <h1 class="text-4xl font-semibold tracking-tight">Linkrovia</h1>
-    <p class="text-lg">{messages['home.description']}</p>
-    <p>{messages['home.status']}</p>
-  </div>
+<main class="landing">
+  <header class="landing-bar">
+    <Brand iconOnly />
+    <a href="https://github.com/enjoydarts/linkrovia" class="landing-source">
+      GitHub <span aria-hidden="true">↗</span>
+    </a>
+  </header>
 
-  <a
-    class="w-fit rounded-md border px-4 py-2 font-medium underline underline-offset-4"
-    href={data.initialized ? '/login' : '/setup'}
-  >
-    {data.initialized ? messages['login.title'] : messages['setup.title']}
-  </a>
+  <section class="landing-panel">
+    <div class="landing-copy">
+      <h1>Linkrovia</h1>
+      <p>{messages['home.description']}</p>
+      <a class="landing-action" href={data.initialized ? '/login' : '/setup'}>
+        {data.initialized ? messages['login.title'] : messages['setup.title']}
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+    <div class="landing-preview" aria-hidden="true">
+      <img src="/linkrovia-logo.png" alt="" width="240" height="240" />
+    </div>
+  </section>
 
-  <form method="POST" class="flex flex-wrap items-end gap-3">
+  <form method="POST" class="landing-footer">
     <div class="space-y-1">
       <label for="locale" class="block text-sm font-medium">
         {messages['language.label']}
@@ -46,7 +53,8 @@
     </div>
     <button
       type="submit"
-      class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white"
+      class="rounded-md border px-4 py-2 text-sm font-semibold"
+      style:border-color="var(--line)"
     >
       {messages['language.save']}
     </button>

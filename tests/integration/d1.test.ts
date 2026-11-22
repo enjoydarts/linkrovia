@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { getTableConfig, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getPlatformProxy } from 'wrangler';
@@ -14,11 +14,11 @@ beforeAll(async () => {
     persist: false,
   });
 
-  for (const migration of ['0001_initial.sql', '0002_domain_connections.sql']) {
-    const sql = await readFile(
-      new URL('../../migrations/' + migration, import.meta.url),
-      'utf8',
-    );
+  const migrations = new URL('../../migrations/', import.meta.url);
+  for (const migration of (await readdir(migrations))
+    .filter((name) => name.endsWith('.sql'))
+    .sort()) {
+    const sql = await readFile(new URL(migration, migrations), 'utf8');
     const statements = sql
       .replace(/--.*$/gm, '')
       .split(';')

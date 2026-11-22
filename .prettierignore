@@ -4,3 +4,4 @@ src/lib/timezone/timezones.json
 worker-configuration.d.ts
 
 /AGENTS.override.md
+/.svelte-kit-e2e-*/
