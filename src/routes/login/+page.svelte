@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { messagesFor } from '$lib/i18n/locale';
   import AuthFrame from '$lib/components/auth/AuthFrame.svelte';
   import PasskeyForm from '$lib/components/auth/PasskeyForm.svelte';
@@ -29,7 +30,9 @@
   });
 </script>
 
-<svelte:head><title>{messages['login.title']} · Linkrovia</title></svelte:head>
+<svelte:head>
+  <title>{messages['login.title']} · {brand.name}</title>
+</svelte:head>
 <AuthFrame
   title={messages['login.title']}
   description={messages['login.subtitle']}
@@ -59,7 +62,7 @@
               type="email"
               required
               autocomplete="username"
-              class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+              class="w-full rounded-md border border-control bg-surface px-3 py-2"
             />
           </div>
           <div class="space-y-2">
@@ -71,7 +74,7 @@
               type="password"
               required
               autocomplete="current-password"
-              class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+              class="w-full rounded-md border border-control bg-surface px-3 py-2"
             />
           </div>
           {#if data.turnstile}<TurnstileWidget
@@ -79,14 +82,11 @@
               action="login"
               locale={data.locale}
             />{/if}
-          {#if errorMessage}<p
-              role="alert"
-              class="text-red-700 dark:text-red-400"
-            >
+          {#if errorMessage}<p role="alert" class="text-negative">
               {errorMessage}
             </p>{/if}
           <button
-            class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+            class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
             type="submit"
           >
             {messages['login.submit']}

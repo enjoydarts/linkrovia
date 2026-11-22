@@ -4,6 +4,7 @@ import zhCN from '../../../messages/zh-CN.json';
 import zhTW from '../../../messages/zh-TW.json';
 import es from '../../../messages/es.json';
 import it from '../../../messages/it.json';
+import { brand } from '../brand';
 
 export const locales = ['en', 'ja', 'zh-CN', 'zh-TW', 'es', 'it'] as const;
 export type Locale = (typeof locales)[number];
@@ -31,7 +32,13 @@ export function isLocale(value: unknown): value is Locale {
 }
 
 export function messagesFor(locale: Locale): typeof en {
-  return { ...en, ...catalogs[locale] };
+  const messages = { ...en, ...catalogs[locale] };
+  if (brand.name !== 'Linkrovia') {
+    for (const key of Object.keys(messages) as (keyof typeof en)[]) {
+      messages[key] = messages[key].replaceAll('Linkrovia', () => brand.name);
+    }
+  }
+  return messages;
 }
 
 export function resolveLocale(

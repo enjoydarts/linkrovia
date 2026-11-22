@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import AuthFrame from '$lib/components/auth/AuthFrame.svelte';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
   import { messagesFor } from '$lib/i18n/locale';
@@ -22,7 +23,7 @@
 </script>
 
 <svelte:head>
-  <title>{m.openLink} · Linkrovia</title>
+  <title>{m.openLink} · {brand.name}</title>
   {#if data.nextPath}<meta
       http-equiv="refresh"
       content={`0;url=${data.nextPath}`}
@@ -33,10 +34,7 @@
   description={data.oneTime ? m.oneTimeNotice : m.passwordNotice}
 >
   {#if data.nextPath}
-    <a
-      href={data.nextPath}
-      class="font-medium text-blue-700 underline dark:text-blue-400"
-    >
+    <a href={data.nextPath} class="font-medium text-link underline">
       {m.continue}
     </a>
   {:else}
@@ -62,7 +60,7 @@
           locale={data.locale}
         />
       {/if}
-      {#if message}<p class="text-red-700 dark:text-red-400" role="alert">
+      {#if message}<p class="text-negative" role="alert">
           {message}
         </p>{/if}
       <button type="submit" class="font-medium">{m.continue}</button>

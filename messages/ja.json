@@ -1,5 +1,5 @@
 {
-  "home.description": "Cloudflare Workers でセルフホストする URL 短縮・分析ツール。",
+  "home.description": "自分のCloudflareアカウントで運用できる、オープンソースのスマートリンク管理。",
   "home.status": "Linkrovia は開発中です。",
   "language.label": "言語",
   "language.save": "保存",

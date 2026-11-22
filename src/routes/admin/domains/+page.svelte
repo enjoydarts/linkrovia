@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { linkExtra, linkMessages } from '$lib/i18n/links';
   import type { PageProps } from './$types';
   let { data, form }: PageProps = $props();
@@ -6,21 +7,16 @@
   let x = $derived(linkExtra(data.locale));
 </script>
 
-<svelte:head><title>{m.domains} · Linkrovia</title></svelte:head>
+<svelte:head><title>{m.domains} · {brand.name}</title></svelte:head>
 <div class="max-w-3xl space-y-8">
   <header class="space-y-3">
     <h1 class="text-3xl font-semibold tracking-tight">{m.domains}</h1>
     <p>{m.domainHelp}</p>
-    <a
-      href="/admin/links"
-      class="inline-block text-blue-700 underline dark:text-blue-400"
-    >
+    <a href="/admin/links" class="inline-block text-link underline">
       ← {m.back}
     </a>
   </header>
-  <ul
-    class="divide-y divide-neutral-300 rounded-lg border border-neutral-300 dark:divide-neutral-700 dark:border-neutral-700"
-  >
+  <ul class="divide-y divide-line rounded-lg border border-line">
     {#each data.domains as domain (domain.id)}<li
         class="flex flex-wrap items-center justify-between gap-2 p-4"
       >
@@ -48,14 +44,14 @@
           autocomplete="off"
           placeholder="links.example.com"
           value={form?.hostname ?? ''}
-          class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+          class="w-full rounded-md border border-control bg-surface px-3 py-2"
         />
       </div>
-      {#if form?.code}<p role="alert" class="text-red-700 dark:text-red-400">
+      {#if form?.code}<p role="alert" class="text-negative">
           {m.error}
         </p>{/if}<button
         type="submit"
-        class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
       >
         {m.addDomain}
       </button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import LinkForm from '$lib/components/links/LinkForm.svelte';
   import { linkExtra, linkMessages } from '$lib/i18n/links';
   import { protectionMessages } from '$lib/i18n/protection';
@@ -9,18 +10,15 @@
   let protection = $derived(protectionMessages(data.locale));
 </script>
 
-<svelte:head><title>{m.edit} · Linkrovia</title></svelte:head>
+<svelte:head><title>{m.edit} · {brand.name}</title></svelte:head>
 <div class="space-y-6">
-  <a href="/admin/links" class="text-blue-700 underline dark:text-blue-400">
+  <a href="/admin/links" class="text-link underline">
     ← {m.back}
   </a>
   <h1 class="text-3xl font-semibold tracking-tight">{m.edit}</h1>
   {#if data.link}<p class="break-all">
       <span class="font-medium">{m.shortUrl}:</span>
-      <a
-        href={data.link.shortUrl}
-        class="text-blue-700 underline dark:text-blue-400"
-      >
+      <a href={data.link.shortUrl} class="text-link underline">
         {data.link.shortUrl}
       </a>
     </p>
@@ -28,21 +26,21 @@
       <a
         href={`/admin/links/${data.link.id}/qr`}
         class="rounded-md border px-3 py-2 font-medium hover:underline"
-        style="border-color: var(--line)"
+        style="border-color: var(--ui-border)"
       >
         {protection.qr}
       </a>
       <a
         href={`/admin/links/${data.link.id}/protection`}
         class="rounded-md border px-3 py-2 font-medium hover:underline"
-        style="border-color: var(--line)"
+        style="border-color: var(--ui-border)"
       >
         {protection.title}
       </a>
     </div>
   {/if}
   {#if form?.code === 'temporary_redirect'}
-    <p role="alert" class="text-red-700 dark:text-red-400">
+    <p role="alert" class="text-negative">
       {protection.temporaryRedirect}
     </p>
   {/if}
@@ -57,7 +55,7 @@
     values={form && 'values' in form ? form.values : undefined}
   />
   {#if data.link}
-    <details class="max-w-2xl rounded-md border border-red-500 p-4">
+    <details class="max-w-2xl rounded-md border border-negative p-4">
       <summary class="cursor-pointer font-medium">{x.deleteHelp}</summary>
       <form method="POST" action="?/remove" class="mt-4 space-y-4">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
@@ -73,7 +71,7 @@
         </label>
         <button
           type="submit"
-          class="rounded-md bg-red-700 px-4 py-2 font-medium text-white"
+          class="rounded-md bg-negative px-4 py-2 font-medium text-on-negative"
         >
           {m.remove}
         </button>

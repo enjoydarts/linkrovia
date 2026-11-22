@@ -4,7 +4,7 @@ import { isLocale } from '$lib/i18n/locale';
 import { setupComplete } from '$lib/server/auth/setup';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals, setHeaders }) => {
+export const load: PageServerLoad = async ({ locals, setHeaders, url }) => {
   setHeaders({
     'cache-control': 'private, no-store',
     vary: 'Cookie, Accept-Language',
@@ -12,6 +12,7 @@ export const load: PageServerLoad = async ({ locals, setHeaders }) => {
   const db = locals.env.DB;
   return {
     locale: locals.locale,
+    origin: url.origin,
     initialized: db ? await setupComplete(db) : false,
   };
 };

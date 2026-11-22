@@ -6,6 +6,8 @@ import { resolveLocale } from '$lib/i18n/locale';
 import { getSession, sessionCookie } from '$lib/server/auth/session';
 import { publicLinkHeaders } from '$lib/server/links/public-response';
 import { normalizeHostname } from '$lib/server/security/url-policy';
+import { themeCookie } from '$lib/server/theme';
+import { resolveTheme } from '$lib/theme/theme';
 
 export const handle: Handle = async ({ event, resolve }) => {
   event.locals.env = env;
@@ -48,9 +50,15 @@ export const handle: Handle = async ({ event, resolve }) => {
     event.request.headers.get('accept-language'),
   );
   event.locals.locale = locale;
+  const theme = resolveTheme(
+    event.locals.session?.user.theme,
+    event.cookies.get(themeCookie),
+  );
   const response = await resolve(event, {
     transformPageChunk: ({ html }) =>
-      html.replace('%linkrovia.locale%', locale),
+      html
+        .replace('%linkrovia.locale%', locale)
+        .replace('%linkrovia.theme%', theme),
   });
   if (id === '/gate/[token]') {
     const gateResponse = new Response(response.body, response);

@@ -2,6 +2,8 @@ import { error, fail, redirect, type RequestEvent } from '@sveltejs/kit';
 import { isLocale } from '$lib/i18n/locale';
 import { checkCsrfToken } from '$lib/server/auth/session';
 import { readSmallForm, requireSameOrigin } from '$lib/server/security/request';
+import { setThemeCookie } from '$lib/server/theme';
+import { isTheme, resolveTheme } from '$lib/theme/theme';
 import { isTimeZone, timeZones } from '$lib/timezone/timezone';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -36,6 +38,7 @@ export const load = (async (event) => {
   return {
     locale: event.locals.locale,
     userZone: session.user.timezone ?? '',
+    theme: resolveTheme(session.user.theme, undefined),
     defaultZone: isTimeZone(defaultZone) ? defaultZone : 'UTC',
     timeZones,
     isOwner: session.user.role === 'owner',
@@ -47,14 +50,20 @@ export const actions = {
     const { session, db, form } = await authorizeForm(event);
     const locale = form.get('locale');
     const timezone = form.get('timezone')?.trim() ?? '';
-    if (!isLocale(locale) || (timezone !== '' && !isTimeZone(timezone)))
+    const theme = form.get('theme') ?? session.user.theme;
+    if (
+      !isLocale(locale) ||
+      !isTheme(theme) ||
+      (timezone !== '' && !isTimeZone(timezone))
+    )
       return fail(400, { code: 'invalid', section: 'personal' });
     await db
       .prepare(
-        'UPDATE users SET locale = ?, timezone = ?, updated_at = unixepoch() WHERE id = ? AND disabled_at IS NULL',
+        'UPDATE users SET locale = ?, timezone = ?, theme = ?, updated_at = unixepoch() WHERE id = ? AND disabled_at IS NULL',
       )
-      .bind(locale, timezone || null, session.user.id)
+      .bind(locale, timezone || null, theme, session.user.id)
       .run();
+    setThemeCookie(event.cookies, theme);
     redirect(303, '/admin/settings?saved=personal');
   },
   defaultZone: async (event) => {

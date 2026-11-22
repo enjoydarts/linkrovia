@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import LinkForm from '$lib/components/links/LinkForm.svelte';
   import { linkMessages } from '$lib/i18n/links';
   import type { PageProps } from './$types';
@@ -6,9 +7,9 @@
   let m = $derived(linkMessages(data.locale));
 </script>
 
-<svelte:head><title>{m.create} · Linkrovia</title></svelte:head>
+<svelte:head><title>{m.create} · {brand.name}</title></svelte:head>
 <div class="space-y-6">
-  <a href="/admin/links" class="text-blue-700 underline dark:text-blue-400">
+  <a href="/admin/links" class="text-link underline">
     ← {m.back}
   </a>
   <h1 class="text-3xl font-semibold tracking-tight">{m.create}</h1>

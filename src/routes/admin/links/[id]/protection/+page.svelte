@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { messagesFor } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
   import { protectionMessages } from '$lib/i18n/protection';
@@ -23,12 +24,9 @@
   );
 </script>
 
-<svelte:head><title>{m.title} · Linkrovia</title></svelte:head>
+<svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 <section class="max-w-2xl space-y-5">
-  <a
-    href={`/admin/links/${data.link.id}`}
-    class="text-blue-700 underline dark:text-blue-400"
-  >
+  <a href={`/admin/links/${data.link.id}`} class="text-link underline">
     ← {link.edit}
   </a>
   <h1 class="text-3xl font-semibold tracking-tight">{m.title}</h1>
@@ -39,7 +37,7 @@
   <form
     method="POST"
     class="space-y-5 rounded-xl border p-5"
-    style="border-color: var(--line); background: var(--surface)"
+    style="border-color: var(--ui-border); background: var(--ui-surface)"
   >
     <input type="hidden" name="csrfToken" value={data.csrfToken} />
     <input type="hidden" name="updatedAt" value={data.link.updatedAt} />
@@ -81,17 +79,17 @@
         class="w-full rounded-md border px-3 py-2"
       />
     </label>
-    <p id="password-help" class="text-sm" style="color: var(--muted)">
+    <p id="password-help" class="text-sm" style="color: var(--ui-text-muted)">
       {m.passwordHelp}
       {m.paidNote}
     </p>
-    {#if message}<p role="alert" class="text-red-700 dark:text-red-400">
+    {#if message}<p role="alert" class="text-negative">
         {message}
       </p>{/if}
     {#if form?.saved}<p role="status">{m.saved}</p>{/if}
     <button
       type="submit"
-      class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+      class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
     >
       {link.save}
     </button>

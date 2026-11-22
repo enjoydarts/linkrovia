@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { resolve } from '$app/paths';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
   import type { PageProps } from './$types';
@@ -12,7 +13,7 @@
 </script>
 
 <svelte:head>
-  <title>{messages.title} · Linkrovia</title>
+  <title>{messages.title} · {brand.name}</title>
 </svelte:head>
 
 <div class="max-w-2xl space-y-6">
@@ -21,9 +22,7 @@
     <p>{messages.intro}</p>
   </header>
 
-  <dl
-    class="space-y-2 rounded-md border border-neutral-300 p-4 text-sm dark:border-neutral-700"
-  >
+  <dl class="space-y-2 rounded-md border border-line p-4 text-sm">
     <div class="flex flex-wrap gap-x-3">
       <dt class="font-medium">{messages.status}</dt>
       <dd>
@@ -63,7 +62,7 @@
       <div class="flex flex-wrap items-center gap-4">
         <button
           type="submit"
-          class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white"
+          class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary"
         >
           {data.enabled ? messages.verifySave : messages.verifyEnable}
         </button>
@@ -120,7 +119,7 @@
       </div>
       <button
         type="submit"
-        class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white"
+        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary"
       >
         {messages.prepare}
       </button>
@@ -128,9 +127,7 @@
   {/if}
 
   {#if data.enabled}
-    <div
-      class="space-y-3 border-t border-neutral-300 pt-4 dark:border-neutral-700"
-    >
+    <div class="space-y-3 border-t border-line pt-4">
       <p class="text-sm">{messages.rotate}</p>
       <form method="POST" action="?/disable">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />

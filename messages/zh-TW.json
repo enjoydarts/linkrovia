@@ -1,5 +1,5 @@
 {
-  "home.description": "在 Cloudflare Workers 上自行託管的短網址與分析工具。",
+  "home.description": "在自己的 Cloudflare 帳戶上運作的開放原始碼智慧連結管理工具。",
   "home.status": "Linkrovia 正在開發中。",
   "language.label": "語言",
   "language.save": "儲存",

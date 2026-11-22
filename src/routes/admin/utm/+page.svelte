@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { resolve } from '$app/paths';
   import type { PageProps } from './$types';
   import { utmMessages } from './messages';
@@ -22,13 +23,13 @@
 
   type Field = PageProps['data']['utmKeys'][number];
   const inputClass =
-    'w-full min-w-0 rounded-md border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-sm';
+    'w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm';
   const buttonClass =
-    'rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50';
+    'rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary disabled:opacity-50';
 </script>
 
 <svelte:head>
-  <title>{messages.title} · Linkrovia</title>
+  <title>{messages.title} · {brand.name}</title>
 </svelte:head>
 
 {#snippet utmFields(
@@ -77,7 +78,7 @@
 <div class="space-y-6">
   <header class="space-y-2">
     <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
-    <p class="text-[color:var(--muted)]">{messages.description}</p>
+    <p class="text-muted">{messages.description}</p>
   </header>
 
   {#if form?.issue}
@@ -91,7 +92,7 @@
   <div class="grid items-start gap-6 lg:grid-cols-2">
     <section
       aria-labelledby="utm-templates-title"
-      class="min-w-0 space-y-5 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-5"
+      class="min-w-0 space-y-5 rounded-xl border border-line bg-surface p-5"
     >
       <div class="space-y-3">
         <h2 id="utm-templates-title" class="text-xl font-semibold">
@@ -100,7 +101,7 @@
         {#if !data.templates.length}
           <p class="text-sm">{messages.noTemplates}</p>
         {:else}
-          <ul class="divide-y divide-[color:var(--line)]">
+          <ul class="divide-y divide-line">
             {#each data.templates as template (template.id)}
               <li class="py-2">
                 <a
@@ -114,7 +115,7 @@
                   {template.name}
                 </a>
                 {#if template.description}
-                  <p class="text-sm break-words text-[color:var(--muted)]">
+                  <p class="text-sm break-words text-muted">
                     {template.description}
                   </p>
                 {/if}
@@ -124,7 +125,7 @@
         {/if}
       </div>
 
-      <div class="space-y-3 border-t border-[color:var(--line)] pt-4">
+      <div class="space-y-3 border-t border-line pt-4">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
           <h3 class="text-lg font-medium">
             {data.editing ? messages.editTemplate : messages.newTemplate}
@@ -193,7 +194,7 @@
             <button
               type="submit"
               disabled={staleTemplate}
-              class="rounded-md border border-red-600 px-4 py-2 text-sm font-medium text-red-700 disabled:opacity-50 dark:text-red-300"
+              class="rounded-md border border-negative px-4 py-2 text-sm font-medium text-negative disabled:opacity-50"
             >
               {messages.remove}
             </button>
@@ -204,7 +205,7 @@
 
     <section
       aria-labelledby="utm-preview-title"
-      class="min-w-0 space-y-4 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-5"
+      class="min-w-0 space-y-4 rounded-xl border border-line bg-surface p-5"
     >
       <h2 id="utm-preview-title" class="text-xl font-semibold">
         {messages.preview}
@@ -259,7 +260,7 @@
 
       {#if form?.preview}
         <dl
-          class="space-y-2 rounded-md border border-[color:var(--line)] bg-[var(--canvas)] p-3 text-sm"
+          class="space-y-2 rounded-md border border-line bg-canvas p-3 text-sm"
         >
           <dt class="font-medium">{messages.before}</dt>
           <dd><code class="break-all">{form.preview.before}</code></dd>

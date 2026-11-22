@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
+import type { Theme } from '../../theme/theme';
 import { isValidPassword, normalizeEmail, verifyPassword } from './credential';
 import { encode, hex, randomHex, sha256, uuidV7 } from './crypto';
 
@@ -11,6 +12,7 @@ export interface SessionUser {
   role: 'owner' | 'admin';
   locale: string;
   timezone: string | null;
+  theme: Theme;
 }
 
 export interface Session {
@@ -72,7 +74,7 @@ export async function getSession(
   if (!validToken(token)) return null;
   const user = await db
     .prepare(
-      `SELECT users.id, users.email, users.role, users.locale, users.timezone
+      `SELECT users.id, users.email, users.role, users.locale, users.timezone, users.theme
        FROM sessions JOIN users ON users.id = sessions.user_id
        WHERE sessions.token_hash = ? AND sessions.revoked_at IS NULL
          AND sessions.expires_at > unixepoch() AND users.disabled_at IS NULL`,

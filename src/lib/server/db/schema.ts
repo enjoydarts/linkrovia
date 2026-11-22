@@ -10,6 +10,7 @@ import {
   unique,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
+import type { Theme } from '../../theme/theme';
 
 // The D1 migrations are the schema authority. Apply them through Wrangler.
 // The tags.name NOCASE collation is defined in SQL.
@@ -23,6 +24,7 @@ export const users = sqliteTable(
     role: text('role').notNull(),
     locale: text('locale').notNull().default('en'),
     timezone: text('timezone'),
+    theme: text('theme').$type<Theme>().notNull().default('system'),
     createdAt: integer('created_at')
       .notNull()
       .default(sql`(unixepoch())`),
@@ -31,7 +33,10 @@ export const users = sqliteTable(
       .default(sql`(unixepoch())`),
     disabledAt: integer('disabled_at'),
   },
-  (table) => [check('users_role_check', sql`role IN ('owner','admin')`)],
+  () => [
+    check('users_role_check', sql`role IN ('owner','admin')`),
+    check('users_theme_check', sql`theme IN ('system', 'light', 'dark')`),
+  ],
 );
 
 export const sessions = sqliteTable(

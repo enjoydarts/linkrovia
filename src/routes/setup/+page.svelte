@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { messagesFor } from '$lib/i18n/locale';
   import AuthFrame from '$lib/components/auth/AuthFrame.svelte';
   import PasskeyForm from '$lib/components/auth/PasskeyForm.svelte';
@@ -27,7 +28,9 @@
   });
 </script>
 
-<svelte:head><title>{messages['setup.title']} · Linkrovia</title></svelte:head>
+<svelte:head>
+  <title>{messages['setup.title']} · {brand.name}</title>
+</svelte:head>
 <AuthFrame
   title={messages['setup.title']}
   description={messages['setup.subtitle']}
@@ -38,7 +41,7 @@
         <h2 class="text-xl font-semibold">{messages['setup.step1']}</h2>
         <p class="leading-relaxed">{messages['setup.tokenHelp']}</p>
         <a
-          class="inline-block text-blue-700 underline underline-offset-4 dark:text-blue-400"
+          class="inline-block text-link underline underline-offset-4"
           href="https://dash.cloudflare.com/"
           target="_blank"
           rel="noopener noreferrer"
@@ -55,7 +58,7 @@
               type="password"
               required
               autocomplete="off"
-              class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+              class="w-full rounded-md border border-control bg-surface px-3 py-2"
             />
           </div>
           {#if data.turnstile}<TurnstileWidget
@@ -63,14 +66,11 @@
               action="setup"
               locale={data.locale}
             />{/if}
-          {#if errorMessage}<p
-              role="alert"
-              class="text-red-700 dark:text-red-400"
-            >
+          {#if errorMessage}<p role="alert" class="text-negative">
               {errorMessage}
             </p>{/if}
           <button
-            class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+            class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
             type="submit"
           >
             {messages['setup.verify']}
@@ -100,7 +100,7 @@
                   type="email"
                   required
                   autocomplete="email"
-                  class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+                  class="w-full rounded-md border border-control bg-surface px-3 py-2"
                 />
               </div>
               <div class="space-y-2">
@@ -112,7 +112,7 @@
                   type="password"
                   required
                   autocomplete="new-password"
-                  class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+                  class="w-full rounded-md border border-control bg-surface px-3 py-2"
                 />
               </div>
               <div class="space-y-2">
@@ -124,17 +124,14 @@
                   type="password"
                   required
                   autocomplete="new-password"
-                  class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+                  class="w-full rounded-md border border-control bg-surface px-3 py-2"
                 />
               </div>
-              {#if errorMessage}<p
-                  role="alert"
-                  class="text-red-700 dark:text-red-400"
-                >
+              {#if errorMessage}<p role="alert" class="text-negative">
                   {errorMessage}
                 </p>{/if}
               <button
-                class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+                class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
                 type="submit"
               >
                 {messages['setup.register']}
@@ -147,10 +144,7 @@
       </section>
     {:else}
       <p>{messages['setup.configuration']}</p>
-      <a
-        href="/login"
-        class="text-blue-700 underline underline-offset-4 dark:text-blue-400"
-      >
+      <a href="/login" class="text-link underline underline-offset-4">
         {messages['login.title']}
       </a>
     {/if}

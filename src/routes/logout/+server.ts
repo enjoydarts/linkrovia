@@ -5,6 +5,7 @@ import {
   sessionCookie,
 } from '$lib/server/auth/session';
 import { readSmallForm, requireSameOrigin } from '$lib/server/security/request';
+import { setThemeCookie } from '$lib/server/theme';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({
@@ -29,5 +30,6 @@ export const POST: RequestHandler = async ({
     secure: true,
     sameSite: 'lax',
   });
+  setThemeCookie(cookies, locals.session.user.theme);
   redirect(303, '/login');
 };

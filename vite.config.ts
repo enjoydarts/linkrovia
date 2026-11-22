@@ -6,6 +6,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   cacheDir: process.env.LINKROVIA_E2E_VITE_CACHE,
+  optimizeDeps: { exclude: ['@lucide/svelte'] },
+  environments: { ssr: { optimizeDeps: { exclude: ['@lucide/svelte'] } } },
   server: {
     fs: {
       deny: [

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { resolve } from '$app/paths';
   import {
     CsvInputError,
@@ -34,11 +35,11 @@
   );
 
   const inputClass =
-    'w-full min-w-0 rounded-md border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-sm disabled:opacity-50';
+    'w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm disabled:opacity-50';
   const buttonClass =
-    'rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50';
+    'rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-50';
   const secondaryClass =
-    'rounded-md border border-[color:var(--line)] px-4 py-2 text-sm font-semibold disabled:opacity-50';
+    'rounded-md border border-line px-4 py-2 text-sm font-semibold disabled:opacity-50';
 
   const example = [
     'destination_url,slug,domain,redirect_type,starts_at,expires_at,tags,ios_url,android_url,title,is_active,rules',
@@ -215,18 +216,16 @@
 </script>
 
 <svelte:head>
-  <title>{messages.title} · Linkrovia</title>
+  <title>{messages.title} · {brand.name}</title>
 </svelte:head>
 
 <div class="space-y-6">
   <header class="space-y-2">
     <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
-    <p class="text-[color:var(--muted)]">{messages.description}</p>
+    <p class="text-muted">{messages.description}</p>
   </header>
 
-  <section
-    class="space-y-5 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-6"
-  >
+  <section class="space-y-5 rounded-xl border border-line bg-surface p-6">
     <form class="space-y-5" onsubmit={previewFile}>
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
@@ -244,7 +243,7 @@
             disabled={busy}
             required
           />
-          <p id="csv-limits" class="text-sm text-[color:var(--muted)]">
+          <p id="csv-limits" class="text-sm text-muted">
             {messages.limits}
           </p>
         </div>
@@ -262,7 +261,7 @@
             <option value="error">{messages.error}</option>
             <option value="skip">{messages.skip}</option>
           </select>
-          <p class="text-sm text-[color:var(--muted)]">
+          <p class="text-sm text-muted">
             {messages.timeZone} · {data.timeZone}
           </p>
         </div>
@@ -326,13 +325,11 @@
         </div>
       </div>
       {#if started && remaining.length && !busy}
-        <p class="text-sm text-[color:var(--muted)]">{messages.retryInfo}</p>
+        <p class="text-sm text-muted">{messages.retryInfo}</p>
       {/if}
-      <div
-        class="overflow-x-auto rounded-xl border border-[color:var(--line)] bg-[var(--surface)]"
-      >
+      <div class="overflow-x-auto rounded-xl border border-line bg-surface">
         <table class="w-full border-collapse text-left text-sm">
-          <thead class="border-b border-[color:var(--line)] bg-[var(--canvas)]">
+          <thead class="border-b border-line bg-canvas">
             <tr>
               {#each [messages.row, messages.slug, messages.destination, messages.status, messages.detail] as heading (heading)}
                 <th scope="col" class="px-4 py-3 font-semibold">{heading}</th>
@@ -341,9 +338,7 @@
           </thead>
           <tbody aria-live="polite" aria-busy={busy}>
             {#each rows as row (row.row)}
-              <tr
-                class="border-b border-[color:var(--line)] align-top last:border-b-0"
-              >
+              <tr class="border-b border-line align-top last:border-b-0">
                 <th scope="row" class="px-4 py-3 font-normal">{row.row}</th>
                 <td class="px-4 py-3 font-mono wrap-anywhere">
                   {#if row.id}
@@ -357,7 +352,7 @@
                     {row.slug ?? '—'}
                   {/if}
                   {#if row.domain}
-                    <span class="block text-xs text-[color:var(--muted)]">
+                    <span class="block text-xs text-muted">
                       {row.domain}
                     </span>
                   {/if}

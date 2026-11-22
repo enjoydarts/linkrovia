@@ -1,5 +1,5 @@
 {
-  "home.description": "Self-hosted URL shortening and analytics on Cloudflare Workers.",
+  "home.description": "Open-source smart link management on your Cloudflare account.",
   "home.status": "Linkrovia is in development.",
   "language.label": "Language",
   "language.save": "Save",

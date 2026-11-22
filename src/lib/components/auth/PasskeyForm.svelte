@@ -128,7 +128,7 @@
         type="email"
         required
         autocomplete="email"
-        class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="w-full rounded-md border border-control bg-surface px-3 py-2"
       />
     </div>{/if}
   {#if mode === 'login' && turnstile}<TurnstileWidget
@@ -137,13 +137,13 @@
       {locale}
       {resetKey}
     />{/if}
-  {#if issue}<p role="alert" class="text-red-700 dark:text-red-400">
+  {#if issue}<p role="alert" class="text-negative">
       {issue}
     </p>{/if}
   <button
     type="submit"
     disabled={busy || !hydrated}
-    class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800 disabled:opacity-60"
+    class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-60"
   >
     {busy
       ? messages['passkey.busy']

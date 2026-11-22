@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
+  import Link2 from '@lucide/svelte/icons/link-2';
+  import Globe from '@lucide/svelte/icons/globe';
+  import Settings from '@lucide/svelte/icons/settings';
   import { messagesFor } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
   import { preferenceMessages } from '$lib/i18n/preferences';
@@ -9,14 +13,16 @@
   let preferences = $derived(preferenceMessages(data.locale));
 </script>
 
-<svelte:head><title>{messages['admin.title']} · Linkrovia</title></svelte:head>
+<svelte:head>
+  <title>{messages['admin.title']} · {brand.name}</title>
+</svelte:head>
 <div class="overview">
   <header class="overview-header">
     <h1>{messages['admin.title']}</h1>
   </header>
   <div class="cards">
     <a href="/admin/links/new" class="card primary">
-      <span class="card-icon" aria-hidden="true">↗</span><span
+      <span class="card-icon" aria-hidden="true"><Link2 size={20} /></span><span
         class="card-name"
       >
         {links.links}
@@ -25,7 +31,7 @@
       </span>
     </a>
     <a href="/admin/domains" class="card">
-      <span class="card-icon" aria-hidden="true">◎</span><span
+      <span class="card-icon" aria-hidden="true"><Globe size={20} /></span><span
         class="card-name"
       >
         {links.domains}
@@ -34,12 +40,12 @@
       </span>
     </a>
     <a href="/admin/settings" class="card">
-      <span class="card-icon" aria-hidden="true">⚙</span><span
-        class="card-name"
-      >
+      <span class="card-icon" aria-hidden="true">
+        <Settings size={20} />
+      </span><span class="card-name">
         {preferences.settings}
       </span><span class="card-action">
-        {preferences.regional} <span aria-hidden="true">→</span>
+        {preferences.personal} <span aria-hidden="true">→</span>
       </span>
     </a>
   </div>
@@ -92,17 +98,17 @@
     flex-direction: column;
     align-items: flex-start;
     padding: 23px;
-    border: 1px solid var(--line);
+    border: 1px solid var(--ui-border);
     border-radius: 14px;
-    background: var(--surface);
-    color: var(--ink);
+    background: var(--ui-surface);
+    color: var(--ui-text);
     text-decoration: none;
     transition:
       border-color 0.15s,
       transform 0.15s;
   }
   .card:hover {
-    border-color: #8eae94;
+    border-color: var(--ui-primary);
     transform: translateY(-2px);
   }
   .card-icon {
@@ -111,8 +117,8 @@
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: #edf4eb;
-    color: #3e7650;
+    background: var(--ui-accent-surface);
+    color: var(--ui-link);
     font-size: 22px;
   }
   .card-name {
@@ -123,7 +129,7 @@
   .card-action {
     margin-top: auto;
     padding-top: 10px;
-    color: var(--muted);
+    color: var(--ui-text-muted);
     font-size: 13px;
   }
   @media (max-width: 760px) {
@@ -151,16 +157,16 @@
     letter-spacing: -0.025em;
   }
   .recent-heading > a {
-    color: var(--muted);
+    color: var(--ui-text-muted);
     font-weight: 610;
     font-size: 0.86rem;
     white-space: nowrap;
   }
   .recent ul {
     overflow: hidden;
-    border: 1px solid var(--line);
+    border: 1px solid var(--ui-border);
     border-radius: 0.9rem;
-    background: var(--surface);
+    background: var(--ui-surface);
   }
   .recent li {
     display: flex;
@@ -170,7 +176,7 @@
     padding: 0.82rem 1.05rem;
   }
   .recent li + li {
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--ui-border);
   }
   .recent-item {
     min-width: 0;
@@ -183,22 +189,22 @@
   }
   .recent-item span {
     overflow-wrap: anywhere;
-    color: var(--muted);
+    color: var(--ui-text-muted);
     font-size: 0.83rem;
   }
   .state-indicator {
     flex: none;
     border-radius: 999px;
     padding: 0.3rem 0.58rem;
-    color: var(--muted);
-    background: var(--canvas);
+    color: var(--ui-text-muted);
+    background: var(--ui-background);
     font-size: 0.76rem;
   }
   .state-indicator.enabled {
-    color: light-dark(#23563c, #d0e7d6);
-    background: light-dark(#e7f1e8, #304336);
+    color: var(--ui-positive);
+    background: var(--ui-accent-surface);
   }
   .recent > p {
-    color: var(--muted);
+    color: var(--ui-text-muted);
   }
 </style>

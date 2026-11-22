@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { linkMessages } from '$lib/i18n/links';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
@@ -12,19 +13,19 @@
   }
 </script>
 
-<svelte:head><title>{m.links} · Linkrovia</title></svelte:head>
+<svelte:head><title>{m.links} · {brand.name}</title></svelte:head>
 <div class="space-y-8">
   <header class="flex flex-wrap items-center justify-between gap-4">
     <h1 class="text-3xl font-semibold tracking-tight">{m.links}</h1>
     <div class="flex flex-wrap gap-4">
       <a
         href="/admin/domains"
-        class="rounded-md border border-neutral-400 px-4 py-2 font-medium"
+        class="rounded-md border border-control px-4 py-2 font-medium"
       >
         {m.domains}
       </a><a
         href="/admin/links/new"
-        class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
       >
         {m.create}
       </a>
@@ -32,7 +33,7 @@
   </header>
   <form
     method="GET"
-    class="grid gap-4 rounded-lg border border-neutral-300 p-4 sm:grid-cols-2 lg:grid-cols-5 dark:border-neutral-700"
+    class="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5"
   >
     <div class="space-y-1">
       <label for="q" class="block text-sm font-medium">
@@ -41,7 +42,7 @@
         id="q"
         name="q"
         value={data.filters.q}
-        class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="w-full rounded-md border border-control bg-surface px-3 py-2"
       />
     </div>
     <div class="space-y-1">
@@ -50,7 +51,7 @@
       </label><select
         id="domain"
         name="domain"
-        class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="w-full rounded-md border border-control bg-surface px-3 py-2"
       >
         <option value="">
           {m.allDomains}
@@ -67,7 +68,7 @@
         id="tag"
         name="tag"
         value={data.filters.tag}
-        class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="w-full rounded-md border border-control bg-surface px-3 py-2"
       />
     </div>
     <div class="space-y-1">
@@ -76,7 +77,7 @@
       </label><select
         id="status"
         name="status"
-        class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="w-full rounded-md border border-control bg-surface px-3 py-2"
       >
         <option value="">{m.allStatuses}</option><option
           value="active"
@@ -93,27 +94,36 @@
     </div>
     <button
       type="submit"
-      class="self-end rounded-md border border-neutral-400 px-4 py-2 font-medium"
+      class="self-end rounded-md border border-control px-4 py-2 font-medium"
     >
       {m.filter}
     </button>
   </form>
   {#if data.links.length === 0}<p>{m.empty}</p>{:else}<ul
-      class="divide-y divide-neutral-300 rounded-lg border border-neutral-300 dark:divide-neutral-700 dark:border-neutral-700"
+      class="divide-y divide-line rounded-xl border border-line bg-surface"
     >
       {#each data.links as link (link.id)}<li class="space-y-2 p-4">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
             <a
               href="/admin/links/{encodeURIComponent(link.id)}"
-              class="font-semibold text-blue-700 underline underline-offset-4 dark:text-blue-400"
+              class="min-w-0 truncate font-semibold text-link underline underline-offset-4"
+              title={link.title || link.shortUrl}
             >
               {link.title || link.shortUrl}
-            </a><span class="text-sm">
+            </a><span
+              class="rounded-full px-2.5 py-1 text-xs font-medium"
+              class:bg-accent-surface={link.isActive}
+              class:text-positive={link.isActive}
+              class:bg-canvas={!link.isActive}
+              class:text-muted={!link.isActive}
+            >
               {link.isActive ? m.active : m.inactive}
             </span>
           </div>
-          <p class="break-all text-sm">{m.shortUrl}: {link.shortUrl}</p>
-          <p class="break-all text-sm text-neutral-600 dark:text-neutral-300">
+          <p class="truncate text-sm" title={link.shortUrl}>
+            {m.shortUrl}: {link.shortUrl}
+          </p>
+          <p class="truncate text-sm text-muted" title={link.destinationUrl}>
             {m.destination}: {link.destinationUrl}
           </p>
           {#if link.startsAt !== null}<p class="text-sm">
@@ -135,7 +145,7 @@
     </ul>{/if}
   {#if data.nextCursor}<a
       href={nextPage(data.nextCursor)}
-      class="inline-block text-blue-700 underline dark:text-blue-400"
+      class="inline-block text-link underline"
     >
       {m.next} →
     </a>{/if}

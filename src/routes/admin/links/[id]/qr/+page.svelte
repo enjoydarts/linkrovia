@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import type { PageProps } from './$types';
   import { qrMessages } from './messages';
   let { data }: PageProps = $props();
@@ -6,22 +7,20 @@
   let base = $derived(`/admin/links/${encodeURIComponent(data.link.id)}/qr`);
 </script>
 
-<svelte:head><title>{m.title} · Linkrovia</title></svelte:head>
+<svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 <div class="mx-auto max-w-4xl space-y-6">
   <a
     href={`/admin/links/${encodeURIComponent(data.link.id)}`}
-    class="text-sm font-medium text-blue-700 hover:underline"
+    class="text-sm font-medium text-link hover:underline"
   >
     ← {m.back}
   </a>
   <header class="space-y-2">
     <h1 class="text-3xl font-semibold tracking-tight">{m.title}</h1>
-    <p class="text-[color:var(--muted)]">{m.description}</p>
+    <p class="text-muted">{m.description}</p>
     <p class="font-medium">{data.link.title || data.link.slug}</p>
   </header>
-  <section
-    class="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-6"
-  >
+  <section class="rounded-xl border border-line bg-surface p-6">
     {#if data.url}
       <div class="flex flex-wrap items-start gap-8">
         <div class="rounded-lg bg-white p-3 shadow-sm">
@@ -36,7 +35,7 @@
         <div class="min-w-0 flex-1 space-y-5">
           <div>
             <h2 class="text-sm font-medium">{m.url}</h2>
-            <p class="mt-1 break-all text-sm text-[color:var(--muted)]">
+            <p class="mt-1 break-all text-sm text-muted">
               {data.url}
             </p>
           </div>
@@ -44,14 +43,14 @@
             <a
               href={`${base}/image/svg`}
               download
-              class="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white"
+              class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary"
             >
               {m.downloadSvg}
             </a>
             <a
               href={`${base}/image/png`}
               download
-              class="rounded-md border border-[color:var(--line)] px-4 py-2 text-sm font-medium"
+              class="rounded-md border border-line px-4 py-2 text-sm font-medium"
             >
               {m.downloadPng}
             </a>
@@ -62,7 +61,7 @@
       <form method="POST" action="?/create">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
         <button
-          class="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary"
         >
           {m.create}
         </button>

@@ -81,7 +81,7 @@
     />{/if}
   {#if error}<p
       role="alert"
-      class="rounded-md border border-red-500 p-3 text-red-700 dark:text-red-400"
+      class="rounded-md border border-negative p-3 text-negative"
     >
       {error === 'conflict'
         ? m.conflict
@@ -102,7 +102,7 @@
       type="url"
       required
       value={values?.destinationUrl ?? link?.destinationUrl ?? ''}
-      class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2"
     />
   </div>
   <div class="space-y-2">
@@ -110,7 +110,7 @@
       id="title"
       name="title"
       value={values?.title ?? link?.title ?? ''}
-      class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2"
     />
   </div>
   <div class="space-y-2">
@@ -118,7 +118,7 @@
       id="domainId"
       name="domainId"
       required
-      class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2"
     >
       {#each domains as domain (domain.id)}<option
           value={domain.id}
@@ -136,9 +136,9 @@
       name="slug"
       value={values?.slug ?? link?.slug ?? ''}
       aria-describedby="slug-help"
-      class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2"
     />
-    <p id="slug-help" class="text-sm text-neutral-600 dark:text-neutral-300">
+    <p id="slug-help" class="text-sm text-muted">
       {m.slugHelp}
     </p>
   </div>
@@ -146,7 +146,7 @@
     <label for="status" class="block font-medium">{m.redirect}</label><select
       id="status"
       name="status"
-      class="rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+      class="rounded-md border border-control bg-surface px-3 py-2"
     >
       {#each [301, 302, 307, 308] as status (status)}<option
           value={status}
@@ -173,14 +173,14 @@
         type="datetime-local"
         step="1"
         value={values?.startsAt ?? localTime(link?.startsAt ?? null)}
-        class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="w-full rounded-md border border-control bg-surface px-3 py-2"
       />
       <label for="startFold" class="block text-sm">
         {m.startsAt} — {x.fold}
       </label><select
         id="startFold"
         name="startFold"
-        class="rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="rounded-md border border-control bg-surface px-3 py-2"
       >
         <option value="">{x.choose}</option><option
           value="earlier"
@@ -201,14 +201,14 @@
         type="datetime-local"
         step="1"
         value={values?.expiresAt ?? localTime(link?.expiresAt ?? null)}
-        class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="w-full rounded-md border border-control bg-surface px-3 py-2"
       />
       <label for="expiryFold" class="block text-sm">
         {m.expiresAt} — {x.fold}
       </label><select
         id="expiryFold"
         name="expiryFold"
-        class="rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+        class="rounded-md border border-control bg-surface px-3 py-2"
       >
         <option value="">{x.choose}</option><option
           value="earlier"
@@ -230,15 +230,15 @@
       name="tags"
       value={values?.tags ?? link?.tags.join(', ') ?? ''}
       aria-describedby="tags-help"
-      class="w-full rounded-md border border-neutral-400 bg-transparent px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2"
     />
-    <p id="tags-help" class="text-sm text-neutral-600 dark:text-neutral-300">
+    <p id="tags-help" class="text-sm text-muted">
       {m.tagsHelp}
     </p>
   </div>
   <button
     type="submit"
-    class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+    class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
   >
     {m.save}
   </button>

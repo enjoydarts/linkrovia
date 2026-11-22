@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import { fixtureSetupToken } from '../fixtures/setup.mjs';
 
 test('sets up an owner, manages a short link, scopes API access, and signs out', async ({
@@ -7,6 +8,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   request,
   browser,
 }) => {
+  test.setTimeout(60_000);
   const email = 'owner@example.com';
   const password = 'a long development passphrase';
 
@@ -322,6 +324,63 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     );
   });
 
+  await test.step('persists the chosen theme and provides keyboard navigation at 360 px', async () => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto('/admin/settings');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
+    await expect(page.getByLabel('Appearance')).toHaveValue('system');
+    await page.getByLabel('Appearance').selectOption('dark');
+    await page
+      .locator('form[action="?/personal"]')
+      .getByRole('button', { name: 'Save' })
+      .click();
+    await expect(page.getByRole('status')).toHaveText('Settings saved.');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('body')).toHaveCSS(
+      'background-color',
+      'rgb(11, 18, 32)',
+    );
+
+    if (!cookie) throw new Error('Missing authenticated session');
+    const markup = await request.get('/admin/settings', {
+      headers: {
+        cookie:
+          cookie.name + '=' + cookie.value + '; __Host-linkrovia_theme=light',
+      },
+    });
+    expect((await markup.text()).match(/data-theme="([a-z]+)"/)?.[1]).toBe(
+      'dark',
+    );
+    await page.reload();
+    await expect(page.getByLabel('Appearance')).toHaveValue('dark');
+    const accessibility = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(accessibility.violations).toEqual([]);
+
+    const originalViewport = page.viewportSize();
+    await page.setViewportSize({ width: 360, height: 800 });
+    try {
+      const menu = page.getByRole('button', { name: 'Open navigation' });
+      await menu.focus();
+      await page.keyboard.press('Enter');
+      const drawer = page.getByRole('dialog');
+      await expect(drawer).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(drawer).not.toBeVisible();
+      await expect(menu).toBeFocused();
+      await menu.click();
+      await drawer.getByRole('link', { name: 'Links', exact: true }).click();
+      await expect(page).toHaveURL('/admin/links');
+      await expect(drawer).not.toBeVisible();
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBe(360);
+    } finally {
+      if (originalViewport) await page.setViewportSize(originalViewport);
+    }
+  });
+
   const invalidLogout = await context.request.post('/logout', {
     headers: { origin: new URL(page.url()).origin },
     form: { csrfToken: 'wrong' },
@@ -330,6 +389,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
 
   await page.locator('form[action="/logout"] button').click();
   await expect(page).toHaveURL('/login');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.goto('/admin');
   await expect(page).toHaveURL('/login');
 });

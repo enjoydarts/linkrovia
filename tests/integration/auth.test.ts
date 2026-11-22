@@ -22,7 +22,11 @@ beforeAll(async () => {
     persist: false,
   });
   db = platform.env.DB;
-  for (const migration of ['0001_initial.sql', '0002_domain_connections.sql']) {
+  for (const migration of [
+    '0001_initial.sql',
+    '0002_domain_connections.sql',
+    '0005_user_theme.sql',
+  ]) {
     const sql = await readFile(
       new URL('../../migrations/' + migration, import.meta.url),
       'utf8',
@@ -166,6 +170,23 @@ describe('first owner in local D1', () => {
 });
 
 describe('sessions in local D1', () => {
+  it('reads a saved theme from the user across sessions and rejects invalid values', async () => {
+    const token = await createOwnerSession();
+    const session = await getSession(db, token);
+    const userId = session!.user.id;
+    const updateTheme = db.prepare('UPDATE users SET theme = ? WHERE id = ?');
+
+    await updateTheme.bind('dark', userId).run();
+    const secondToken = await createSession(db, userId);
+    expect((await getSession(db, token))?.user.theme).toBe('dark');
+    expect((await getSession(db, secondToken))?.user.theme).toBe('dark');
+
+    await expect(updateTheme.bind('invalid', userId).run()).rejects.toThrow(
+      'CHECK constraint failed',
+    );
+    expect((await getSession(db, secondToken))?.user.theme).toBe('dark');
+  });
+
   it('stores only the hash of a seven-day bearer and derives session-specific CSRF tokens', async () => {
     const token = await createOwnerSession();
     expect(token).toMatch(/^[0-9a-f]{64}$/);
@@ -185,6 +206,7 @@ describe('sessions in local D1', () => {
       locale: 'ja',
       role: 'owner',
       timezone: null,
+      theme: 'system',
     });
     expect(session?.csrfToken).toMatch(/^[0-9a-f]{64}$/);
     expect(session?.csrfToken).not.toBe(token);

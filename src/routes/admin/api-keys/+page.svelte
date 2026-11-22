@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import { enhance } from '$app/forms';
   import type { PageProps } from './$types';
   import { apiKeyMessages } from './messages';
@@ -15,7 +16,7 @@
 </script>
 
 <svelte:head>
-  <title>{messages.title} · Linkrovia</title>
+  <title>{messages.title} · {brand.name}</title>
 </svelte:head>
 
 <div class="max-w-2xl space-y-8">
@@ -25,10 +26,7 @@
   </header>
 
   {#if form?.newToken}
-    <div
-      class="space-y-2 rounded-md border border-neutral-400 p-4"
-      role="status"
-    >
+    <div class="space-y-2 rounded-md border border-control p-4" role="status">
       <p id="new-api-key" class="font-medium">{messages.created}</p>
       <input
         aria-labelledby="new-api-key"
@@ -78,7 +76,7 @@
     </fieldset>
     <button
       type="submit"
-      class="rounded-md bg-blue-700 px-4 py-2 font-medium text-white"
+      class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary"
     >
       {messages.create}
     </button>
@@ -91,9 +89,7 @@
     {#if data.keys.length === 0}
       <p>{messages.empty}</p>
     {:else}
-      <ul
-        class="divide-y divide-neutral-300 border-y border-neutral-300 dark:divide-neutral-700 dark:border-neutral-700"
-      >
+      <ul class="divide-y divide-line border-y border-line">
         {#each data.keys as key (key.id)}
           <li class="flex flex-wrap items-start justify-between gap-3 py-4">
             <div class="min-w-0 space-y-1">
@@ -102,9 +98,7 @@
               <p class="break-words font-mono text-sm">
                 {key.scopes.join(', ')}
               </p>
-              <dl
-                class="space-y-1 text-sm text-neutral-700 dark:text-neutral-300"
-              >
+              <dl class="space-y-1 text-sm text-muted">
                 <div class="flex gap-2">
                   <dt>{messages.expires}</dt>
                   <dd>
