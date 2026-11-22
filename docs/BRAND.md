@@ -60,4 +60,4 @@ Use your configured domain for short links. Serve the identity visually with loc
 
 ## Provenance and review
 
-The repository includes the initial brand assets. Formal trademark clearance remains a release task. Inter is distributed under the [SIL Open Font License](../static/licenses/inter.txt).
+The repository includes the initial brand assets. Formal trademark clearance remains a release task. The bundled [Inter font notice](../static/licenses/inter.txt) and [Lucide icon notices](../static/licenses/lucide.txt) cover the typography and interface icons.
