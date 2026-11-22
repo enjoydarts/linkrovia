@@ -4,6 +4,7 @@ import type { Handle } from '@sveltejs/kit/hooks';
 import { localeCookie } from '$lib/i18n/cookie';
 import { resolveLocale } from '$lib/i18n/locale';
 import { getSession, sessionCookie } from '$lib/server/auth/session';
+import { publicLinkHeaders } from '$lib/server/links/public-response';
 import { normalizeHostname } from '$lib/server/security/url-policy';
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -51,6 +52,14 @@ export const handle: Handle = async ({ event, resolve }) => {
     transformPageChunk: ({ html }) =>
       html.replace('%linkrovia.locale%', locale),
   });
+  if (id === '/gate/[token]') {
+    const gateResponse = new Response(response.body, response);
+    for (const [name, value] of Object.entries(publicLinkHeaders))
+      gateResponse.headers.set(name, value);
+    // The gate uses same-origin form POSTs and checks the browser's Origin.
+    gateResponse.headers.set('referrer-policy', 'same-origin');
+    return gateResponse;
+  }
   if (!management) return response;
   const protectedResponse = new Response(response.body, response);
   protectedResponse.headers.set('cache-control', 'private, no-store');

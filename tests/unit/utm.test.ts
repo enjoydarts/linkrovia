@@ -125,6 +125,8 @@ describe('link API UTM snapshots', () => {
     createdAt: 1,
     updatedAt: 2,
     utmConfigJson: '{"default":{"utm_source":"previous"}}',
+    protectionMode: 'none' as const,
+    consumedAt: null,
   };
 
   it('canonicalizes explicit snapshots while leaving the destination unchanged', () => {

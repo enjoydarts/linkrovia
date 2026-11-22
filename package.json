@@ -28,7 +28,8 @@
     "@simplewebauthn/browser": "14.0.0",
     "@simplewebauthn/server": "14.1.0",
     "bowser": "2.15.0",
-    "drizzle-orm": "0.45.4"
+    "drizzle-orm": "0.45.4",
+    "qrcode-generator": "2.0.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",

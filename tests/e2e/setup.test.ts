@@ -5,6 +5,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   page,
   context,
   request,
+  browser,
 }) => {
   const email = 'owner@example.com';
   const password = 'a long development passphrase';
@@ -124,9 +125,175 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     ).toBeVisible();
   });
 
+  await test.step('preview and import CSV rows with partial success', async () => {
+    const batchHeaders = {
+      origin: new URL(page.url()).origin,
+      'content-type': 'text/csv',
+      'x-import-mode': 'preview',
+    };
+    expect(
+      (
+        await request.post('/admin/import/batch', {
+          headers: batchHeaders,
+          data: 'destination_url\nhttps://example.org',
+        })
+      ).status(),
+    ).toBe(401);
+    expect(
+      (
+        await context.request.post('/admin/import/batch', {
+          headers: batchHeaders,
+          data: 'destination_url\nhttps://example.org',
+        })
+      ).status(),
+    ).toBe(403);
+    await page.getByRole('link', { name: 'CSV import' }).click();
+    await page.getByLabel('CSV file').setInputFiles({
+      name: 'links.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(
+        'destination_url,slug\r\nhttps://example.org/import,csv-e2e\r\nhttp://localhost,bad-destination\r\nhttps://example.org/duplicate,csv-e2e',
+      ),
+    });
+    await page.getByLabel('Duplicate slugs').selectOption('skip');
+    await page.getByRole('button', { name: 'Preview links' }).click();
+    await expect(page.getByText('Ready', { exact: true })).toBeVisible();
+    await expect(page.getByText('Skipped', { exact: true })).toBeVisible();
+    await expect(page.getByText('Check the listed columns.')).toBeVisible();
+    expect((await request.get('/csv-e2e', { maxRedirects: 0 })).status()).toBe(
+      404,
+    );
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Download error CSV' }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe('import-errors.csv');
+    await page.getByRole('button', { name: 'Import ready rows' }).click();
+    await expect(page.getByText('Imported', { exact: true })).toBeVisible();
+    const visit = await request.get('/csv-e2e', { maxRedirects: 0 });
+    expect(visit.status()).toBe(302);
+    expect(visit.headers()['location']).toBe('https://example.org/import');
+  });
+
+  await test.step('create a QR code and redeem a password-protected one-time link', async () => {
+    const destination = 'https://example.org/private-target';
+    const password = 'a shared fixture password';
+    await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
+    await page.locator('[name=slug]').fill('shared-once');
+    await page.locator('[name=destinationUrl]').fill(destination);
+    await page
+      .locator('form')
+      .filter({ has: page.locator('[name=slug]') })
+      .locator('button[type=submit]')
+      .click();
+    await expect(page).toHaveURL(/\/admin\/links\/[a-f0-9-]{36}$/);
+    const editUrl = page.url();
+    await page.getByRole('link', { name: 'Link protection' }).click();
+    await page.locator('[name=mode]').selectOption('password_one_time');
+    await page.locator('[name=password]').fill(password);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+      page.getByText('The protection settings were saved.'),
+    ).toBeVisible();
+
+    await page.goto(editUrl);
+    await page.getByRole('link', { name: 'QR code' }).click();
+    await page.getByRole('button', { name: 'Create QR code' }).click();
+    const qrUrl = await page.getByText(/\/q\/[a-f0-9]{64}$/).textContent();
+    if (!qrUrl) throw new Error('Missing QR URL');
+    const qr = qrUrl.trim();
+    const svgPath = await page
+      .getByRole('link', { name: 'Download SVG' })
+      .getAttribute('href');
+    const pngPath = await page
+      .getByRole('link', { name: 'Download PNG' })
+      .getAttribute('href');
+    if (!svgPath || !pngPath) throw new Error('Missing image download');
+    const svg = await context.request.get(svgPath);
+    expect(svg.headers()['content-type']).toContain('image/svg+xml');
+    expect(await svg.text()).toMatch(/^<svg\b/);
+    const png = await context.request.get(pngPath);
+    expect(png.headers()['content-type']).toContain('image/png');
+    expect((await png.body()).subarray(0, 8).toString('hex')).toBe(
+      '89504e470d0a1a0a',
+    );
+
+    const locked = await request.get(qr, { maxRedirects: 0 });
+    expect(locked.status()).toBe(302);
+    const gateUrl = locked.headers()['location'];
+    expect(gateUrl).toMatch(/\/gate\/q-[a-f0-9]{64}$/);
+    expect(locked.headers()['cache-control']).toBe('no-store');
+    const visitor = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      const gatePage = await visitor.newPage();
+      await gatePage.goto(gateUrl);
+      await expect(
+        gatePage.getByRole('heading', { name: 'Open protected link' }),
+      ).toBeVisible();
+      const csrf = await gatePage.locator('[name=csrfToken]').inputValue();
+      const headers = { origin: new URL(gateUrl).origin, accept: 'text/html' };
+      const wrongOrigin = await visitor.request.post(gateUrl, {
+        headers: { origin: 'https://other.example.com' },
+        form: { csrfToken: csrf, password },
+        maxRedirects: 0,
+      });
+      expect(wrongOrigin.status()).toBe(403);
+      const wrongPassword = await visitor.request.post(gateUrl, {
+        headers,
+        form: { csrfToken: csrf, password: 'the wrong fixture password' },
+        maxRedirects: 0,
+      });
+      expect(wrongPassword.status()).toBe(403);
+      const accepted = await visitor.request.post(gateUrl, {
+        headers,
+        form: { csrfToken: csrf, password },
+        maxRedirects: 0,
+      });
+      expect(accepted.status()).toBe(303);
+      expect(accepted.headers()['location']).toBe(
+        new URL(gateUrl).pathname + '?continue=1',
+      );
+      const unlock = (await visitor.cookies()).find(
+        (cookie) => cookie.name === '__Host-linkrovia_unlock',
+      );
+      expect(unlock).toMatchObject({
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Lax',
+      });
+      expect(
+        (await visitor.request.head(qr, { maxRedirects: 0 })).headers()[
+          'location'
+        ],
+      ).toBe(gateUrl);
+      await gatePage.route(destination, (route) =>
+        route.fulfill({ body: 'Fixture destination' }),
+      );
+      await gatePage.locator('[name=password]').fill(password);
+      const browserPost = gatePage.waitForRequest(
+        (outgoing) =>
+          outgoing.method() === 'POST' && outgoing.url() === gateUrl,
+      );
+      await gatePage
+        .getByRole('button', { name: 'Continue', exact: true })
+        .click();
+      expect(await (await browserPost).headerValue('origin')).toBe(
+        new URL(gateUrl).origin,
+      );
+      await expect(gatePage).toHaveURL(destination);
+    } finally {
+      await visitor.close();
+    }
+    expect(
+      (await request.get('/shared-once', { maxRedirects: 0 })).status(),
+    ).toBe(410);
+    expect((await request.get(qr, { maxRedirects: 0 })).status()).toBe(410);
+  });
+
   await test.step('issue and revoke a read-only API key', async () => {
     expect((await request.get('/api/v1/links')).status()).toBe(401);
-    await page.goto('/admin/api-keys');
+    await page.goto('/admin/api-keys', { waitUntil: 'networkidle' });
     await page.locator('[name=name]').fill('End-to-end read key');
     await page.locator('[name=scope][value="links:read"]').check();
     await page.locator('form[action="?/create"] button[type=submit]').click();

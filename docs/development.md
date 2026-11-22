@@ -61,6 +61,18 @@ The committed timezone data currently records IANA tzdata version `2026f`.
 
 GitHub Actions runs on pushes to `main` and pull requests. It uses read-only repository permissions and no project credentials. The workflow installs dependencies with `npm ci`, then runs `check`, `lint`, unit and local workerd/D1 integration tests, and `build`. It installs Chromium with its system dependencies and runs the end-to-end browser tests. These checks use local resources and do not deploy the application.
 
+## Link options and CSV import
+
+Open a link in the admin interface to generate its QR code or set its protection mode. A QR code encodes a separate URL on the link's configured hostname. The QR and short URLs share the same redirect rules, active window, and redemption state.
+
+Protected links use temporary redirects (302 or 307). Visitors confirm at the gate before a one-time link can be redeemed. A successful redemption grants one redirect. The destination can fail to load after the redirect. HEAD requests and admin previews leave the link available. For password modes, a password must contain 12 to 128 characters. Changes to the link invalidate previous unlocks.
+
+For automation, call `POST /api/v1/links/:id/qr` with the `links:write` scope to create a default QR code. Download it from `GET /api/v1/links/:id/qr.svg` or `GET /api/v1/links/:id/qr.png` with `links:read`. To change protection, call `PUT /api/v1/links/:id/protection` with `links:write` and a JSON body containing the current `updatedAt`, a `mode` of `none`, `password`, `one_time`, or `password_one_time`, and a password if setting or replacing one.
+
+The CSV import screen accepts UTF-8 files up to 1 MiB and 500 data rows. Include a `destination_url` column. Optional columns include `slug`, `domain`, `title`, `redirect_type`, `starts_at`, `expires_at`, `is_active`, `tags`, `ios_url`, `android_url`, and `rules`. The screen shows validation results before importing and lets you download row errors. Existing short URLs are preserved.
+
+The `links:write` API endpoints `POST /api/v1/links/import/validate` and `POST /api/v1/links/import` accept `text/csv` and optional `duplicate` (`skip` or `error`) and `tz` query parameters. The default time zone is UTC. Preview up to 50 rows and commit up to four rows per request. For a complete file, use the zero-based `offset` and the returned `nextOffset`. A preview returns `headers` and a `record` per ready row with its assigned slug. Use those records, or CSV with explicit slugs, to commit and retry safely. When previewing multiple batches, clients can check for repeated domain and slug pairs across batches. The server checks conflicts again when committing.
+
 ## Cloudflare runtime verification
 
-Local tests cover owner setup, passkey registration and sign-in, session revocation, and D1 persistence. New production setups use passkeys. Existing password accounts retain their scrypt sign-in. The browser-led deployment path, production Turnstile validation, and execution time still require verification on Cloudflare Workers Free.
+Local tests cover owner setup, passkey registration and sign-in, session revocation, D1 persistence, CSV import, QR generation, and concurrent one-time link redemption. New production setups use passkeys. Existing password accounts and password-protected links use scrypt. Password setup or verification can exceed the [Workers Free CPU limit](https://developers.cloudflare.com/workers/platform/limits/) and may require Workers Paid. The browser-led deployment path, production Turnstile validation, and execution time still require verification on Cloudflare Workers Free.

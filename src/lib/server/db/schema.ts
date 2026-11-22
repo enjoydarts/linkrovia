@@ -125,6 +125,7 @@ export const links = sqliteTable(
     description: text('description'),
     protectionMode: text('protection_mode').notNull().default('none'),
     protectionPasswordHash: text('protection_password_hash'),
+    gateToken: text('gate_token'),
     consumedAt: integer('consumed_at'),
     utmConfigJson: text('utm_config_json'),
     redirectType: integer('redirect_type').notNull().default(302),
@@ -147,6 +148,9 @@ export const links = sqliteTable(
     ),
     check('links_redirect_type_check', sql`redirect_type IN (301,302,307,308)`),
     unique().on(table.domainId, table.slug),
+    uniqueIndex('links_gate_token')
+      .on(table.gateToken)
+      .where(sql`gate_token IS NOT NULL`),
     check(
       'links_active_window_check',
       sql`expires_at IS NULL OR starts_at IS NULL OR expires_at > starts_at`,
@@ -164,6 +168,22 @@ export const links = sqliteTable(
       sql`${table.createdAt} DESC`,
     ),
     index('links_status').on(table.domainId, table.isActive, table.deletedAt),
+  ],
+);
+
+export const linkUnlocks = sqliteTable(
+  'link_unlocks',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    linkId: text('link_id')
+      .notNull()
+      .references(() => links.id, { onDelete: 'cascade' }),
+    linkVersion: integer('link_version').notNull(),
+    expiresAt: integer('expires_at').notNull(),
+  },
+  (table) => [
+    index('link_unlocks_expiry').on(table.expiresAt),
+    index('link_unlocks_link').on(table.linkId),
   ],
 );
 

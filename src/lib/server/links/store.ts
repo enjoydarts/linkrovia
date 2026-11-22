@@ -1,6 +1,7 @@
 import { uuidV7 } from '../auth/crypto';
 import { generateSlug } from '../security/slug';
 import type { TargetingCondition, TargetingRule } from '../targeting';
+import type { ProtectionMode } from './protection';
 
 export type RedirectType = 301 | 302 | 307 | 308;
 export type LinkRuleInput = {
@@ -33,6 +34,8 @@ export type LinkSummary = Omit<
   createdAt: number;
   updatedAt: number;
   utmConfigJson: string | null;
+  protectionMode: ProtectionMode;
+  consumedAt: number | null;
 };
 
 type LinkRow = Omit<LinkSummary, 'isActive' | 'tags'> & {
@@ -42,6 +45,8 @@ type LinkRow = Omit<LinkSummary, 'isActive' | 'tags'> & {
 type MutationResult =
   | { ok: true; id: string }
   | { ok: false; code: 'slug_conflict' | 'missing_domain' | 'stale_link' };
+type UpdateMutationResult =
+  MutationResult | { ok: false; code: 'temporary_redirect' };
 
 export type LinkFilter = {
   q?: string;
@@ -63,6 +68,7 @@ const linkFields = `
   l.title, l.redirect_type AS redirectType, l.is_active AS isActive,
   l.created_at AS createdAt, l.updated_at AS updatedAt, l.starts_at AS startsAt,
   l.expires_at AS expiresAt, l.utm_config_json AS utmConfigJson,
+  l.protection_mode AS protectionMode, l.consumed_at AS consumedAt,
   (SELECT json_group_array(t.name ORDER BY t.name COLLATE NOCASE)
    FROM link_tags lt JOIN tags t ON t.id = lt.tag_id WHERE lt.link_id = l.id) AS tags
 `;
@@ -313,7 +319,7 @@ export async function updateLink(
   id: string,
   expected: number,
   input: LinkInput,
-): Promise<MutationResult> {
+): Promise<UpdateMutationResult> {
   if (!input.slug) return { ok: false, code: 'slug_conflict' };
   if (
     !(await db
@@ -337,6 +343,7 @@ export async function updateLink(
         END,
         updated_at = MAX(unixepoch(), updated_at + 1)
        WHERE id = ? AND updated_at = ? AND deleted_at IS NULL
+         AND (protection_mode = 'none' OR ? IN (302, 307))
          AND NOT EXISTS (SELECT 1 FROM links other WHERE other.domain_id = ? AND other.slug = ? AND other.id <> ?)`,
       )
       .bind(
@@ -353,6 +360,7 @@ export async function updateLink(
         Number(input.rules !== undefined),
         id,
         expected,
+        input.redirectType,
         input.domainId,
         input.slug,
         id,
@@ -368,6 +376,13 @@ export async function updateLink(
   ]);
   if (update.meta.changes === 1) return { ok: true, id };
   const row = await getLink(db, id);
+  if (
+    row?.updatedAt === expected &&
+    row.protectionMode !== 'none' &&
+    input.redirectType !== 302 &&
+    input.redirectType !== 307
+  )
+    return { ok: false, code: 'temporary_redirect' };
   return {
     ok: false,
     code: row?.updatedAt === expected ? 'slug_conflict' : 'stale_link',

@@ -69,9 +69,14 @@ export function staleLink() {
 }
 
 export function linkConflict(
-  code: 'slug_conflict' | 'missing_domain' | 'stale_link',
+  code:
+    'slug_conflict' | 'missing_domain' | 'stale_link' | 'temporary_redirect',
 ) {
   if (code === 'stale_link') return staleLink();
+  if (code === 'temporary_redirect')
+    return invalidFields({
+      redirectType: ['Protected links require 302 or 307.'],
+    });
   if (code === 'missing_domain')
     return invalidFields({ domainId: ['Select an existing active domain.'] });
   return problem(

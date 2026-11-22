@@ -1,10 +1,12 @@
 <script lang="ts">
   import LinkForm from '$lib/components/links/LinkForm.svelte';
   import { linkExtra, linkMessages } from '$lib/i18n/links';
+  import { protectionMessages } from '$lib/i18n/protection';
   import type { PageProps } from './$types';
   let { data, form }: PageProps = $props();
   let m = $derived(linkMessages(data.locale));
   let x = $derived(linkExtra(data.locale));
+  let protection = $derived(protectionMessages(data.locale));
 </script>
 
 <svelte:head><title>{m.edit} · Linkrovia</title></svelte:head>
@@ -21,14 +23,37 @@
       >
         {data.link.shortUrl}
       </a>
-    </p>{/if}<LinkForm
+    </p>
+    <div class="flex flex-wrap gap-3">
+      <a
+        href={`/admin/links/${data.link.id}/qr`}
+        class="rounded-md border px-3 py-2 font-medium hover:underline"
+        style="border-color: var(--line)"
+      >
+        {protection.qr}
+      </a>
+      <a
+        href={`/admin/links/${data.link.id}/protection`}
+        class="rounded-md border px-3 py-2 font-medium hover:underline"
+        style="border-color: var(--line)"
+      >
+        {protection.title}
+      </a>
+    </div>
+  {/if}
+  {#if form?.code === 'temporary_redirect'}
+    <p role="alert" class="text-red-700 dark:text-red-400">
+      {protection.temporaryRedirect}
+    </p>
+  {/if}
+  <LinkForm
     formAction="?/save"
     locale={data.locale}
     csrfToken={data.csrfToken}
     domains={data.domains}
     link={data.link}
     timeZone={data.timeZone}
-    error={form?.code}
+    error={form?.code === 'temporary_redirect' ? undefined : form?.code}
     values={form && 'values' in form ? form.values : undefined}
   />
   {#if data.link}

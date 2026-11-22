@@ -64,6 +64,8 @@ describe('link JSON payloads', () => {
       hostname: 'go.example.org',
       createdAt: 1,
       utmConfigJson: null,
+      protectionMode: 'none' as const,
+      consumedAt: null,
     };
     expect(
       parseLinkPayload({ updatedAt: 2, isActive: false }, current),

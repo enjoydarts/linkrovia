@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { csvMessages } from './import/messages';
   import Brand from '$lib/components/Brand.svelte';
   import { messagesFor } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
@@ -13,6 +14,7 @@
   let nav = $derived([
     { href: '/admin', label: messages['admin.overview'], icon: '◫' },
     { href: '/admin/links', label: links.links, icon: '↗' },
+    { href: '/admin/import', label: csvMessages(data.locale).title, icon: '⇧' },
     { href: '/admin/utm', label: 'UTM', icon: '⌘' },
     { href: '/admin/domains', label: links.domains, icon: '◎' },
     { href: '/admin/settings', label: preferences.settings, icon: '⚙' },
