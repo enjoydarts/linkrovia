@@ -113,6 +113,7 @@ export async function recordConversion(
       WHERE g.id = ? AND g.is_active = 1 AND g.backup_archived_at IS NULL
         AND (g.link_id IS NULL OR EXISTS (SELECT 1 FROM links WHERE id = g.link_id AND deleted_at IS NULL))
         AND (? IS NULL OR ref.ref_hash IS NOT NULL)
+        AND ? BETWEEN unixepoch() - ${retentionSeconds} AND unixepoch() + 300
       ON CONFLICT DO NOTHING RETURNING ${receiptFields}`,
       )
       .bind(
@@ -124,6 +125,7 @@ export async function recordConversion(
         event.occurredAt,
         event.goalId,
         reference,
+        event.occurredAt,
       ),
     db
       .prepare(
@@ -136,6 +138,8 @@ export async function recordConversion(
     return { receipt: inserted.results[0], duplicate: false };
   const duplicate = await priorReceipt(db, event.goalId, key);
   if (duplicate) return { receipt: duplicate, duplicate: true };
+  if (event.occurredAt < Math.floor(Date.now() / 1000) - retentionSeconds)
+    return { code: 'invalid_time' };
   const activeGoal = await db
     .prepare(
       `SELECT 1 FROM conversion_goals g WHERE g.id = ? AND g.is_active = 1 AND g.backup_archived_at IS NULL
@@ -153,25 +157,50 @@ export async function conversionSummary(
 ) {
   const { results } = await db
     .prepare(
-      `WITH events AS (
-      SELECT goal_id, COUNT(*) AS total, SUM(status = 'accepted') AS attributed
-      FROM conversion_receipts WHERE occurred_at >= ? AND occurred_at < ? GROUP BY goal_id
-    ), cohort AS (
+      `WITH bounds AS (
+      SELECT ?1 AS start_at, ?2 AS end_at, date(?1, 'unixepoch') AS start_day,
+        date(?2 - 1, 'unixepoch') AS end_day
+    ), event_counts AS (
+      SELECT goal_id, COUNT(*) AS total, SUM(status = 'accepted') AS attributed, 0 AS partial
+      FROM conversion_receipts WHERE occurred_at >= ?1 AND occurred_at < ?2 GROUP BY goal_id
+      UNION ALL
+      SELECT goal_id, SUM(conversions) FILTER (WHERE complete), SUM(attributed) FILTER (WHERE complete),
+        MAX(NOT complete)
+      FROM (
+        SELECT r.*, unixepoch(r.day_utc) >= start_at AND unixepoch(r.day_utc) + 86400 <= end_at AS complete
+        FROM conversion_rollups r CROSS JOIN bounds WHERE r.day_utc BETWEEN start_day AND end_day
+      ) GROUP BY goal_id
+    ), events AS (
+      SELECT goal_id, SUM(total) AS total, SUM(attributed) AS attributed, MAX(partial) AS partial
+      FROM event_counts GROUP BY goal_id
+    ), cohort_counts AS (
       SELECT eligibility.key AS id, COUNT(*) AS eligible_clicks, COUNT(r.id) AS converted_clicks,
-        MAX(eligibility.value) AS closes_at
+        MAX(eligibility.value) AS closes_at, 0 AS partial
       FROM click_attributions ref JOIN json_each(ref.eligible_goals_json) eligibility
       LEFT JOIN conversion_receipts r ON r.goal_id = eligibility.key AND r.click_ref_hash = ref.ref_hash
-      WHERE ref.created_at >= ? AND ref.created_at < ? GROUP BY eligibility.key
+      WHERE ref.created_at >= ?1 AND ref.created_at < ?2 GROUP BY eligibility.key
+      UNION ALL
+      SELECT goal_id, SUM(eligible_clicks) FILTER (WHERE complete),
+        SUM(converted_clicks) FILTER (WHERE complete), 0, MAX(NOT complete)
+      FROM (
+        SELECT r.*, unixepoch(r.day_utc) >= start_at AND unixepoch(r.day_utc) + 86400 <= end_at AS complete
+        FROM conversion_cohort_rollups r CROSS JOIN bounds WHERE r.day_utc BETWEEN start_day AND end_day
+      ) GROUP BY goal_id
+    ), cohort AS (
+      SELECT id, SUM(eligible_clicks) AS eligible_clicks, SUM(converted_clicks) AS converted_clicks,
+        MAX(closes_at) AS closes_at, MAX(partial) AS partial
+      FROM cohort_counts GROUP BY id
     )
     SELECT g.id AS goalId, g.name AS goalName, g.backup_archived_at IS NOT NULL AS archived,
       COALESCE(e.total, 0) AS total, COALESCE(e.attributed, 0) AS attributed,
       COALESCE(e.total - e.attributed, 0) AS unattributed, COALESCE(c.eligible_clicks, 0) AS eligibleClicks,
-      CASE WHEN c.closes_at <= unixepoch() THEN 1.0 * c.converted_clicks / c.eligible_clicks END AS rate
+      CASE WHEN c.closes_at <= unixepoch() AND c.partial = 0 THEN 1.0 * c.converted_clicks / c.eligible_clicks END AS rate,
+      COALESCE(e.partial, 0) OR COALESCE(c.partial, 0) AS partialUtcDays
     FROM conversion_goals g LEFT JOIN events e ON e.goal_id = g.id LEFT JOIN cohort c ON c.id = g.id
     WHERE g.backup_archived_at IS NULL OR e.goal_id IS NOT NULL OR c.id IS NOT NULL
     ORDER BY archived, g.name COLLATE NOCASE, g.id LIMIT 200`,
     )
-    .bind(from, to, from, to)
+    .bind(from, to)
     .all<{
       goalId: string;
       goalName: string;
@@ -181,6 +210,11 @@ export async function conversionSummary(
       unattributed: number;
       eligibleClicks: number;
       rate: number | null;
+      partialUtcDays: number;
     }>();
-  return results.map((row) => ({ ...row, archived: row.archived === 1 }));
+  return results.map((row) => ({
+    ...row,
+    archived: row.archived === 1,
+    partialUtcDays: row.partialUtcDays === 1,
+  }));
 }

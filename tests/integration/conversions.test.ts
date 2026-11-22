@@ -14,6 +14,8 @@ import {
   saveGoal,
   setLinkTracking,
 } from '../../src/lib/server/conversions/goals';
+import { rollupConversions } from '../../src/lib/server/conversions/rollup';
+
 import { getLink, updateLink } from '../../src/lib/server/links/store';
 
 let platform: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
@@ -112,6 +114,7 @@ it('requires deliberate opt-in and applies receipt idempotency atomically', asyn
     attributed: 1,
     unattributed: 1,
     eligibleClicks: 1,
+    partialUtcDays: false,
   };
   expect(await conversionSummary(db, now() - 600, now() + 600)).toContainEqual({
     ...stats,
@@ -222,4 +225,107 @@ it('rejects unknown fields and invalid date ranges in input', () => {
     }),
   ).toBeNull();
   expect(parseGoal({ ...payload, attributionWindowHours: 721 })).toBeNull();
+});
+
+it('archives complete UTC aggregates atomically and preserves thirty-day retries', async () => {
+  const goal = await saveGoal(db, { ...payload, eventName: 'rollup' });
+  if (!goal) throw new Error('Missing goal');
+  const day = '2025-01-15';
+  const from = Date.parse(day + 'T00:00:00Z') / 1000;
+  const to = from + 86400;
+  const old = await recordConversion(
+    db,
+    'owner',
+    { goalId: goal.id, occurredAt: now(), clickRef: null },
+    'rollup-recent-retry',
+  );
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO click_attributions
+      (ref_hash, link_id, created_at, expires_at, eligible_goals_json)
+      VALUES ('historical-ref', 'fixture', ?, ?, json_object(?, ?))`,
+      )
+      .bind(from + 60, from + 3600, goal.id, from + 3600),
+    db
+      .prepare(
+        `INSERT INTO conversion_receipts
+      (id, goal_id, link_id, click_ref_hash, dedupe_key_hash, occurred_at, status, created_at)
+      VALUES ('rollup-attributed', ?, 'fixture', 'historical-ref', 'one', ?, 'accepted', ?),
+        ('rollup-unattributed', ?, NULL, NULL, 'two', ?, 'unattributed', ?)`,
+      )
+      .bind(goal.id, from + 61, from + 61, goal.id, from + 62, from + 62),
+  ]);
+  await db
+    .prepare(
+      `CREATE TRIGGER fail_conversion_rollup BEFORE INSERT ON conversion_rollups
+    BEGIN SELECT RAISE(ABORT, 'snapshot failed'); END`,
+    )
+    .run();
+  try {
+    await expect(rollupConversions(db, new Date())).rejects.toThrow();
+    expect(
+      await db
+        .prepare(
+          "SELECT count(*) AS n FROM conversion_receipts WHERE id LIKE 'rollup-%'",
+        )
+        .first('n'),
+    ).toBe(2);
+    expect(
+      await db
+        .prepare(
+          "SELECT count(*) AS n FROM click_attributions WHERE ref_hash = 'historical-ref'",
+        )
+        .first('n'),
+    ).toBe(1);
+  } finally {
+    await db.prepare('DROP TRIGGER fail_conversion_rollup').run();
+  }
+  const results = await Promise.all([
+    rollupConversions(db, new Date()),
+    rollupConversions(db, new Date()),
+  ]);
+  expect(results.reduce((sum, count) => sum + count, 0)).toBe(2);
+  expect(
+    await db
+      .prepare(
+        "SELECT count(*) AS n FROM conversion_receipts WHERE id LIKE 'rollup-%'",
+      )
+      .first('n'),
+  ).toBe(0);
+  expect(
+    await db
+      .prepare(
+        "SELECT count(*) AS n FROM click_attributions WHERE ref_hash = 'historical-ref'",
+      )
+      .first('n'),
+  ).toBe(0);
+  expect(await conversionSummary(db, from, to)).toContainEqual(
+    expect.objectContaining({
+      goalId: goal.id,
+      total: 2,
+      attributed: 1,
+      unattributed: 1,
+      eligibleClicks: 1,
+      rate: 1,
+      partialUtcDays: false,
+    }),
+  );
+  expect(await conversionSummary(db, from + 3600, to)).toContainEqual(
+    expect.objectContaining({
+      goalId: goal.id,
+      total: 0,
+      eligibleClicks: 0,
+      rate: null,
+      partialUtcDays: true,
+    }),
+  );
+  expect(
+    await recordConversion(
+      db,
+      'owner',
+      { goalId: goal.id, occurredAt: now(), clickRef: null },
+      'rollup-recent-retry',
+    ),
+  ).toMatchObject({ ...old, duplicate: true });
 });

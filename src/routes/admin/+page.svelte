@@ -1,5 +1,7 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import ReportChart from '$lib/components/analytics/ReportChart.svelte';
+  import { analyticsMessages } from '$lib/components/analytics/messages';
   import Link2 from '@lucide/svelte/icons/link-2';
   import Globe from '@lucide/svelte/icons/globe';
   import Settings from '@lucide/svelte/icons/settings';
@@ -11,6 +13,59 @@
   let messages = $derived(messagesFor(data.locale));
   let links = $derived(linkMessages(data.locale));
   let preferences = $derived(preferenceMessages(data.locale));
+  let analytics = $derived(analyticsMessages(data.locale));
+  const dashboardLabels = {
+    en: [
+      'Last 14 days',
+      'Popular links',
+      'Analytics unavailable',
+      'Analytics data may be delayed',
+      'View analytics',
+    ],
+    ja: [
+      '過去14日間',
+      '人気のリンク',
+      '解析データを取得できません',
+      '解析データの反映には時間がかかる場合があります',
+      'アクセス解析を見る',
+    ],
+    'zh-CN': [
+      '过去 14 天',
+      '热门链接',
+      '无法获取分析数据',
+      '分析数据可能延迟',
+      '查看数据分析',
+    ],
+    'zh-TW': [
+      '過去 14 天',
+      '熱門連結',
+      '無法取得分析資料',
+      '分析資料可能延遲',
+      '查看數據分析',
+    ],
+    es: [
+      'Últimos 14 días',
+      'Enlaces populares',
+      'Analítica no disponible',
+      'Los datos pueden tardar en aparecer',
+      'Ver analítica',
+    ],
+    it: [
+      'Ultimi 14 giorni',
+      'Link più popolari',
+      'Analisi non disponibili',
+      'I dati potrebbero essere aggiornati in ritardo',
+      'Visualizza analisi',
+    ],
+    fr: [
+      '14 derniers jours',
+      'Liens populaires',
+      'Analyses indisponibles',
+      'Les données peuvent apparaître avec un délai',
+      'Voir les analyses',
+    ],
+  } as const;
+  let labels = $derived(dashboardLabels[data.locale]);
 </script>
 
 <svelte:head>
@@ -49,6 +104,77 @@
       </span>
     </a>
   </div>
+  <section class="analytics" aria-labelledby="analytics-heading">
+    <div class="recent-heading">
+      <h2 id="analytics-heading">{analytics.title}</h2>
+      <a href="/admin/analytics">
+        {labels[4]} <span aria-hidden="true">→</span>
+      </a>
+    </div>
+    {#if data.report}
+      <div class="analytics-panel">
+        <p class="period">
+          {labels[0]} · {data.report.meta.from} – {data.report.meta.to} · {analytics.timezone}:
+          {data.report.meta
+            .timezone}{#if data.report.meta.dateBasis === 'UTC' && data.report.meta.timezone !== 'UTC'}
+            · UTC{/if}
+        </p>
+        <p>
+          <strong class="click-count">
+            {data.report.totalClicks?.toLocaleString(data.locale) ?? '—'}
+          </strong>
+          {analytics.clicks}
+        </p>
+        <p class="period">
+          {data.report.meta.source === 'analytics-engine'
+            ? labels[3]
+            : analytics.sample}{#if data.report.meta.estimated}
+            · {analytics.estimated}{/if}
+        </p>
+        <h3>{analytics.daily}</h3>
+        <ReportChart
+          kind="line"
+          labels={data.report.series.map((row) => row.date)}
+          values={data.report.series.map((row) => row.clicks)}
+          label={analytics.clicks}
+        />
+        <details>
+          <summary>{analytics.daily}</summary>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">{analytics.date}</th><th scope="col">
+                  {analytics.clicks}
+                </th>
+              </tr>
+            </thead><tbody>
+              {#each data.report.series as row (row.date)}<tr>
+                  <th scope="row">{row.date}</th><td>
+                    {row.clicks?.toLocaleString(data.locale) ?? '—'}
+                  </td>
+                </tr>{/each}
+            </tbody>
+          </table>
+        </details>
+        <h3>{labels[1]}</h3>
+        {#if data.popularLinks.length}
+          <ul class="popular">
+            {#each data.popularLinks as link (link.key)}<li>
+                <span>
+                  {#if link.id}<a href={`/admin/links/${link.id}`}>
+                      {link.title || link.url}
+                    </a>{:else}{link.key || '—'}{/if}
+                </span><strong>
+                  {link.clicks.toLocaleString(data.locale)}
+                </strong>
+              </li>{/each}
+          </ul>
+        {:else}<p>{analytics.empty}</p>{/if}
+      </div>
+    {:else}<p role="status">
+        {labels[2]} · <a href="/admin/analytics">{labels[4]}</a>
+      </p>{/if}
+  </section>
   <section class="recent" aria-labelledby="recent-links">
     <div class="recent-heading">
       <h2 id="recent-links">{messages['admin.recent']}</h2>
@@ -141,6 +267,51 @@
     }
   }
 
+  .analytics {
+    margin-top: 2.4rem;
+  }
+  .analytics-panel {
+    padding: 1.25rem;
+    border: 1px solid var(--ui-border);
+    border-radius: 0.9rem;
+    background: var(--ui-surface);
+  }
+  .analytics-panel h3 {
+    margin-top: 1.5rem;
+    font-size: 1rem;
+  }
+  .period {
+    color: var(--ui-text-muted);
+    font-size: 0.85rem;
+    margin: 0.4rem 0;
+  }
+  .click-count {
+    font-size: 2rem;
+  }
+  .popular {
+    margin-top: 0.75rem;
+  }
+  .popular li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 0;
+    border-top: 1px solid var(--ui-border);
+    overflow-wrap: anywhere;
+  }
+  details {
+    margin-top: 1rem;
+  }
+  table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+  }
+  th,
+  td {
+    padding: 0.4rem;
+    border-bottom: 1px solid var(--ui-border);
+  }
   .recent {
     margin-top: 2.4rem;
   }

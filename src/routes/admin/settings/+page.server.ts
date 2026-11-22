@@ -47,6 +47,7 @@ export const load = (async (event) => {
     defaultZone: isTimeZone(defaultZone) ? defaultZone : 'UTC',
     defaultLocale: parseDefaultLocale(defaults.get('default_locale')),
     timeZones,
+    previewAt: Date.now(),
     isOwner: session.user.role === 'owner',
     saved: event.url.searchParams.get('saved'),
   };

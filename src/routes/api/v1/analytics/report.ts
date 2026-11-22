@@ -23,6 +23,7 @@ export function analyticsResponse(
       const timezone = await getEffectiveTimeZone(getDb(db));
       const parsed = parseAnalyticsQuery(event.url.searchParams, timezone, {
         linkId,
+        allowArchived: true,
       });
       const report = await loadAnalyticsReport(event.locals.env, parsed, {
         development: dev,
@@ -33,7 +34,9 @@ export function analyticsResponse(
         return problem(
           400,
           cause.code,
-          'Check the report dates, time zone, and filters.',
+          cause.code === 'unsupported_archive_filters'
+            ? 'Archived reports support one stored breakdown filter at a time. Change the breakdown or remove the additional filter.'
+            : 'Check the report dates, time zone, and filters.',
         );
       return problem(
         503,

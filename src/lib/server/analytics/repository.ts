@@ -66,6 +66,35 @@ export interface BreakdownResult {
 
 export const breakdownLimit = 25;
 
+export const clickRollupDimensions = [
+  'total',
+  'country',
+  'region',
+  'referrer',
+  'device',
+  'os',
+  'browser',
+  'rule',
+  'source',
+  'traffic',
+] as const;
+
+export const clickRollupMaxRows = 10_000;
+
+export interface ClickRollupRow {
+  linkId: string;
+  dimension: (typeof clickRollupDimensions)[number];
+  value: string;
+  clicks: number;
+  estimated: boolean;
+}
+
+export interface ClickRollupRepository {
+  getDailyClickRollup(
+    query: Pick<StatsQuery, 'from' | 'to'>,
+  ): Promise<ClickRollupRow[]>;
+}
+
 export function compareKeys(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }

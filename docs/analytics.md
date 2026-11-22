@@ -6,6 +6,8 @@ The development server uses labelled sample analytics. A deployed Worker writes 
 
 Linkrovia records successful redirect requests. It excludes HEAD requests, explicit prefetches, and the password screen. The deployed dataset records categorical device, browser, country and region information and the referrer hostname. It omits IP addresses, full user-agent strings, URL paths and queries, and conversion references. Known bot and preview clients are excluded from ordinary totals and can be inspected under **Traffic type**. Cloudflare applies sampling weights to aggregates. Nonempty production reports are marked as estimates because the binding does not return a sampling indicator. [Cloudflare datasets and sampling](https://developers.cloudflare.com/analytics/sql-api/datasets/#workers-analytics-engine-datasets)
 
+The [scheduled Worker](deployment.md#keep-analytics-history) saves daily UTC click totals. A report that starts outside the live data window or spans more than 90 days reads saved daily totals for the full selected range, up to 366 days. In that report, missing days are marked as gaps, and a successful day with no clicks shows zero. The archive supports a single breakdown filter on its matching dimension. Domain reports group archived link totals using each link's current domain. The charts and tables show the archive uses UTC, and CSV records each missing day as a gap.
+
 ## Click reports API
 
 Use an API key with `analytics:read`. Requests accept `from` and `to` as inclusive `YYYY-MM-DD` dates and an optional IANA `tz`. Set `dimension` to `country`, `region`, `referrer`, `device`, `os`, `browser`, `rule`, `source`, `traffic`, or `link`. Optional `domainId`, `ruleId`, and `source=link|qr` narrow a query. To select a category, send its `filter` dimension and `key` value together. For CSV, use `bom=1` to add a UTF-8 BOM.
@@ -47,4 +49,4 @@ An event without a click reference is counted as unattributed. A valid reference
 | PATCH, DELETE | `/api/v1/conversion-goals/:id`  |
 | GET           | `/api/v1/conversions/analytics` |
 
-The conversion report accepts `from`, `to`, and `tz` for a range of up to 30 calendar days. The current release reads recent conversion receipts from D1. Daily rollups and scheduled cleanup of expired references and processed receipts are part of the next phase.
+The conversion report accepts `from`, `to`, and `tz` for a range of up to 30 calendar days. The scheduled Worker retains receipts for at least 30 days to deduplicate retries, then stores daily event and click-cohort totals in UTC in D1. Older reports use UTC dates. Where the selected local dates clip an already archived UTC day, the report excludes that day and marks `partialUtcDays` for the affected goals. The response includes its `dateBasis`.

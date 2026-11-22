@@ -6,6 +6,34 @@
   import type { PageProps } from './$types';
   let { data, form }: PageProps = $props();
   let m = $derived(preferenceMessages(data.locale));
+  let userZone = $derived(data.userZone);
+  let defaultZone = $derived(data.defaultZone);
+
+  function zoneExamples(zone: string) {
+    if (!data.timeZones.includes(zone)) return [];
+    try {
+      const format = new Intl.DateTimeFormat(data.locale, {
+        timeZone: zone,
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZoneName: 'shortOffset',
+      });
+      const example = new Date(data.previewAt);
+      const year = example.getUTCFullYear();
+      const january = Date.UTC(year, 0, 15, 12);
+      const july = Date.UTC(year, 6, 15, 12);
+      const offset = (date: number) =>
+        format.formatToParts(date).find(({ type }) => type === 'timeZoneName')
+          ?.value;
+      return offset(january) === offset(july)
+        ? [format.format(example)]
+        : [format.format(example), format.format(january), format.format(july)];
+    } catch {
+      return [];
+    }
+  }
 </script>
 
 <svelte:head><title>{m.personal} · {brand.name}</title></svelte:head>
@@ -23,7 +51,10 @@
       {m.globalSaved}
     </p>{/if}
   <datalist id="time-zones">
-    {#each data.timeZones as zone (zone)}<option value={zone}></option>{/each}
+    {#each data.timeZones as zone (zone)}<option
+        value={zone}
+        label={zone.replaceAll('_', ' ').replaceAll('/', ' · ')}
+      ></option>{/each}
   </datalist>
   <form
     method="POST"
@@ -52,13 +83,20 @@
         name="timezone"
         type="text"
         list="time-zones"
-        value={data.userZone}
-        aria-describedby="user-zone-help"
+        bind:value={userZone}
+        aria-describedby="user-zone-help user-zone-example"
         autocomplete="off"
         class="w-full rounded-md border border-control bg-surface px-3 py-2"
       />
       <p id="user-zone-help" class="text-sm text-muted">
         {m.userHelp}
+      </p>
+      <p
+        id="user-zone-example"
+        class="text-sm text-muted tabular-nums"
+        aria-live="polite"
+      >
+        {zoneExamples(userZone || data.defaultZone).join(' · ')}
       </p>
     </div>
     <div class="space-y-2">
@@ -100,13 +138,20 @@
           type="text"
           required
           list="time-zones"
-          value={data.defaultZone}
-          aria-describedby="default-zone-help"
+          bind:value={defaultZone}
+          aria-describedby="default-zone-help default-zone-example"
           autocomplete="off"
           class="w-full rounded-md border border-control bg-surface px-3 py-2"
         />
         <p id="default-zone-help" class="text-sm text-muted">
           {m.defaultHelp}
+        </p>
+        <p
+          id="default-zone-example"
+          class="text-sm text-muted tabular-nums"
+          aria-live="polite"
+        >
+          {zoneExamples(defaultZone).join(' · ')}
         </p>
       </div>
       <div class="space-y-2">

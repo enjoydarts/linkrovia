@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,11 +18,15 @@ function runWrangler(args) {
 
 try {
   const args = process.argv.slice(2);
-  const dryRunArgument = args.length === 1 && args[0] === '--dry-run';
-  if (args.length && !dryRunArgument)
-    throw new Error('Usage: npm run deploy [-- --dry-run]');
+  if (
+    args.some((arg) => arg !== '--dry-run' && arg !== '--rollup') ||
+    new Set(args).size !== args.length
+  )
+    throw new Error('Usage: npm run deploy [-- [--dry-run] [--rollup]]');
   // npm consumes --dry-run if it was passed before the argument separator.
-  const dryRun = dryRunArgument || process.env.npm_config_dry_run === 'true';
+  const dryRun =
+    args.includes('--dry-run') || process.env.npm_config_dry_run === 'true';
+  const rollup = args.includes('--rollup');
 
   const { configPath } = JSON.parse(readFileSync(redirectPath, 'utf8'));
   const generatedPath = resolve(dirname(redirectPath), configPath);
@@ -83,8 +87,29 @@ try {
       'Set DB to the Cloudflare D1 database ID and run npm run build again.',
     );
 
+  let deployPath = generatedPath;
+  if (rollup) {
+    deployPath = resolve(dirname(generatedPath), 'rollup.json');
+    writeFileSync(
+      deployPath,
+      JSON.stringify({
+        name: `${config.name}-rollup`,
+        main: relative(dirname(deployPath), resolve(root, 'workers/rollup.ts')),
+        account_id: config.account_id,
+        compatibility_date: config.compatibility_date,
+        compatibility_flags: config.compatibility_flags,
+        workers_dev: false,
+        preview_urls: false,
+        triggers: { crons: ['15 3 * * *', '45 * * * *'] },
+        d1_databases: [database],
+        analytics: config.analytics,
+        observability: config.observability,
+      }),
+    );
+  }
+
   // D1 commands do not follow the adapter redirect. Pin both commands to the same build.
-  const configArgs = ['--config', relative(root, generatedPath)];
+  const configArgs = ['--config', relative(root, deployPath)];
   runWrangler(['deploy', ...configArgs, '--dry-run']);
   if (!dryRun) {
     runWrangler(['d1', 'migrations', 'apply', 'DB', '--remote', ...configArgs]);

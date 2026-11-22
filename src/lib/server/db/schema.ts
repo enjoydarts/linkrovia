@@ -438,6 +438,7 @@ export const conversionReceipts = sqliteTable(
     unique().on(table.goalId, table.dedupeKeyHash),
     index('conversion_receipts_link_time').on(table.linkId, table.occurredAt),
     index('conversion_receipts_goal_time').on(table.goalId, table.occurredAt),
+    index('conversion_receipts_retention').on(table.createdAt, table.id),
     uniqueIndex('conversion_receipts_goal_click')
       .on(table.goalId, table.clickRefHash)
       .where(sql`${table.clickRefHash} IS NOT NULL`),
@@ -451,9 +452,32 @@ export const conversionRollups = sqliteTable(
     goalId: text('goal_id').notNull(),
     linkId: text('link_id').notNull(),
     conversions: integer('conversions').notNull().default(0),
+    attributed: integer('attributed').notNull().default(0),
   },
   (table) => [
     primaryKey({ columns: [table.dayUtc, table.goalId, table.linkId] }),
+    check(
+      'conversion_rollup_attributed_check',
+      sql`${table.attributed} BETWEEN 0 AND ${table.conversions}`,
+    ),
+  ],
+);
+
+export const conversionCohortRollups = sqliteTable(
+  'conversion_cohort_rollups',
+  {
+    dayUtc: text('day_utc').notNull(),
+    goalId: text('goal_id').notNull(),
+    eligibleClicks: integer('eligible_clicks').notNull(),
+    convertedClicks: integer('converted_clicks').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.dayUtc, table.goalId] }),
+    check('conversion_cohort_eligible_check', sql`${table.eligibleClicks} > 0`),
+    check(
+      'conversion_cohort_converted_check',
+      sql`${table.convertedClicks} BETWEEN 0 AND ${table.eligibleClicks}`,
+    ),
   ],
 );
 

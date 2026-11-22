@@ -18,6 +18,8 @@ Owners can download, validate, and restore a configuration backup from **Backup*
 
 Use **Analytics** for click totals, daily trends, and breakdowns, or open a link for its own report and CSV. Use **Conversions** to manage goals and connect a server-side event sender. The analytics guide explains the local sample data and Cloudflare setup. [Analytics and conversions](docs/analytics.md)
 
+Owners can enable a scoped Model Context Protocol endpoint for clients that support bearer credentials. [Connect an MCP client](docs/mcp.md)
+
 ## Deploy to Cloudflare
 
 The [deployment guide](docs/deployment.md) covers Workers Builds, setting up your first owner passkey, and adding a short-link domain. The Deploy to Cloudflare button is pending an end-to-end installation test on Workers Free.

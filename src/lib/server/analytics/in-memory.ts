@@ -2,13 +2,19 @@ import type {
   AnalyticsDimension,
   AnalyticsRepository,
   BreakdownResult,
+  ClickRollupRepository,
+  ClickRollupRow,
   ClickSource,
   Device,
   StatsQuery,
   TrendQuery,
   TrendResult,
 } from './repository';
-import { breakdownLimit, compareKeys } from './repository';
+import {
+  breakdownLimit,
+  clickRollupDimensions,
+  compareKeys,
+} from './repository';
 import { dayBuckets } from './date-buckets';
 
 export interface ClickSample {
@@ -41,7 +47,9 @@ const sampleField = {
 } as const satisfies Record<AnalyticsDimension, keyof ClickSample>;
 
 /** Shared by the local demo and the test fixture. */
-export class InMemoryAnalyticsRepository implements AnalyticsRepository {
+export class InMemoryAnalyticsRepository
+  implements AnalyticsRepository, ClickRollupRepository
+{
   constructor(
     private readonly samples: readonly ClickSample[],
     private readonly source: 'mock' | 'fixture',
@@ -50,6 +58,7 @@ export class InMemoryAnalyticsRepository implements AnalyticsRepository {
   private groupBy<T extends Record<string, string>>(
     query: StatsQuery,
     dimensions: (sample: ClickSample) => T,
+    includeAllTraffic = false,
   ) {
     const groups = new Map<string, T & { clicks: number }>();
     for (const sample of this.samples) {
@@ -59,7 +68,8 @@ export class InMemoryAnalyticsRepository implements AnalyticsRepository {
         (query.linkId !== undefined && sample.linkId !== query.linkId) ||
         (query.domainId !== undefined && sample.domainId !== query.domainId) ||
         (query.ruleId !== undefined && sample.ruleId !== query.ruleId) ||
-        ((query.dimension !== 'traffic' || query.key === undefined) &&
+        (!includeAllTraffic &&
+          (query.dimension !== 'traffic' || query.key === undefined) &&
           (sample.traffic === 'bot' || sample.traffic === 'preview')) ||
         (query.source !== undefined && sample.source !== query.source) ||
         (query.dimension !== undefined &&
@@ -82,6 +92,23 @@ export class InMemoryAnalyticsRepository implements AnalyticsRepository {
       groups.set(key, { ...group, clicks });
     }
     return [...groups.values()];
+  }
+
+  async getDailyClickRollup({ from, to }: Pick<StatsQuery, 'from' | 'to'>) {
+    return clickRollupDimensions.flatMap((dimension) =>
+      this.groupBy(
+        { from, to, timezone: 'UTC' },
+        (sample) => ({
+          linkId: sample.linkId,
+          value: dimension === 'total' ? 'all' : sample[sampleField[dimension]],
+        }),
+        dimension === 'traffic',
+      ).map((group): ClickRollupRow => ({
+        ...group,
+        dimension,
+        estimated: false,
+      })),
+    );
   }
 
   async getClickTrend(query: TrendQuery): Promise<TrendResult> {

@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { parseAnalyticsQuery } from '$lib/server/analytics/report';
+import { AnalyticsInputError } from '$lib/server/analytics/report';
 import { conversionSummary } from '$lib/server/conversions/events';
+import { parseConversionReport } from '$lib/server/conversions/report';
 import {
   archiveGoal,
   getLinkTracking,
@@ -20,10 +21,21 @@ export const load: PageServerLoad = async (event) => {
   event.setHeaders({ 'cache-control': 'private, no-store' });
   const linkId = event.url.searchParams.get('linkId');
   const timezone = await getEffectiveTimeZone(getDb(db), session.user.timezone);
-  const { from, to, query } = parseAnalyticsQuery(
-    new URLSearchParams(),
-    timezone,
+  const dates = new URLSearchParams(
+    [...event.url.searchParams].filter(
+      ([key]) => key === 'from' || key === 'to',
+    ),
   );
+  let filterError = false;
+  let period;
+  try {
+    period = parseConversionReport(dates, timezone);
+  } catch (cause) {
+    if (!(cause instanceof AnalyticsInputError)) throw cause;
+    filterError = true;
+    period = parseConversionReport(new URLSearchParams(), timezone);
+  }
+  const { from, to, query } = period;
   const [goals, { links }, tracking, summary] = await Promise.all([
     listGoals(db),
     listLinks(db, { limit: 60 }),
@@ -61,6 +73,9 @@ export const load: PageServerLoad = async (event) => {
     summary,
     from,
     to,
+    reportTimeZone: period.timezone,
+    filterError,
+    linkId,
     saved: event.url.searchParams.get('saved'),
   };
 };

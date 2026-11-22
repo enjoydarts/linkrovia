@@ -3,6 +3,7 @@ import { csvCell } from '../../csv';
 import { isTimeZone } from '../../timezone/timezone';
 import { CloudflareAnalyticsRepository } from './cloudflare';
 import { MockAnalyticsRepository } from './mock';
+import { loadArchivedClickReport } from './stored-report';
 import type { AnalyticsDimension, StatsQuery, TrendResult } from './repository';
 
 const analyticsDimensions = [
@@ -34,7 +35,11 @@ const queryFields = new Set([
 export class AnalyticsInputError extends Error {
   constructor(
     readonly code:
-      'invalid_filters' | 'invalid_dates' | 'invalid_timezone' | 'out_of_range',
+      | 'invalid_filters'
+      | 'invalid_dates'
+      | 'invalid_timezone'
+      | 'out_of_range'
+      | 'unsupported_archive_filters',
   ) {
     super(code);
   }
@@ -60,8 +65,9 @@ export function parseAnalyticsQuery(
   defaultTimezone: string,
   {
     linkId,
+    allowArchived = false,
     now = Math.floor(Date.now() / 1000),
-  }: { linkId?: string; now?: number } = {},
+  }: { linkId?: string; allowArchived?: boolean; now?: number } = {},
 ) {
   for (const key of params.keys()) {
     if (!queryFields.has(key) || params.getAll(key).length !== 1)
@@ -70,21 +76,25 @@ export function parseAnalyticsQuery(
   const get = (key: string) => params.get(key) || undefined;
   const timezone = get('tz') ?? defaultTimezone;
   if (!isTimeZone(timezone)) throw new AnalyticsInputError('invalid_timezone');
-  const today = Temporal.Instant.fromEpochMilliseconds(now * 1000)
-    .toZonedDateTimeISO(timezone)
-    .toPlainDate();
-  const to = civilDay(get('to'), today);
+  const instant = Temporal.Instant.fromEpochMilliseconds(now * 1000);
+  const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
+  const utcToday = instant.toZonedDateTimeISO('UTC').toPlainDate();
+  let to = civilDay(get('to'), today);
   const from = civilDay(get('from'), to.subtract({ days: 13 }));
+  const retention = today.subtract({ months: 3 }).add({ days: 1 });
+  const archived =
+    Temporal.PlainDate.compare(from, retention) < 0 ||
+    from.until(to).days >= 90;
+  if (archived && allowArchived && !get('to')) to = utcToday;
   if (
     Temporal.PlainDate.compare(from, to) > 0 ||
-    Temporal.PlainDate.compare(to, today) > 0
+    Temporal.PlainDate.compare(
+      to,
+      archived && allowArchived ? utcToday : today,
+    ) > 0
   )
     throw new AnalyticsInputError('invalid_dates');
-  const retention = today.subtract({ months: 3 }).add({ days: 1 });
-  if (
-    Temporal.PlainDate.compare(from, retention) < 0 ||
-    from.until(to).days >= 90
-  )
+  if (archived && (!allowArchived || from.until(to).days >= 366))
     throw new AnalyticsInputError('out_of_range');
 
   const dimension = get('dimension') ?? 'country';
@@ -114,7 +124,7 @@ export function parseAnalyticsQuery(
     throw new AnalyticsInputError('invalid_filters');
 
   const midnight = (date: Temporal.PlainDate) =>
-    date.toZonedDateTime(timezone).epochMilliseconds / 1000;
+    date.toZonedDateTime(archived ? 'UTC' : timezone).epochMilliseconds / 1000;
   const query: StatsQuery = {
     from: midnight(from),
     to: midnight(to.add({ days: 1 })),
@@ -128,6 +138,7 @@ export function parseAnalyticsQuery(
   if (query.from >= query.to) throw new AnalyticsInputError('invalid_dates');
   return {
     query,
+    archived,
     dimension,
     bom: bom === '1',
     from: from.toString(),
@@ -138,26 +149,35 @@ export function parseAnalyticsQuery(
 export type AnalyticsQuery = ReturnType<typeof parseAnalyticsQuery>;
 
 export type AnalyticsReport = {
-  meta: Pick<
-    TrendResult['meta'],
-    'timezone' | 'source' | 'estimated' | 'dateBasis'
-  > & {
+  meta: Pick<TrendResult['meta'], 'timezone' | 'estimated' | 'dateBasis'> & {
+    source: TrendResult['meta']['source'] | 'daily-rollup';
     from: string;
     to: string;
     completeThrough: string | null;
     gaps: string[];
   };
-  totalClicks: number;
-  series: TrendResult['series'];
+  totalClicks: number | null;
+  series: Array<{ date: string; clicks: number | null }>;
   dimension: AnalyticsDimension;
   breakdown: Array<{ key: string; clicks: number }>;
 };
 
 export async function loadAnalyticsReport(
-  env: Pick<Cloudflare.Env, 'ANALYTICS_SQL'>,
-  { query, dimension, from, to }: AnalyticsQuery,
+  env: Pick<Cloudflare.Env, 'ANALYTICS_SQL'> & { DB?: D1Database },
+  { query, dimension, from, to, archived }: AnalyticsQuery,
   { development }: { development: boolean },
 ): Promise<AnalyticsReport> {
+  if (archived) {
+    if (!env.DB) throw new Error('D1 binding is unavailable');
+    const report = await loadArchivedClickReport(env.DB, {
+      query,
+      dimension,
+      from,
+      to,
+    });
+    if (!report) throw new AnalyticsInputError('unsupported_archive_filters');
+    return report;
+  }
   const repository = development
     ? new MockAnalyticsRepository()
     : new CloudflareAnalyticsRepository(env.ANALYTICS_SQL);
@@ -222,7 +242,7 @@ export function analyticsCsv(report: AnalyticsReport, bom: boolean): Response {
       row.date,
       '',
       '',
-      String(row.clicks),
+      row.clicks === null ? '' : String(row.clicks),
       ...metadata,
     ]),
     ...report.breakdown.map((row) => [

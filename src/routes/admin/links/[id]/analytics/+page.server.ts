@@ -3,6 +3,7 @@ import { error } from '@sveltejs/kit';
 import { getLink } from '$lib/server/links/store';
 import { requireSession, effectiveTimeZone } from '$lib/server/links/form';
 import {
+  AnalyticsInputError,
   parseAnalyticsQuery,
   loadAnalyticsReport,
 } from '$lib/server/analytics/report';
@@ -14,6 +15,7 @@ export const load = (async (event) => {
   event.setHeaders({ 'cache-control': 'private, no-store' });
   try {
     const parsed = parseAnalyticsQuery(event.url.searchParams, timezone, {
+      allowArchived: true,
       linkId: event.params.id,
     });
     const report = await loadAnalyticsReport(event.locals.env, parsed, {
@@ -31,10 +33,14 @@ export const load = (async (event) => {
       },
       linkId: event.params.id,
     };
-  } catch {
+  } catch (cause) {
     return {
       report: null,
-      failed: true,
+      failed:
+        cause instanceof AnalyticsInputError &&
+        cause.code === 'unsupported_archive_filters'
+          ? ('unsupported_archive_filters' as const)
+          : true,
       filters: { ...Object.fromEntries(event.url.searchParams), tz: timezone },
       linkId: event.params.id,
     };

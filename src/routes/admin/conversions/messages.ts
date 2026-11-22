@@ -1,4 +1,36 @@
 import type { Locale } from '$lib/i18n/locale';
+
+export const archivedDates: Record<Locale, readonly [string, string]> = {
+  en: [
+    'Choose a date range of up to 30 days.',
+    'A saved UTC day crosses this date range. The report excludes that partial day.',
+  ],
+  ja: [
+    '30日以内の日付範囲を選んでください。',
+    '期間の境界をまたぐ保存済みの UTC 日は、集計から除外しています。',
+  ],
+  'zh-CN': [
+    '请选择不超过 30 天的日期范围。',
+    '已保存的 UTC 日期跨越此范围的边界，报表将排除该日期。',
+  ],
+  'zh-TW': [
+    '請選擇不超過 30 天的日期範圍。',
+    '已儲存的 UTC 日期跨越此範圍的邊界，報表會排除該日期。',
+  ],
+  es: [
+    'Elige un intervalo de hasta 30 días.',
+    'Un día UTC guardado cruza el límite del intervalo. El informe excluye ese día parcial.',
+  ],
+  it: [
+    'Scegli un intervallo di massimo 30 giorni.',
+    'Un giorno UTC salvato attraversa il limite dell’intervallo. Il report esclude quel giorno parziale.',
+  ],
+  fr: [
+    'Choisissez une période de 30 jours maximum.',
+    'Une journée UTC enregistrée chevauche la période. Le rapport exclut cette journée partielle.',
+  ],
+};
+
 const keys = [
   'title',
   'intro',

@@ -1,14 +1,17 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import { analyticsMessages } from '$lib/components/analytics/messages';
   import {
     conversionMessages,
     manageHelp,
     goalHelp,
     ratePending,
+    archivedDates,
   } from './messages';
   import type { PageProps } from './$types';
   let { data, form }: PageProps = $props();
   let m = $derived(conversionMessages(data.locale));
+  let dateLabels = $derived(analyticsMessages(data.locale));
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
@@ -21,7 +24,30 @@
 {#if !data.isOwner}<p class="notice">{m.readOnly}</p>{/if}
 <section aria-labelledby="report">
   <h2 id="report">{m.report}</h2>
-  <p class="muted">{data.from} – {data.to} · {data.timeZone}</p>
+  <form method="GET" class="inline">
+    {#if data.linkId}<input
+        type="hidden"
+        name="linkId"
+        value={data.linkId}
+      />{/if}
+    <label>
+      {dateLabels.from}<input
+        type="date"
+        name="from"
+        value={data.from}
+        required
+      />
+    </label>
+    <label>
+      {dateLabels.to}<input type="date" name="to" value={data.to} required />
+    </label>
+    <button type="submit">{dateLabels.apply}</button>
+  </form>
+  <p class="muted">{data.from} – {data.to} · {data.reportTimeZone}</p>
+  {#if data.filterError}<p role="alert">{archivedDates[data.locale][0]}</p>{/if}
+  {#if data.summary.some((goal) => goal.partialUtcDays)}<p class="muted">
+      {archivedDates[data.locale][1]}
+    </p>{/if}
   <p class="muted">{m.rateHelp} {ratePending[data.locale]}</p>
   {#if data.summary.length === 0}<p>{m.none}</p>{:else}<div class="table-wrap">
       <table>

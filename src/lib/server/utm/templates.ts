@@ -81,16 +81,35 @@ export function parseUtmTemplateRow({
   }
 }
 
-export async function listUtmTemplates(db: D1Database): Promise<UtmTemplate[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT ${fields} FROM utm_templates ORDER BY name COLLATE NOCASE, id`,
-    )
-    .all<TemplateRow>();
-  return results.flatMap((row) => {
-    const template = parseUtmTemplateRow(row);
-    return template ? [template] : [];
-  });
+export async function listUtmTemplates(db: D1Database): Promise<UtmTemplate[]>;
+export async function listUtmTemplates(
+  db: D1Database,
+  page: { limit: number; offset: number },
+): Promise<{ data: UtmTemplate[]; nextOffset: number | null }>;
+export async function listUtmTemplates(
+  db: D1Database,
+  page?: { limit: number; offset: number },
+) {
+  const statement = db.prepare(
+    `SELECT ${fields} FROM utm_templates ORDER BY name COLLATE NOCASE, id
+     ${page ? 'LIMIT ? OFFSET ?' : ''}`,
+  );
+  const { results } = await (
+    page ? statement.bind(page.limit + 1, page.offset) : statement
+  ).all<TemplateRow>();
+  const templates = (page ? results.slice(0, page.limit) : results).flatMap(
+    (row) => {
+      const template = parseUtmTemplateRow(row);
+      return template ? [template] : [];
+    },
+  );
+  return page
+    ? {
+        data: templates,
+        nextOffset:
+          results.length > page.limit ? page.offset + page.limit : null,
+      }
+    : templates;
 }
 
 export async function getUtmTemplate(

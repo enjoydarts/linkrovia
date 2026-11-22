@@ -55,6 +55,11 @@
             label: backupMessages(data.locale).title,
             icon: Archive,
           },
+          {
+            href: '/admin/integrations/mcp',
+            label: 'MCP',
+            icon: Route,
+          },
         ]
       : []),
     { href: '/admin/utm', label: 'UTM', icon: Route },

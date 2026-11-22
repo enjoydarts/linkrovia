@@ -11,7 +11,15 @@ Linkrovia runs on Cloudflare Workers with a D1 database. The browser-based deplo
 5. In your Worker's **Settings → Variables and Secrets**, add a **Secret** named `SETUP_TOKEN`. Use your password manager to generate and save a fresh private random value of at least 32 characters. Deploy the secret and keep it available for setup. The Worker requires this secret to start owner registration. [Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
 6. Open your Worker's `workers.dev` address from **Workers & Pages**. Check that `/health` returns `{"status":"ok"}`, then open `/setup`, enter your setup token, and follow the prompts to create an owner passkey. Keep using the same management hostname to sign in. After you confirm that you can sign in, remove `SETUP_TOKEN` from **Variables and Secrets**. If setup asks you to configure the Worker, check the health result and confirm the secret is present on the deployed Worker. If you lost the token before completing setup, replace it with a newly generated one and deploy the change.
 
-The official [Deploy to Cloudflare flow](https://developers.cloudflare.com/workers/platform/deploy-buttons/) documents D1 provisioning and secret entry for public templates. The button requires an installation test against the public Linkrovia repository before it is enabled. Cloudflare's provisioning list covers D1. Verify the analytics bindings on the deployed Worker separately. The flow deploys one Worker and the preview above covers the main application only.
+The official [Deploy to Cloudflare flow](https://developers.cloudflare.com/workers/platform/deploy-buttons/) documents D1 provisioning and secret entry for public templates. The button requires an installation test against the public Linkrovia repository before it is enabled. Cloudflare's provisioning list covers D1. Verify the analytics bindings on the deployed Worker separately. The flow deploys one Worker.
+
+## Keep analytics history
+
+Deploy the scheduled Worker from the same GitHub repository and branch to save click and conversion history in the main application's D1 database.
+
+1. In **Workers & Pages → Create application → Import a repository**, select the same repository and deployment branch. Use the main Worker's name followed by `-rollup` for the scheduled Worker.
+2. Use `npm run build` as the build command and `npm run deploy -- --rollup` as the deploy command. Use a build API token with permissions to deploy the scheduled Worker and edit the same D1 database. Deploy the main Worker first so the application and database bindings are ready.
+3. Confirm the scheduled Worker lists the `DB` and `ANALYTICS_SQL` bindings. Check **Settings → Triggers** for a daily run at 03:15 UTC and an hourly reconciliation. The hourly run revisits recent days one at a time. The scheduled Worker needs no setup token or public URL. Check run outcomes in **Observability**. [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
 
 ## Use and verify your deployment
 
@@ -30,4 +38,4 @@ npm run deploy -- --dry-run
 npm run deploy
 ```
 
-The dry run packages the Worker and skips D1 migrations. A real deploy requires an explicit database ID, and it stops before uploading the Worker if a migration fails. Use the dashboard for the owner setup secret and follow the browser setup steps above.
+The dry run packages the Worker and skips D1 migrations. A real deploy requires an explicit database ID, and it stops before uploading the Worker if a migration fails. Use the dashboard for the owner setup secret and follow the browser setup steps above. After deploying the main Worker, run `npm run deploy -- --rollup --dry-run` to package the scheduled Worker and `npm run deploy -- --rollup` to deploy it.

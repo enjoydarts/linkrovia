@@ -15,7 +15,7 @@ export const GET = (async (event) => {
     const parsed = parseAnalyticsQuery(
       event.url.searchParams,
       await effectiveTimeZone(db, session.user.timezone),
-      { linkId: event.params.id },
+      { linkId: event.params.id, allowArchived: true },
     );
     return analyticsCsv(
       await loadAnalyticsReport(event.locals.env, parsed, { development: dev }),

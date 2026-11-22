@@ -281,3 +281,67 @@ export function analyticsMessages(
     keys.map((key, index) => [key, messages[locale][index]]),
   ) as Record<(typeof keys)[number], string>;
 }
+
+const archiveMessages = {
+  en: [
+    'Saved daily totals · UTC dates',
+    'No data',
+    'This date range supports one breakdown filter at a time. Select the same breakdown as the filter, or clear the filters.',
+    'Clear breakdown filters',
+    'Archived domain reports use each link’s current domain.',
+  ],
+  ja: [
+    '保存済みの日次集計 · UTC 日付',
+    'データなし',
+    'この期間に適用できる内訳の絞り込みは1種類です。絞り込みと同じ内訳を選ぶか、絞り込みを解除してください。',
+    '内訳の絞り込みを解除',
+    '保存済み集計のドメイン別レポートには、各リンクの現在のドメインを使用します。',
+  ],
+  'zh-CN': [
+    '已保存的每日汇总 · UTC 日期',
+    '无数据',
+    '此日期范围一次只能使用一种明细筛选。请选择与筛选相同的明细类别，或清除筛选。',
+    '清除明细筛选',
+    '归档的域名报告使用每条链接当前的域名。',
+  ],
+  'zh-TW': [
+    '已儲存的每日彙總 · UTC 日期',
+    '無資料',
+    '這個日期範圍一次只能使用一種明細篩選。請選擇與篩選相同的明細類別，或清除篩選。',
+    '清除明細篩選',
+    '封存的網域報表使用每條連結目前的網域。',
+  ],
+  es: [
+    'Totales diarios guardados · Fechas UTC',
+    'Sin datos',
+    'Este intervalo admite un filtro de desglose a la vez. Selecciona el desglose del filtro o borra los filtros.',
+    'Borrar filtros de desglose',
+    'Los informes históricos por dominio usan el dominio actual de cada enlace.',
+  ],
+  it: [
+    'Totali giornalieri salvati · Date UTC',
+    'Dati non disponibili',
+    'Questo intervallo supporta un filtro di dettaglio alla volta. Seleziona il dettaglio del filtro o rimuovi i filtri.',
+    'Rimuovi i filtri di dettaglio',
+    'I report storici per dominio usano il dominio attuale di ogni link.',
+  ],
+  fr: [
+    'Totaux quotidiens enregistrés · Dates UTC',
+    'Données indisponibles',
+    'Cette période accepte un filtre de détail à la fois. Choisissez le détail du filtre ou effacez les filtres.',
+    'Effacer les filtres de détail',
+    'Les rapports historiques par domaine utilisent le domaine actuel de chaque lien.',
+  ],
+} as const satisfies Record<Locale, readonly string[]>;
+
+export function analyticsArchiveMessages(locale: Locale) {
+  const [dailySource, missing, unsupportedFilters, clearFilters, domainScope] =
+    archiveMessages[locale];
+  return {
+    dailySource,
+    missing,
+    unsupportedFilters,
+    clearFilters,
+    domainScope,
+  };
+}

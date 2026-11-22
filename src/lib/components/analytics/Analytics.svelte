@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Locale } from '$lib/i18n/locale';
-  import { analyticsMessages } from './messages';
+  import { analyticsArchiveMessages, analyticsMessages } from './messages';
   import ReportChart from './ReportChart.svelte';
   import type { loadAnalyticsReport } from '$lib/server/analytics/report';
   let {
@@ -14,13 +14,14 @@
   }: {
     locale: Locale;
     report: Awaited<ReturnType<typeof loadAnalyticsReport>> | null;
-    failed: boolean;
+    failed: boolean | 'unsupported_archive_filters';
     base: string;
     filters: Record<string, string>;
     domains?: readonly { id: string; hostname: string }[];
     linkScoped?: boolean;
   } = $props();
   let m = $derived(analyticsMessages(locale));
+  let archive = $derived(analyticsArchiveMessages(locale));
   const allDimensions = [
     'country',
     'region',
@@ -50,6 +51,11 @@
       params.delete('filter');
       params.delete('key');
     }
+    return `${base}?${params.toString()}`;
+  }
+  function clearArchiveFiltersUrl() {
+    const params = new URLSearchParams(filters);
+    for (const key of ['ruleId', 'source', 'filter', 'key']) params.delete(key);
     return `${base}?${params.toString()}`;
   }
   const trafficLabels = {
@@ -121,12 +127,21 @@
   <button type="submit">{m.apply}</button>
 </form>
 {#if failed}
-  <p class="notice" role="alert">{m.error}</p>
+  <p class="notice" role="alert">
+    {failed === 'unsupported_archive_filters'
+      ? archive.unsupportedFilters
+      : m.error}
+  </p>
+  {#if failed === 'unsupported_archive_filters'}
+    <p class="filter-links">
+      <a href={clearArchiveFiltersUrl()}>{archive.clearFilters}</a>
+    </p>
+  {/if}
 {:else if report}
   <div class="report-head">
     <div>
       <strong class="count">
-        {report.totalClicks.toLocaleString(locale)}
+        {report.totalClicks?.toLocaleString(locale) ?? '—'}
       </strong><span> {m.clicks}</span>
     </div>
     <a class="export" href={`${base}/export?${exportQuery}`}>{m.export}</a>
@@ -134,20 +149,26 @@
   <p class="meta">
     {m.timezone}: {report.meta
       .timezone}{#if report.meta.dateBasis === 'UTC' && report.meta.timezone !== 'UTC'}
-      · UTC{/if}{#if report.meta.source !== 'analytics-engine'}
+      · UTC{/if}{#if report.meta.source === 'daily-rollup'}
+      · {archive.dailySource}{:else if report.meta.source !== 'analytics-engine'}
       · {m.sample}{/if}{#if report.meta.estimated}
       · {m.estimated}{/if}{#if report.meta.gaps.length}
       · {m.incomplete}{/if}
   </p>
+  {#if report.meta.source === 'daily-rollup' && filters.domainId}
+    <p class="meta">{archive.domainScope}</p>
+  {/if}
   {#if filters.filter && filters.key}
     <p class="filter-links">
       <span>{filters.key}</span> <a href={filterUrl()}>{traffic[2]}</a>
     </p>
   {/if}
-  {#if report.totalClicks === 0}<p>{m.empty}</p>{/if}
+  {#if report.totalClicks === 0 && report.meta.gaps.length === 0}<p>
+      {m.empty}
+    </p>{/if}
   <section>
     <h2>{m.daily}</h2>
-    {#if report.totalClicks > 0}
+    {#if (report.totalClicks ?? 0) > 0}
       <ReportChart
         kind="line"
         labels={report.series.map((row) =>
@@ -168,7 +189,7 @@
                   {formatDay.format(new Date(`${row.date}T00:00:00Z`))}
                 </time>
               </th><td>
-                {row.clicks.toLocaleString(locale)}
+                {row.clicks?.toLocaleString(locale) ?? archive.missing}
               </td>
             </tr>{/each}
         </tbody>
@@ -183,7 +204,7 @@
         <a href={filterUrl('traffic', 'preview')}>{traffic[1]}</a>
       </p>
     {/if}
-    {#if report.totalClicks > 0 && report.breakdown.length}
+    {#if (report.totalClicks ?? 0) > 0 && report.breakdown.length}
       <ReportChart
         kind="bar"
         labels={report.breakdown.map((row) => row.key || '—')}

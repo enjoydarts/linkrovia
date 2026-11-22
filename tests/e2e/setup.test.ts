@@ -102,6 +102,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     expect(wrongMethod.status()).toBe(405);
 
     await page.goto('/admin');
+    await expect(page.locator('canvas')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Popular links' }),
+    ).toBeVisible();
     const recentLink = page
       .getByRole('region', { name: 'Recent links' })
       .getByRole('listitem')
@@ -151,6 +155,18 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       expect(rows.slice(1).every((row) => row.split(',')[4] === '"0"')).toBe(
         true,
       );
+
+      const archived = '/admin/analytics?from=2025-01-01&to=2025-01-01';
+      await page.goto(`${archived}&dimension=country&source=qr`);
+      await expect(page.getByRole('alert')).toContainText(
+        'This date range supports one breakdown filter at a time.',
+      );
+      await page.getByRole('link', { name: 'Clear breakdown filters' }).click();
+      await expect(
+        page.getByText('Saved daily totals · UTC dates'),
+      ).toBeVisible();
+      await expect(page.getByRole('cell', { name: 'No data' })).toBeVisible();
+      await expect(page.getByText('Sample data')).toHaveCount(0);
 
       await page.goto(
         `/admin/conversions?linkId=${encodeURIComponent(linkId)}`,
@@ -399,6 +415,185 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     );
   });
 
+  await test.step('serves MCP on the primary host with independent tool scopes', async () => {
+    const headers = { Accept: 'application/json, text/event-stream' };
+    const initialize = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-11-25',
+        capabilities: {},
+        clientInfo: { name: 'Linkrovia E2E', version: '1.0.0' },
+      },
+    };
+    expect(
+      (await request.post('/mcp', { headers, data: initialize })).status(),
+    ).toBe(404);
+    await page.goto('/admin/integrations/mcp');
+    await page.getByRole('button', { name: 'Enable MCP' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Disable MCP' }),
+    ).toBeVisible();
+    expect(
+      (
+        await context.request.post('/mcp', { headers, data: initialize })
+      ).status(),
+    ).toBe(401);
+    await page.goto('/admin/api-keys');
+    await page.locator('[name=name]').fill('MCP read key');
+    await page.locator('[name=scope][value="mcp:connect"]').check();
+    await page.locator('[name=scope][value="links:read"]').check();
+    await page.locator('form[action="?/create"] button[type=submit]').click();
+    const token = await page
+      .locator('input[readonly][aria-labelledby="new-api-key"]')
+      .inputValue();
+    const authorizedHeaders = { ...headers, Authorization: `Bearer ${token}` };
+    const rpc = (method: string, params?: unknown) =>
+      request.post('/mcp', {
+        headers: { ...authorizedHeaders, 'MCP-Protocol-Version': '2025-11-25' },
+        data: { jsonrpc: '2.0', id: 2, method, params },
+      });
+    const readMessage = async (response: Awaited<ReturnType<typeof rpc>>) => {
+      const body = await response.text();
+      expect(response.status(), body).toBe(200);
+      if (response.headers()['content-type'].includes('application/json'))
+        return JSON.parse(body);
+      const lines = body.split('\n');
+      return JSON.parse(
+        lines.find((line) => line.startsWith('data: '))!.slice(6),
+      );
+    };
+    expect(
+      (
+        await request.post('/mcp', {
+          headers: {
+            ...authorizedHeaders,
+            Origin: 'https://elsewhere.example',
+          },
+          data: initialize,
+        })
+      ).status(),
+    ).toBe(403);
+    expect(
+      (
+        await request.post('/mcp', {
+          headers: { ...authorizedHeaders, Host: 'localhost:4173' },
+          data: initialize,
+        })
+      ).status(),
+    ).toBe(404);
+    const initialized = await request.post('/mcp', {
+      headers: authorizedHeaders,
+      data: initialize,
+    });
+    expect(initialized.headers()['mcp-session-id']).toBeUndefined();
+    expect(await readMessage(initialized)).toMatchObject({
+      result: { protocolVersion: '2025-11-25' },
+    });
+    const tools = (await readMessage(await rpc('tools/list'))).result.tools;
+    expect(tools.map(({ name }: { name: string }) => name)).toContain(
+      'list_links',
+    );
+    expect(tools.map(({ name }: { name: string }) => name)).not.toContain(
+      'create_link',
+    );
+    const list = await readMessage(
+      await rpc('tools/call', { name: 'list_links', arguments: { limit: 1 } }),
+    );
+    expect(list.result.structuredContent.data).toHaveLength(1);
+    expect(JSON.stringify(list)).not.toMatch(/passwordHash|proofToken|keyHash/);
+    const discovery = await request.post('/mcp', {
+      headers: {
+        ...authorizedHeaders,
+        'MCP-Protocol-Version': '2026-07-28',
+        'Mcp-Method': 'server/discover',
+      },
+      data: {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'server/discover',
+        params: {
+          _meta: {
+            'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+            'io.modelcontextprotocol/clientCapabilities': {},
+          },
+        },
+      },
+    });
+    expect((await readMessage(discovery)).result.supportedVersions).toContain(
+      '2026-07-28',
+    );
+    const write = await readMessage(
+      await rpc('tools/call', { name: 'create_link', arguments: {} }),
+    );
+    expect(write.error).toMatchObject({ code: -32602 });
+    expect(
+      (
+        await request.post('/mcp', {
+          headers: { ...authorizedHeaders, 'content-type': 'application/json' },
+          data: '{',
+        })
+      ).status(),
+    ).toBe(400);
+    expect(
+      (
+        await request.post('/mcp', {
+          headers: authorizedHeaders,
+          data: { padding: 'x'.repeat(263_000) },
+        })
+      ).status(),
+    ).toBe(413);
+    await page.locator('form[action="?/revoke"] button[type=submit]').click();
+    await expect(page.locator('form[action="?/revoke"]')).toHaveCount(0);
+    expect((await rpc('tools/list')).status()).toBe(401);
+
+    await page.locator('[name=name]').fill('MCP write key');
+    await page.locator('[name=scope][value="mcp:connect"]').check();
+    await page.locator('[name=scope][value="links:write"]').check();
+    await page.locator('form[action="?/create"] button[type=submit]').click();
+    authorizedHeaders.Authorization =
+      'Bearer ' +
+      (await page
+        .locator('input[readonly][aria-labelledby="new-api-key"]')
+        .inputValue());
+    const created = await readMessage(
+      await rpc('tools/call', {
+        name: 'create_link',
+        arguments: {
+          domainId: list.result.structuredContent.data[0].domainId,
+          slug: 'mcp-fixture',
+          destinationUrl: 'https://example.org/mcp',
+        },
+      }),
+    );
+    const { id, updatedAt } = created.result.structuredContent;
+    expect(
+      (await request.get('/mcp-fixture', { maxRedirects: 0 })).status(),
+    ).toBe(302);
+    const disabled = await readMessage(
+      await rpc('tools/call', {
+        name: 'disable_link',
+        arguments: { id, updatedAt },
+      }),
+    );
+    expect(disabled.result.structuredContent).toMatchObject({
+      id,
+      isActive: false,
+    });
+    expect(
+      (await request.get('/mcp-fixture', { maxRedirects: 0 })).status(),
+    ).toBe(404);
+    await page.locator('form[action="?/revoke"] button[type=submit]').click();
+    await expect(page.locator('form[action="?/revoke"]')).toHaveCount(0);
+    await page.goto('/admin/integrations/mcp');
+    await page.getByRole('button', { name: 'Disable MCP' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Enable MCP' }),
+    ).toBeVisible();
+    expect((await rpc('tools/list')).status()).toBe(404);
+  });
+
   await test.step('receives a conversion only with the scoped API key', async () => {
     const endpoint = '/api/v1/conversions/events';
     expect((await request.post(endpoint, { data: {} })).status()).toBe(401);
@@ -545,6 +740,9 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     );
     await personal.locator('[name=locale]').selectOption('fr');
     await personal.locator('[name=timezone]').fill('Europe/Paris');
+    await expect(page.locator('#user-zone-example')).toContainText(
+      /(?:GMT|UTC)\+1.*(?:GMT|UTC)\+2/,
+    );
     await personal.locator('button[type=submit]').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(

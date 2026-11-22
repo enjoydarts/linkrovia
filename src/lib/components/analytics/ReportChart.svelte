@@ -9,7 +9,7 @@
   }: {
     kind: 'line' | 'bar';
     labels: string[];
-    values: number[];
+    values: Array<number | null>;
     label: string;
   } = $props();
   let canvas: HTMLCanvasElement;

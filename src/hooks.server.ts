@@ -13,6 +13,7 @@ import { resolveTheme } from '$lib/theme/theme';
 export const handle: Handle = async ({ event, resolve }) => {
   event.locals.env = env;
   const id = event.route.id;
+  const mcp = id === '/mcp';
   const management =
     id === '/setup' ||
     id?.startsWith('/setup/') ||
@@ -24,7 +25,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     id?.startsWith('/api/v1/domains/') ||
     id?.startsWith('/api/v1/backup/') ||
     id === '/api/v1/settings/export';
-  if (management && event.locals.env.DB) {
+  if ((management || mcp) && event.locals.env.DB) {
     try {
       const host = await event.locals.env.DB.prepare(
         'SELECT hostname FROM domains WHERE is_primary = 1',
@@ -79,7 +80,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     gateResponse.headers.set('referrer-policy', 'same-origin');
     return gateResponse;
   }
-  if (!management) return response;
+  if (!management && !mcp) return response;
   const protectedResponse = new Response(response.body, response);
   protectedResponse.headers.set('cache-control', 'private, no-store');
   protectedResponse.headers.set('x-robots-tag', 'noindex, nofollow');

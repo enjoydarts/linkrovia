@@ -147,12 +147,18 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
   };
 }
 
-export async function listDomains(db: D1Database): Promise<DomainSummary[]> {
-  const { results } = await db
-    .prepare(
-      'SELECT id, hostname, is_active AS isActive, connection_status AS connectionStatus FROM domains WHERE backup_archived_at IS NULL ORDER BY is_primary DESC, hostname',
-    )
-    .all<Omit<DomainSummary, 'isActive'> & { isActive: number }>();
+export async function listDomains(
+  db: D1Database,
+  page?: { limit: number; offset: number },
+): Promise<DomainSummary[]> {
+  const statement = db.prepare(
+    `SELECT id, hostname, is_active AS isActive, connection_status AS connectionStatus
+     FROM domains WHERE backup_archived_at IS NULL
+     ORDER BY is_primary DESC, hostname ${page ? 'LIMIT ? OFFSET ?' : ''}`,
+  );
+  const { results } = await (
+    page ? statement.bind(page.limit, page.offset) : statement
+  ).all<Omit<DomainSummary, 'isActive'> & { isActive: number }>();
   return results.map((domain) => ({
     ...domain,
     isActive: domain.isActive === 1,

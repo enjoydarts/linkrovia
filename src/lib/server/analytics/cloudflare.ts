@@ -1,10 +1,14 @@
 import { dayBuckets } from './date-buckets';
 import {
   breakdownLimit,
+  clickRollupDimensions,
+  clickRollupMaxRows,
   compareKeys,
   type AnalyticsDimension,
   type AnalyticsRepository,
   type BreakdownResult,
+  type ClickRollupRepository,
+  type ClickRollupRow,
   type Device,
   type StatsQuery,
   type TrendQuery,
@@ -32,7 +36,10 @@ function dimensionColumn(dimension: AnalyticsDimension) {
   return columns[dimension];
 }
 
-function whereClause(query: StatsQuery): {
+function whereClause(
+  query: StatsQuery,
+  includeAllTraffic = false,
+): {
   where: string;
   params: Record<string, AnalyticsSQLParameter>;
 } {
@@ -52,7 +59,10 @@ function whereClause(query: StatsQuery): {
     predicates.push(`${column} = $${parameter}`);
     params[parameter] = value;
   }
-  if (query.dimension !== 'traffic' || query.key === undefined) {
+  if (
+    !includeAllTraffic &&
+    (query.dimension !== 'traffic' || query.key === undefined)
+  ) {
     predicates.push("blob10 NOT IN ('bot', 'preview')");
   }
   if (query.dimension !== undefined && query.key !== undefined) {
@@ -95,8 +105,41 @@ function deviceFrom(value: unknown): Device {
 
 // Analytics SQL weights COUNT(*) automatically, including Workers Analytics Engine datasets.
 // https://developers.cloudflare.com/analytics/sql-api/datasets/#workers-analytics-engine-datasets
-export class CloudflareAnalyticsRepository implements AnalyticsRepository {
+export class CloudflareAnalyticsRepository
+  implements AnalyticsRepository, ClickRollupRepository
+{
   constructor(private readonly binding: AnalyticsSQLBinding) {}
+
+  async getDailyClickRollup({ from, to }: Pick<StatsQuery, 'from' | 'to'>) {
+    const rows: ClickRollupRow[] = [];
+    for (const dimension of clickRollupDimensions) {
+      const column =
+        dimension === 'total' ? undefined : dimensionColumn(dimension);
+      const { where, params } = whereClause(
+        { from, to, timezone: 'UTC' },
+        dimension === 'traffic',
+      );
+      const { data } = await this.binding.query({
+        query: `SELECT index1 AS link_id, ${column ?? "'all'"} AS dimension_key, COUNT(*) AS clicks
+FROM ${dataset} WHERE ${where}
+GROUP BY index1${column ? `, ${column}` : ''}
+LIMIT ${clickRollupMaxRows - rows.length + 1}`,
+        params,
+      });
+      if (rows.length + data.length > clickRollupMaxRows)
+        throw new Error('Daily click rollup exceeds storage capacity');
+      for (const { link_id, dimension_key, clicks } of data) {
+        rows.push({
+          linkId: stringFrom(link_id),
+          dimension,
+          value: stringFrom(dimension_key),
+          clicks: clicksFrom(clicks),
+          estimated: true,
+        });
+      }
+    }
+    return rows;
+  }
 
   async getClickTrend(query: TrendQuery): Promise<TrendResult> {
     const { where, params } = whereClause(query);
