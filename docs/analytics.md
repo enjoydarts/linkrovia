@@ -28,8 +28,10 @@ The CSV identifies each row as `hourly`, `daily`, `weekly`, `monthly`, or `break
 
 ## Conversion setup
 
-1. In **Conversions**, create a goal, such as `purchase`. Pick a link or apply the goal to all tracked links. The event identifier and link define that goal's historical identity. Create a new goal when either changes.
-2. For attribution, open the link's conversion settings and enable tracking. This applies to temporary redirects. Linkrovia adds a short-lived `cl_ref` query value to the destination. Treat it as sensitive and retain it on your server. Changes to a link destination or redirect rules, and restores that overwrite a link, clear the tracking opt-in.
+Open **Analytics → Conversions** for the account-wide report and shared goals. A link's **Conversions** tab shows goals assigned to that link and its tracking setting.
+
+1. Create a goal, such as `purchase`. In the account-wide view, pick a link or apply the goal to all tracked links. The event identifier and link define that goal's historical identity. Create a new goal when either changes.
+2. For attribution, enable tracking in the link's **Conversions** tab. This applies to temporary redirects. Linkrovia adds a short-lived `cl_ref` query value to the destination. Treat it as sensitive and retain it on your server. Changes to a link destination or redirect rules, and restores that overwrite a link, clear the tracking opt-in.
 3. Have your server submit the event with a `conversions:write` API key. Store the key on your server. Choose a stable `Idempotency-Key` for the event and reuse it on retry. Send only the defined fields and pass `clickRef` if it is available.
 
 ```http

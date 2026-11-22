@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { brand } from '$lib/brand';
   import { analyticsMessages } from '$lib/components/analytics/messages';
-  import { linkMessages } from '$lib/i18n/links';
+  import type { Locale } from '$lib/i18n/locale';
+  import type { loadConversions } from '$lib/server/conversions/admin';
   import {
     conversionMessages,
     manageHelp,
@@ -9,45 +9,25 @@
     ratePending,
     archivedDates,
   } from './messages';
-  import type { PageProps } from './$types';
-  let { data, form }: PageProps = $props();
+  type Props = {
+    data: Awaited<ReturnType<typeof loadConversions>> & {
+      csrfToken: string;
+      locale: Locale;
+    };
+    form?: { code: string } | null;
+  };
+
+  let { data, form }: Props = $props();
   let m = $derived(conversionMessages(data.locale));
   let dateLabels = $derived(analyticsMessages(data.locale));
-  let contextLink = $derived(
-    data.links.find((link) => link.id === data.linkId),
-  );
 </script>
 
-<svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<header class="workspace-intro">
-  <div>
-    <h1>{m.title}</h1>
-    <p>
-      {contextLink?.title ??
-        (contextLink ? `${contextLink.hostname}/${contextLink.slug}` : m.intro)}
-    </p>
-  </div>
-  <a
-    class="workspace-link"
-    href={contextLink
-      ? `/admin/links/${encodeURIComponent(contextLink.id)}`
-      : '/admin/analytics'}
-  >
-    {contextLink ? linkMessages(data.locale).edit : dateLabels.title}
-    <span aria-hidden="true">→</span>
-  </a>
-</header>
 {#if data.saved}<p class="notice" role="status">{m.saved}</p>{/if}
 {#if form?.code}<p class="notice" role="alert">{m.error}</p>{/if}
 {#if !data.isOwner}<p class="notice">{m.readOnly}</p>{/if}
 <section class="workspace-panel" aria-labelledby="report">
   <h2 id="report">{m.report}</h2>
   <form method="GET" class="inline">
-    {#if data.linkId}<input
-        type="hidden"
-        name="linkId"
-        value={data.linkId}
-      />{/if}
     <label>
       {dateLabels.from}<input
         type="date"
@@ -112,15 +92,17 @@
         {m.name}<input name="name" required maxlength="120" />
       </label><label>
         {m.event}<input name="eventName" required maxlength="120" />
-      </label><label>
-        {m.link}<select name="linkId">
-          <option value="">
-            {m.allLinks}
-          </option>{#each data.links as link (link.id)}<option value={link.id}>
-              {link.title || `${link.hostname}/${link.slug}`}
-            </option>{/each}
-        </select>
-      </label><label>
+      </label>{#if !data.linkId}<label>
+          {m.link}<select name="linkId">
+            <option value="">
+              {m.allLinks}
+            </option>{#each data.links as link (link.id)}<option
+                value={link.id}
+              >
+                {link.title || `${link.hostname}/${link.slug}`}
+              </option>{/each}
+          </select>
+        </label>{/if}<label>
         {m.window} ({m.hours})<input
           type="number"
           name="window"
@@ -162,19 +144,23 @@
                   value={goal.eventName}
                   readonly
                 />
-              </label><label>
-                {m.link}<input
-                  value={goal.linkId
-                    ? data.links.find((link) => link.id === goal.linkId)
-                        ?.title ||
-                      data.links.find((link) => link.id === goal.linkId)
-                        ?.slug ||
-                      goal.linkId
-                    : m.allLinks}
-                  readonly
-                />
-                <input type="hidden" name="linkId" value={goal.linkId ?? ''} />
-              </label><label>
+              </label>{#if !data.linkId}<label>
+                  {m.link}<input
+                    value={goal.linkId
+                      ? data.links.find((link) => link.id === goal.linkId)
+                          ?.title ||
+                        data.links.find((link) => link.id === goal.linkId)
+                          ?.slug ||
+                        goal.linkId
+                      : m.allLinks}
+                    readonly
+                  />
+                  <input
+                    type="hidden"
+                    name="linkId"
+                    value={goal.linkId ?? ''}
+                  />
+                </label>{/if}<label>
                 {m.window} ({m.hours})<input
                   type="number"
                   name="window"
@@ -213,20 +199,19 @@
 <section aria-labelledby="tracking">
   <h2 id="tracking">{m.tracking}</h2>
   <p>{m.trackingHelp}</p>
-  {#if data.links.length}<form method="GET" class="inline">
+  {#if !data.linkId && data.links.length}<form method="GET" class="inline">
       <label>
         {m.link}<select name="linkId">
           <option value="">
             {m.select}
-          </option>{#each data.links as link (link.id)}<option
-              value={link.id}
-              selected={data.tracking?.id === link.id}
-            >
+          </option>{#each data.links as link (link.id)}<option value={link.id}>
               {link.title || `${link.hostname}/${link.slug}`}
             </option>{/each}
         </select>
       </label><button type="submit">{m.select}</button>
-    </form>{:else}<p>{m.noLinks}</p>{/if}{#if data.tracking}<p class="muted">
+    </form>{:else if !data.linkId}<p>{m.noLinks}</p>{/if}{#if data.tracking}<p
+      class="muted"
+    >
       {data.tracking.hostname}/{data.tracking.slug} · {data.tracking.enabled
         ? m.activeLabel
         : m.inactive}
@@ -236,11 +221,8 @@
         action="?/tracking"
         class="card"
       >
-        <input type="hidden" name="csrfToken" value={data.csrfToken} /><input
-          type="hidden"
-          name="linkId"
-          value={data.tracking.id}
-        /><label class="check">
+        <input type="hidden" name="csrfToken" value={data.csrfToken} />
+        <label class="check">
           <input
             type="checkbox"
             name="enabled"
@@ -257,7 +239,6 @@
 </section>
 
 <style>
-  header,
   section {
     margin-bottom: 2rem;
   }

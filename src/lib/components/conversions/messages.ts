@@ -72,7 +72,7 @@ const text = {
   en: [
     'Conversions',
     'Measure server-reported events and their connection to link clicks.',
-    'Last 14 days',
+    'Conversion report',
     'Goal',
     'Events',
     'Attributed',
@@ -109,7 +109,7 @@ const text = {
   ja: [
     'コンバージョン',
     'サーバーから送信されたイベントとリンクのクリックを計測します。',
-    '過去14日間',
+    'コンバージョンレポート',
     '目標',
     'イベント数',
     '紐付けあり',
@@ -146,7 +146,7 @@ const text = {
   'zh-CN': [
     '转化',
     '衡量服务器上报的事件及其与链接点击的关联。',
-    '最近 14 天',
+    '转化报告',
     '目标',
     '事件',
     '已归因',
@@ -183,7 +183,7 @@ const text = {
   'zh-TW': [
     '轉換',
     '衡量伺服器回報的事件及其與連結點擊的關聯。',
-    '最近 14 天',
+    '轉換報表',
     '目標',
     '事件',
     '已歸因',
@@ -220,7 +220,7 @@ const text = {
   es: [
     'Conversiones',
     'Mide eventos enviados por el servidor y su relación con los clics.',
-    'Últimos 14 días',
+    'Informe de conversiones',
     'Objetivo',
     'Eventos',
     'Atribuidos',
@@ -257,7 +257,7 @@ const text = {
   it: [
     'Conversioni',
     'Misura gli eventi inviati dal server e il loro legame con i clic.',
-    'Ultimi 14 giorni',
+    'Report sulle conversioni',
     'Obiettivo',
     'Eventi',
     'Attribuiti',
@@ -294,7 +294,7 @@ const text = {
   fr: [
     'Conversions',
     'Mesurez les événements transmis par le serveur et leur lien avec les clics.',
-    '14 derniers jours',
+    'Rapport sur les conversions',
     'Objectif',
     'Événements',
     'Attribués',

@@ -10,6 +10,7 @@ import {
 import {
   archiveGoal,
   getLinkTracking,
+  listGoals,
   parseGoal,
   saveGoal,
   setLinkTracking,
@@ -328,4 +329,44 @@ it('archives complete UTC aggregates atomically and preserves thirty-day retries
       'rollup-recent-retry',
     ),
   ).toMatchObject({ ...old, duplicate: true });
+});
+
+it('isolates the goals, archived results, and archive action for a link', async () => {
+  const goal = await saveGoal(db, { ...payload, eventName: 'scoped_goal' });
+  const other = await saveGoal(db, {
+    ...payload,
+    eventName: 'other_scoped_goal',
+    linkId: 'other',
+  });
+  const shared = await saveGoal(db, {
+    ...payload,
+    eventName: 'shared_scoped_goal',
+    linkId: null,
+  });
+  if (!goal || !other || !shared) throw new Error('Missing goals');
+
+  expect(await archiveGoal(db, other.id, 'fixture')).toBe(false);
+  expect(await archiveGoal(db, shared.id, 'fixture')).toBe(false);
+  expect(await listGoals(db, 'fixture')).toContainEqual(goal);
+  expect(await listGoals(db, 'fixture')).not.toContainEqual(other);
+  expect(await listGoals(db, 'fixture')).not.toContainEqual(shared);
+
+  await recordConversion(
+    db,
+    'owner',
+    { goalId: goal.id, occurredAt: now(), clickRef: null },
+    'scoped-conversion',
+  );
+  expect(await archiveGoal(db, goal.id, 'fixture')).toBe(true);
+  const summary = await conversionSummary(
+    db,
+    now() - 60,
+    now() + 60,
+    'fixture',
+  );
+  expect(summary).toContainEqual(
+    expect.objectContaining({ goalId: goal.id, archived: true, total: 1 }),
+  );
+  expect(summary.map(({ goalId }) => goalId)).not.toContain(other.id);
+  expect(summary.map(({ goalId }) => goalId)).not.toContain(shared.id);
 });

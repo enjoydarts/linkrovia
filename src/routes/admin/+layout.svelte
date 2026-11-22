@@ -3,7 +3,6 @@
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import Link2 from '@lucide/svelte/icons/link-2';
   import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined';
-  import Target from '@lucide/svelte/icons/target';
   import { analyticsMessages } from '$lib/components/analytics/messages';
   import Upload from '@lucide/svelte/icons/upload';
   import Archive from '@lucide/svelte/icons/archive';
@@ -38,11 +37,6 @@
       href: '/admin/analytics',
       label: analyticsMessages(data.locale).title,
       icon: ChartNoAxesCombined,
-    },
-    {
-      href: '/admin/conversions',
-      label: analyticsMessages(data.locale).conversions,
-      icon: Target,
     },
     {
       href: '/admin/import',
@@ -123,13 +117,20 @@
       {/if}
       <a
         href={item.href}
-        aria-current={active(item.href, page.url.pathname) ? 'page' : undefined}
-        class:active={active(item.href, page.url.pathname)}
+        aria-current={active(item.href, page.url.pathname)
+          ? item.href === page.url.pathname
+            ? 'page'
+            : 'location'
+          : undefined}
         onclick={() => drawer?.close()}
       >
-        <item.icon size={19} strokeWidth={1.8} aria-hidden="true" /><span>
-          {item.label}
+        <span class="nav-icon">
+          <item.icon size={18} strokeWidth={1.8} aria-hidden="true" />
         </span>
+        <span>{item.label}</span>
+        {#if active(item.href, page.url.pathname)}
+          <span class="current-position" aria-hidden="true"></span>
+        {/if}
       </a>
     {/each}
   </nav>
@@ -235,27 +236,54 @@
     opacity: 0.8;
   }
   .navigation a {
-    display: flex;
+    display: grid;
+    grid-template-columns: 27px minmax(0, 1fr) 6px;
     align-items: center;
-    gap: 13px;
+    gap: 8px;
     min-height: 40px;
-    padding: 9px 13px;
-    border-radius: var(--ui-radius-sm);
+    padding: 6px 11px 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 10px;
     color: var(--brand-muted-on-ink);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 530;
     text-decoration: none;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
   }
-  .navigation a:hover,
-  .navigation a.active {
+  .nav-icon {
+    display: grid;
+    width: 27px;
+    height: 27px;
+    place-items: center;
+    border-radius: 7px;
+  }
+  .navigation a:hover {
     background: var(--brand-ink-panel);
     color: var(--brand-on-ink);
   }
-  .navigation a.active {
-    box-shadow: inset 3px 0 var(--brand-signal);
+  .navigation a[aria-current] {
+    background: color-mix(
+      in srgb,
+      var(--brand-ink-panel) 95%,
+      var(--brand-signal)
+    );
+    border-color: var(--brand-ink-border);
+    color: var(--brand-on-ink);
+    font-weight: 640;
   }
-  .navigation a.active :global(svg) {
-    color: var(--brand-signal);
+  .navigation a[aria-current] .nav-icon {
+    background: color-mix(in srgb, var(--brand-signal) 13%, transparent);
+    color: var(--brand-focus-on-ink);
+  }
+  .current-position {
+    width: 5px;
+    height: 5px;
+    justify-self: end;
+    border-radius: 50%;
+    background: var(--brand-focus-on-ink);
   }
   .navigation a:focus-visible,
   .drawer-close:focus-visible {

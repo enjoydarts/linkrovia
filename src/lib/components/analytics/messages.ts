@@ -34,6 +34,8 @@ const messages = {
     'Domain',
     'Time zone',
     'Conversions',
+    'Clicks by date table',
+    'Breakdown table',
   ],
   ja: [
     'アクセス解析',
@@ -68,6 +70,8 @@ const messages = {
     'ドメイン',
     'タイムゾーン',
     'コンバージョン',
+    '期間別のクリック数を表で表示',
+    '内訳を表で表示',
   ],
   'zh-CN': [
     '数据分析',
@@ -102,6 +106,8 @@ const messages = {
     '域名',
     '时区',
     '转化',
+    '按日期查看点击次数表',
+    '查看明细表',
   ],
   'zh-TW': [
     '數據分析',
@@ -136,6 +142,8 @@ const messages = {
     '網域',
     '時區',
     '轉換',
+    '依日期查看點擊次數表',
+    '查看明細表',
   ],
   es: [
     'Analítica',
@@ -170,6 +178,8 @@ const messages = {
     'Dominio',
     'Zona horaria',
     'Conversiones',
+    'Tabla de clics por fecha',
+    'Tabla de desglose',
   ],
   it: [
     'Analisi',
@@ -204,6 +214,8 @@ const messages = {
     'Dominio',
     'Fuso orario',
     'Conversioni',
+    'Tabella dei clic per data',
+    'Tabella di dettaglio',
   ],
   fr: [
     'Analytique',
@@ -238,6 +250,8 @@ const messages = {
     'Domaine',
     'Fuseau horaire',
     'Conversions',
+    'Tableau des clics par date',
+    'Tableau de répartition',
   ],
 } satisfies Record<Locale, string[]>;
 const keys = [
@@ -273,6 +287,8 @@ const keys = [
   'domain',
   'timezone',
   'conversions',
+  'seriesTable',
+  'breakdownTable',
 ] as const;
 export function analyticsMessages(
   locale: Locale,

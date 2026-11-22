@@ -1,5 +1,6 @@
 <script lang="ts">
   import Analytics from '$lib/components/analytics/Analytics.svelte';
+  import ReportNavigation from '$lib/components/analytics/ReportNavigation.svelte';
   import {
     analyticsMessages,
     analyticsRepairMessages,
@@ -13,6 +14,7 @@
 <svelte:head>
   <title>{analyticsMessages(data.locale).title} · {brand.name}</title>
 </svelte:head>
+<ReportNavigation locale={data.locale} current="clicks" />
 <Analytics
   locale={data.locale}
   report={data.report}

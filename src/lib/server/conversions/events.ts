@@ -154,6 +154,7 @@ export async function conversionSummary(
   db: D1Database,
   from: number,
   to: number,
+  linkId?: string,
 ) {
   const { results } = await db
     .prepare(
@@ -197,10 +198,11 @@ export async function conversionSummary(
       CASE WHEN c.closes_at <= unixepoch() AND c.partial = 0 THEN 1.0 * c.converted_clicks / c.eligible_clicks END AS rate,
       COALESCE(e.partial, 0) OR COALESCE(c.partial, 0) AS partialUtcDays
     FROM conversion_goals g LEFT JOIN events e ON e.goal_id = g.id LEFT JOIN cohort c ON c.id = g.id
-    WHERE g.backup_archived_at IS NULL OR e.goal_id IS NOT NULL OR c.id IS NOT NULL
+    WHERE (?3 IS NULL OR g.link_id = ?3)
+      AND (g.backup_archived_at IS NULL OR e.goal_id IS NOT NULL OR c.id IS NOT NULL)
     ORDER BY archived, g.name COLLATE NOCASE, g.id LIMIT 200`,
     )
-    .bind(from, to)
+    .bind(from, to, linkId ?? null)
     .all<{
       goalId: string;
       goalName: string;

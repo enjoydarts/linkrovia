@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined';
+  import Target from '@lucide/svelte/icons/target';
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import Plus from '@lucide/svelte/icons/plus';
   import Link2 from '@lucide/svelte/icons/link-2';
@@ -31,6 +32,11 @@
       label: analytics.title,
       icon: ChartNoAxesCombined,
     },
+    {
+      href: `${detailBase}/conversions`,
+      label: analytics.conversions,
+      icon: Target,
+    },
     { href: `${detailBase}/qr`, label: protection.qr, icon: QrCode },
     { href: `${detailBase}/protection`, label: protection.title, icon: Shield },
   ]);
@@ -56,13 +62,15 @@
             ? m.create
             : currentPath.endsWith('/analytics')
               ? analytics.linkTitle
-              : currentPath.endsWith('/qr')
-                ? protection.qr
-                : currentPath.endsWith('/protection')
-                  ? protection.title
-                  : isDetail
-                    ? m.edit
-                    : m.links}
+              : currentPath.endsWith('/conversions')
+                ? analytics.conversions
+                : currentPath.endsWith('/qr')
+                  ? protection.qr
+                  : currentPath.endsWith('/protection')
+                    ? protection.title
+                    : isDetail
+                      ? m.edit
+                      : m.links}
         </h1>
         {#if data.linkContext}
           <p class="break-words text-sm">
@@ -98,11 +106,6 @@
             />{tab.label}
           </a>
         {/each}
-        <a
-          href={`/admin/conversions?linkId=${encodeURIComponent(detailId ?? '')}`}
-        >
-          {analytics.conversions}
-        </a>
       </nav>
     {/if}
   </header>

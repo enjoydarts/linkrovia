@@ -87,40 +87,46 @@
     </a>
   </nav>
   <div class="dashboard-content">
-    <section class="analytics" aria-labelledby="analytics-heading">
-      <div class="recent-heading">
+    <section class="analytics card" aria-labelledby="analytics-heading">
+      <div class="section-heading">
         <h2 id="analytics-heading">{analytics.title}</h2>
         <a href="/admin/analytics">
           {labels[4]} <span aria-hidden="true">→</span>
         </a>
       </div>
       {#if data.report}
-        <div class="analytics-panel">
+        <div class="metric-header">
+          <div>
+            <p class="metric-label">{analytics.clicks}</p>
+            <p class="click-count">
+              {data.report.totalClicks?.toLocaleString(data.locale) ?? '—'}
+            </p>
+          </div>
           <p class="period">
-            {labels[0]} · {data.report.meta.from} – {data.report.meta.to} · {analytics.timezone}:
-            {data.report.meta
+            {labels[0]}<br />{data.report.meta.from} – {data.report.meta.to}
+          </p>
+        </div>
+        <div class="chart-heading">
+          <h3>{analytics.daily}</h3>
+          <span>
+            {analytics.timezone}: {data.report.meta
               .timezone}{#if data.report.meta.dateBasis === 'UTC' && data.report.meta.timezone !== 'UTC'}
               · UTC{/if}
-          </p>
-          <p class="click-metric">
-            <strong class="click-count">
-              {data.report.totalClicks?.toLocaleString(data.locale) ?? '—'}
-            </strong>
-            {analytics.clicks}
-          </p>
-          <p class="period">
+          </span>
+        </div>
+        <ReportChart
+          kind="line"
+          labels={data.report.series.map((row) => row.date)}
+          values={data.report.series.map((row) => row.clicks)}
+          label={analytics.clicks}
+        />
+        <div class="chart-footer">
+          <p>
             {data.report.meta.source === 'analytics-engine'
               ? labels[3]
               : analytics.sample}{#if data.report.meta.estimated}
               · {analytics.estimated}{/if}
           </p>
-          <h3>{analytics.daily}</h3>
-          <ReportChart
-            kind="line"
-            labels={data.report.series.map((row) => row.date)}
-            values={data.report.series.map((row) => row.clicks)}
-            label={analytics.clicks}
-          />
           <details>
             <summary>{analytics.daily}</summary>
             <table>
@@ -130,19 +136,38 @@
                     {analytics.clicks}
                   </th>
                 </tr>
-              </thead><tbody>
-                {#each data.report.series as row (row.date)}<tr>
+              </thead>
+              <tbody>
+                {#each data.report.series as row (row.date)}
+                  <tr>
                     <th scope="row">{row.date}</th><td>
                       {row.clicks?.toLocaleString(data.locale) ?? '—'}
                     </td>
-                  </tr>{/each}
+                  </tr>
+                {/each}
               </tbody>
             </table>
           </details>
-          <h3>{labels[1]}</h3>
+        </div>
+      {:else}
+        <p class="empty" role="status">
+          {labels[2]} · <a href="/admin/analytics">{labels[4]}</a>
+        </p>
+      {/if}
+    </section>
+    <div class="link-cards">
+      {#if data.report}
+        <section class="card link-card" aria-labelledby="popular-heading">
+          <div class="section-heading">
+            <h2 id="popular-heading">{labels[1]}</h2>
+            <a href="/admin/analytics">
+              {labels[4]} <span aria-hidden="true">→</span>
+            </a>
+          </div>
           {#if data.popularLinks.length}
             <ul class="popular">
-              {#each data.popularLinks as link (link.key)}<li>
+              {#each data.popularLinks as link (link.key)}
+                <li>
                   <span>
                     {#if link.id}<a href={`/admin/links/${link.id}/analytics`}>
                         {link.title || link.url}
@@ -150,39 +175,36 @@
                   </span><strong>
                     {link.clicks.toLocaleString(data.locale)}
                   </strong>
-                </li>{/each}
+                </li>
+              {/each}
             </ul>
-          {:else}<p>{analytics.empty}</p>{/if}
-        </div>
-      {:else}<p role="status">
-          {labels[2]} · <a href="/admin/analytics">{labels[4]}</a>
-        </p>{/if}
-    </section>
-    <section class="recent" aria-labelledby="recent-links">
-      <div class="recent-heading">
-        <h2 id="recent-links">{messages['admin.recent']}</h2>
-        <a href="/admin/links">
-          {links.links} <span aria-hidden="true">→</span>
-        </a>
-      </div>
-      {#if data.recentLinks.length}
-        <ul>
-          {#each data.recentLinks as link (link.id)}
-            <li>
-              <a class="recent-item" href={`/admin/links/${link.id}`}>
-                {#if link.title}<strong>{link.title}</strong>{/if}
-                <span>{link.shortUrl.replace(/^https?:\/\//, '')}</span>
-              </a>
-              <span class:enabled={link.isActive} class="state-indicator">
-                {link.isActive ? links.active : links.inactive}
-              </span>
-            </li>
-          {/each}
-        </ul>
-      {:else}
-        <p>{links.empty}</p>
+          {:else}<p class="empty">{analytics.empty}</p>{/if}
+        </section>
       {/if}
-    </section>
+      <section class="card link-card recent" aria-labelledby="recent-links">
+        <div class="section-heading">
+          <h2 id="recent-links">{messages['admin.recent']}</h2>
+          <a href="/admin/links">
+            {links.links} <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        {#if data.recentLinks.length}
+          <ul>
+            {#each data.recentLinks as link (link.id)}
+              <li>
+                <a class="recent-item" href={`/admin/links/${link.id}`}>
+                  {#if link.title}<strong>{link.title}</strong>{/if}
+                  <span>{link.shortUrl.replace(/^https?:\/\//, '')}</span>
+                </a>
+                <span class:enabled={link.isActive} class="state-indicator">
+                  {link.isActive ? links.active : links.inactive}
+                </span>
+              </li>
+            {/each}
+          </ul>
+        {:else}<p class="empty">{links.empty}</p>{/if}
+      </section>
+    </div>
   </div>
 </div>
 
@@ -196,7 +218,7 @@
     flex-wrap: wrap;
     gap: 1rem;
     justify-content: space-between;
-    margin-bottom: 0.9rem;
+    margin-bottom: 1rem;
   }
   h1 {
     font-size: clamp(30px, 4vw, 40px);
@@ -221,54 +243,119 @@
   }
   .overview-shortcuts {
     display: flex;
-    gap: 1.25rem;
-    border-bottom: 1px solid var(--ui-border);
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
-  .click-metric {
-    margin-block: 0.45rem;
+  .workspace-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    color: var(--ui-text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
   }
-
+  .workspace-link:hover {
+    color: var(--ui-primary);
+    background: var(--ui-surface);
+  }
   .dashboard-content {
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
     align-items: start;
-    gap: 24px;
-    margin-top: 1.65rem;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
   }
-  .analytics-panel {
-    padding: 1.5rem;
+  .card {
+    min-width: 0;
     border: 1px solid var(--ui-border);
     border-radius: 0.9rem;
     background: var(--ui-surface);
   }
-  .analytics-panel h3 {
-    margin-top: 1.5rem;
-    font-size: 1rem;
+  .analytics {
+    padding: 1.4rem;
   }
-  .period {
-    color: var(--ui-text-muted);
-    font-size: 0.85rem;
-    margin: 0.4rem 0;
-  }
-  .click-count {
-    font-size: 2rem;
-  }
-  .popular {
-    margin-top: 0.75rem;
-  }
-  .popular li {
+  .section-heading {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.65rem 0;
+  }
+  .section-heading h2 {
+    font-size: 1.05rem;
+    font-weight: 680;
+    letter-spacing: -0.02em;
+  }
+  .section-heading > a {
+    color: var(--ui-text-muted);
+    font-size: 0.82rem;
+    font-weight: 610;
+    text-align: right;
+  }
+  .section-heading > a:hover {
+    color: var(--ui-primary);
+  }
+  .metric-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 2rem 0 1.5rem;
+  }
+  .metric-label,
+  .period,
+  .chart-heading span,
+  .chart-footer,
+  .empty {
+    color: var(--ui-text-muted);
+    font-size: 0.83rem;
+  }
+  .metric-label {
+    font-weight: 600;
+  }
+  .click-count {
+    margin-top: 0.2rem;
+    font-size: clamp(2.75rem, 5vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.055em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .period {
+    text-align: right;
+    line-height: 1.6;
+  }
+  .chart-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-top: 1.15rem;
     border-top: 1px solid var(--ui-border);
-    overflow-wrap: anywhere;
+  }
+  .chart-heading h3 {
+    font-size: 0.9rem;
+    font-weight: 650;
+  }
+  .chart-footer {
+    border-top: 1px solid var(--ui-border);
+    padding-top: 0.85rem;
+    line-height: 1.5;
   }
   details {
-    margin-top: 1rem;
+    margin-top: 0.6rem;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: 600;
   }
   table {
     width: 100%;
+    margin-top: 0.6rem;
     text-align: left;
     border-collapse: collapse;
   }
@@ -277,51 +364,42 @@
     padding: 0.4rem;
     border-bottom: 1px solid var(--ui-border);
   }
-  .recent {
-    min-width: 0;
+  .link-cards {
+    display: grid;
+    gap: 1.25rem;
   }
-  .recent-heading {
+  .link-card {
+    padding: 1.25rem;
+  }
+  .link-card ul {
+    margin-top: 1rem;
+  }
+  .link-card li {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.85rem;
-  }
-  .recent-heading h2 {
-    font-size: 1.21rem;
-    font-weight: 680;
-    letter-spacing: -0.025em;
-  }
-  .recent-heading > a {
-    color: var(--ui-text-muted);
-    font-weight: 610;
-    font-size: 0.86rem;
-    white-space: nowrap;
-  }
-  .recent ul {
-    overflow: hidden;
-    border: 1px solid var(--ui-border);
-    border-radius: 0.9rem;
-    background: var(--ui-surface);
-  }
-  .recent li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.82rem 1.05rem;
-  }
-  .recent li + li {
+    min-height: 3.25rem;
+    padding: 0.75rem 0;
     border-top: 1px solid var(--ui-border);
+  }
+  .popular li span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .popular li a:hover,
+  .recent-item:hover {
+    text-decoration: underline;
+  }
+  .popular li strong {
+    flex: none;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
   }
   .recent-item {
     min-width: 0;
     display: grid;
     gap: 0.2rem;
-  }
-  .recent-item:hover strong,
-  .recent-item:hover span {
-    text-decoration: underline;
   }
   .recent-item span {
     overflow-wrap: anywhere;
@@ -340,12 +418,30 @@
     color: var(--ui-positive);
     background: var(--ui-accent-surface);
   }
-  @media (max-width: 1050px) {
+  .empty {
+    margin-top: 1rem;
+  }
+  @media (max-width: 1000px) {
     .dashboard-content {
       grid-template-columns: 1fr;
     }
+    .link-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
-  .recent > p {
-    color: var(--ui-text-muted);
+  @media (max-width: 650px) {
+    .link-cards {
+      grid-template-columns: 1fr;
+    }
+    .analytics,
+    .link-card {
+      padding: 1.1rem;
+    }
+    .metric-header {
+      margin-block: 1.5rem;
+    }
+    .period {
+      text-align: left;
+    }
   }
 </style>

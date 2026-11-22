@@ -133,6 +133,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         page.getByRole('heading', { name: 'Daily clicks' }),
       ).toBeVisible();
       await expect(page.locator('canvas')).toHaveCount(2);
+      await page.getByText('Clicks by date table', { exact: true }).click();
       await expect(page.locator('table').first()).toBeVisible();
       const clicks = await page.locator('.count').innerText();
       expect(Number(clicks.replaceAll(',', ''))).toBeGreaterThan(0);
@@ -221,17 +222,60 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         page.getByRole('link', { name: 'Export CSV' }),
       ).toHaveAttribute('href', /range=all/);
 
-      await page.goto(
-        `/admin/conversions?linkId=${encodeURIComponent(linkId)}`,
-      );
+      const reportTabs = page.getByRole('navigation', {
+        name: 'Analytics',
+        exact: true,
+      });
+      await reportTabs
+        .getByRole('link', { name: 'Conversions', exact: true })
+        .click();
+      await expect(page).toHaveURL('/admin/analytics/conversions');
+      await expect(
+        page.locator('.sidebar a[href="/admin/analytics"]'),
+      ).toHaveAttribute('aria-current', 'location');
+      await expect(
+        reportTabs.getByRole('link', { name: 'Conversions', exact: true }),
+      ).toHaveAttribute('aria-current', 'page');
+      await reportTabs
+        .getByRole('link', { name: 'Clicks', exact: true })
+        .click();
+      await expect(page).toHaveURL('/admin/analytics');
+
+      await page.goto(`${linkPage}/analytics`, { waitUntil: 'networkidle' });
+      await linkTabs
+        .getByRole('link', { name: 'Conversions', exact: true })
+        .click();
+      await expect(page).toHaveURL(`${linkPage}/conversions`);
       await expect(
         page.getByRole('heading', { name: 'Conversions' }),
       ).toBeVisible();
+      await expect(
+        page.getByText('A fixture link', { exact: true }),
+      ).toBeVisible();
+      await expect(
+        linkTabs.getByRole('link', { name: 'Conversions', exact: true }),
+      ).toHaveAttribute('aria-current', 'page');
+      const legacy = await context.request.get(
+        `/admin/conversions?linkId=${encodeURIComponent(linkId)}`,
+        { maxRedirects: 0 },
+      );
+      expect(legacy.status()).toBe(303);
+      expect(legacy.headers().location).toBe(
+        `/admin/links/${linkId}/conversions`,
+      );
+      const legacyOverview = await context.request.get('/admin/conversions', {
+        maxRedirects: 0,
+      });
+      expect(legacyOverview.status()).toBe(303);
+      expect(legacyOverview.headers().location).toBe(
+        '/admin/analytics/conversions',
+      );
       const goal = page.locator('form[action="?/create"]');
       await goal.locator('[name=name]').fill('Purchase');
       await goal.locator('[name=eventName]').fill('purchase');
-      await goal.locator('[name=linkId]').selectOption(linkId);
+      await expect(goal.locator('[name=linkId]')).toHaveCount(0);
       await goal.getByRole('button', { name: 'Create goal' }).click();
+      await expect(page).toHaveURL(`${linkPage}/conversions?saved=created`);
       await expect(page.getByRole('status')).toContainText('Changes saved.');
       await expect(
         page.getByRole('heading', { name: 'Purchase' }),
@@ -269,6 +313,26 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(
       recentLink.getByText('Inactive', { exact: true }),
     ).toBeVisible();
+  });
+
+  await test.step('searches the link list and uses its row actions', async () => {
+    await page.goto('/admin/links', { waitUntil: 'networkidle' });
+    const toolbar = page.getByRole('search', { name: 'Search links' });
+    await toolbar.getByRole('searchbox').fill('fixture link');
+    await toolbar.getByRole('button', { name: 'Search', exact: true }).click();
+    await expect(page).toHaveURL(/\/admin\/links\?q=fixture\+link/);
+    const row = page.getByRole('listitem').filter({
+      has: page.getByRole('link', { name: 'A fixture link', exact: true }),
+    });
+    await expect(row).toHaveCount(1);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await row.getByRole('button', { name: /Copy short URL/ }).click();
+    await expect(page.getByRole('status')).toHaveText('Short URL copied.');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      new URL('/ci-link', page.url()).href,
+    );
+    await row.getByRole('link', { name: /Link analytics/ }).click();
+    await expect(page).toHaveURL(/\/admin\/links\/[^/]+\/analytics$/);
   });
 
   await test.step('queue a missing click day as the owner', async () => {
@@ -838,6 +902,17 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await drawer.getByRole('link', { name: 'Links', exact: true }).click();
       await expect(page).toHaveURL('/admin/links');
       await expect(drawer).not.toBeVisible();
+      await page.waitForLoadState('networkidle');
+      await menu.click();
+      await expect(drawer.locator('a[aria-current]')).toHaveCount(1);
+      await expect(
+        drawer.getByRole('link', { name: 'Links', exact: true }),
+      ).toHaveAttribute('aria-current', 'page');
+      await page.keyboard.press('Escape');
+      await page.locator('label[for="list-filters-toggle"]').click();
+      await expect(
+        page.getByRole('combobox', { name: 'Status', exact: true }),
+      ).toBeVisible();
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth),
       ).toBe(360);

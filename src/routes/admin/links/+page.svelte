@@ -1,9 +1,28 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
+  import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+  import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined';
+  import Check from '@lucide/svelte/icons/check';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Link2 from '@lucide/svelte/icons/link-2';
+  import Search from '@lucide/svelte/icons/search';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import { brand } from '$lib/brand';
+  import { analyticsMessages } from '$lib/components/analytics/messages';
   import { linkMessages } from '$lib/i18n/links';
+  import { listMessages } from './messages';
   import type { PageProps } from './$types';
+
   let { data }: PageProps = $props();
   let m = $derived(linkMessages(data.locale));
+  let copy = $derived(listMessages[data.locale]);
+  let analytics = $derived(analyticsMessages(data.locale));
+  let hasFilters = $derived(Object.values(data.filters).some(Boolean));
+  let canCopy = $state(false);
+  let copyResult = $state<{ id: string; url: string; success: boolean } | null>(
+    null,
+  );
   let dateTime = $derived(
     new Intl.DateTimeFormat(data.locale, {
       dateStyle: 'medium',
@@ -11,144 +30,517 @@
       timeZone: data.timeZone,
     }),
   );
-  function nextPage(cursor: string) {
+
+  onMount(() => {
+    canCopy = typeof navigator.clipboard?.writeText === 'function';
+  });
+
+  function filterHref(options: { tag?: string; cursor?: string }) {
     const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(data.filters))
+    for (const [key, value] of Object.entries({ ...data.filters, ...options }))
       if (value) params.set(key, value);
-    params.set('cursor', cursor);
     return `?${params}`;
+  }
+
+  async function copyUrl(id: string, url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      copyResult = { id, url, success: true };
+    } catch {
+      copyResult = { id, url, success: false };
+    }
   }
 </script>
 
 <svelte:head><title>{m.links} · {brand.name}</title></svelte:head>
-<div class="space-y-6">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <p class="text-sm text-muted">{m.searchLinks}</p>
-    <a
-      href="/admin/domains"
-      class="text-sm font-medium text-link hover:underline"
-    >
-      {m.domains} →
-    </a>
-  </div>
-  <form
-    method="GET"
-    class="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5"
-  >
-    <div class="space-y-1">
-      <label for="q" class="block text-sm font-medium">
-        {m.searchLinks}
-      </label><input
-        id="q"
+
+<section class="link-library" aria-label={m.links}>
+  <form method="GET" role="search" class="toolbar" aria-label={m.searchLinks}>
+    <label for="link-search" class="sr-only">{m.searchLinks}</label>
+    <div class="search-box">
+      <Search size={18} aria-hidden="true" />
+      <input
+        id="link-search"
         name="q"
+        type="search"
         value={data.filters.q}
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
+        placeholder={m.searchLinks}
       />
     </div>
-    <div class="space-y-1">
-      <label for="domain" class="block text-sm font-medium">
-        {m.domain}
-      </label><select
-        id="domain"
-        name="domain"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
-      >
-        <option value="">
-          {m.allDomains}
-        </option>{#each data.domains as domain (domain.id)}<option
-            value={domain.id}
-            selected={data.filters.domain === domain.id}
+    <button type="submit" class="apply">{m.search}</button>
+    <input
+      class="filter-control"
+      id="list-filters-toggle"
+      type="checkbox"
+      aria-controls="list-filters"
+    />
+    <label for="list-filters-toggle" class="filter-toggle">
+      <SlidersHorizontal size={16} aria-hidden="true" />{m.filter}
+    </label>
+    <div id="list-filters" class="filters">
+      <label>
+        <span class="sr-only">{m.domain}</span>
+        <select name="domain">
+          <option value="">{m.allDomains}</option>
+          {#each data.domains as domain (domain.id)}
+            <option
+              value={domain.id}
+              selected={data.filters.domain === domain.id}
+            >
+              {domain.hostname}
+            </option>
+          {/each}
+        </select>
+      </label>
+      <label>
+        <span class="sr-only">{m.status}</span>
+        <select name="status">
+          <option value="">{m.allStatuses}</option>
+          <option value="active" selected={data.filters.status === 'active'}>
+            {m.active}
+          </option>
+          <option
+            value="inactive"
+            selected={data.filters.status === 'inactive'}
           >
-            {domain.hostname}
-          </option>{/each}
-      </select>
+            {m.inactive}
+          </option>
+        </select>
+      </label>
+      <label>
+        <span class="sr-only">{m.tag}</span>
+        <input name="tag" value={data.filters.tag} placeholder={m.tag} />
+      </label>
+      <button class="apply-compact" type="submit">{m.filter}</button>
     </div>
-    <div class="space-y-1">
-      <label for="tag" class="block text-sm font-medium">{m.tag}</label><input
-        id="tag"
-        name="tag"
-        value={data.filters.tag}
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
-      />
-    </div>
-    <div class="space-y-1">
-      <label for="status" class="block text-sm font-medium">
-        {m.status}
-      </label><select
-        id="status"
-        name="status"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
-      >
-        <option value="">{m.allStatuses}</option><option
-          value="active"
-          selected={data.filters.status === 'active'}
-        >
-          {m.active}
-        </option><option
-          value="inactive"
-          selected={data.filters.status === 'inactive'}
-        >
-          {m.inactive}
-        </option>
-      </select>
-    </div>
-    <button
-      type="submit"
-      class="self-end rounded-md border border-control px-4 py-2 font-medium"
-    >
-      {m.filter}
-    </button>
+    {#if hasFilters}<a class="clear-filters" href="/admin/links">
+        {copy.clear}
+      </a>{/if}
   </form>
-  {#if data.links.length === 0}<p>{m.empty}</p>{:else}<ul
-      class="divide-y divide-line rounded-xl border border-line bg-surface"
-    >
-      {#each data.links as link (link.id)}<li class="space-y-2 p-4">
-          <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <a
-              href="/admin/links/{encodeURIComponent(link.id)}"
-              class="min-w-0 truncate font-semibold text-link underline underline-offset-4"
-              title={link.title || link.shortUrl}
-            >
-              {link.title || link.shortUrl}
-            </a><span
-              class="rounded-full px-2.5 py-1 text-xs font-medium"
-              class:bg-accent-surface={link.isActive}
-              class:text-positive={link.isActive}
-              class:bg-canvas={!link.isActive}
-              class:text-muted={!link.isActive}
-            >
-              {link.isActive ? m.active : m.inactive}
+
+  {#if copyResult}
+    <p class="copy-feedback" role="status">
+      {copyResult.success ? copy.copied : copy.copyError}
+      {#if !copyResult.success}<code>{copyResult.url}</code>{/if}
+    </p>
+  {/if}
+
+  {#if data.links.length === 0}
+    <div class="empty">
+      <Link2 size={24} aria-hidden="true" />
+      <p>{m.empty}</p>
+      {#if !hasFilters}
+        <a class="workspace-link" href="/admin/links/new">
+          {m.create}
+          <ArrowRight size={16} aria-hidden="true" />
+        </a>
+      {/if}
+    </div>
+  {:else}
+    <div class="column-labels" aria-hidden="true">
+      <span>{m.shortUrl}</span><span>{m.destination}</span><span>
+        {m.status}
+      </span><span></span>
+    </div>
+    <ul class="link-rows">
+      {#each data.links as link (link.id)}
+        {@const linkPage = `/admin/links/${encodeURIComponent(link.id)}`}
+        {@const linkLabel = link.title || link.shortUrl}
+        <li class="link-row">
+          <div class="identity">
+            <span class="link-icon">
+              <Link2 size={17} aria-hidden="true" />
+            </span>
+            <div class="link-title">
+              <a href={linkPage}>{linkLabel}</a>
+              {#if link.title}<code title={link.shortUrl}>
+                  {link.shortUrl}
+                </code>{/if}
+            </div>
+          </div>
+          <div class="destination" title={link.destinationUrl}>
+            <ArrowUpRight size={14} aria-hidden="true" /><span>
+              {link.destinationUrl}
             </span>
           </div>
-          <p class="truncate text-sm" title={link.shortUrl}>
-            {m.shortUrl}: {link.shortUrl}
-          </p>
-          <p class="truncate text-sm text-muted" title={link.destinationUrl}>
-            {m.destination}: {link.destinationUrl}
-          </p>
-          {#if link.startsAt !== null}<p class="text-sm">
-              {m.startsAt}:
-              <time datetime={new Date(link.startsAt * 1000).toISOString()}>
-                {dateTime.format(link.startsAt * 1000)}
-              </time>
-              ({data.timeZone})
-            </p>{/if}
-          {#if link.expiresAt !== null}<p class="text-sm">
-              {m.expiresAt}:
-              <time datetime={new Date(link.expiresAt * 1000).toISOString()}>
-                {dateTime.format(link.expiresAt * 1000)}
-              </time>
-              ({data.timeZone})
-            </p>{/if}
-          {#if link.tags.length}<p class="text-sm">
-              {m.tags}: {link.tags.join(', ')}
-            </p>{/if}
-        </li>{/each}
-    </ul>{/if}
-  {#if data.nextCursor}<a
-      href={nextPage(data.nextCursor)}
-      class="inline-block text-link underline"
-    >
-      {m.next} →
-    </a>{/if}
-</div>
+          <span class={['status', { enabled: link.isActive }]}>
+            {link.isActive ? m.active : m.inactive}
+          </span>
+          <div class="row-actions">
+            {#if canCopy}
+              <button
+                type="button"
+                title={copy.copy}
+                aria-label={`${copy.copy} · ${linkLabel}`}
+                onclick={() => copyUrl(link.id, link.shortUrl)}
+              >
+                {#if copyResult?.id === link.id && copyResult.success}<Check
+                    size={17}
+                    aria-hidden="true"
+                  />{:else}<Copy size={17} aria-hidden="true" />{/if}
+              </button>
+            {/if}
+            <a
+              href={`${linkPage}/analytics`}
+              title={analytics.linkTitle}
+              aria-label={`${analytics.linkTitle} · ${linkLabel}`}
+            >
+              <ChartNoAxesCombined size={18} aria-hidden="true" />
+            </a>
+          </div>
+          {#if link.startsAt !== null || link.expiresAt !== null || link.tags.length}
+            <div class="metadata">
+              {#if link.startsAt !== null}
+                <span>
+                  {m.startsAt}
+                  <time datetime={new Date(link.startsAt * 1000).toISOString()}>
+                    {dateTime.format(link.startsAt * 1000)}
+                  </time>
+                  ({data.timeZone})
+                </span>
+              {/if}
+              {#if link.expiresAt !== null}
+                <span>
+                  {m.expiresAt}
+                  <time
+                    datetime={new Date(link.expiresAt * 1000).toISOString()}
+                  >
+                    {dateTime.format(link.expiresAt * 1000)}
+                  </time>
+                  ({data.timeZone})
+                </span>
+              {/if}
+              {#each link.tags as tag (tag)}
+                <a
+                  class="tag"
+                  href={filterHref({ tag })}
+                  aria-label={`${m.tag} · ${tag}`}
+                >
+                  {tag}
+                </a>
+              {/each}
+            </div>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  {/if}
+  {#if data.nextCursor}
+    <footer class="results-footer">
+      <a href={filterHref({ cursor: data.nextCursor })} class="workspace-link">
+        {m.next}
+        <ArrowRight size={16} aria-hidden="true" />
+      </a>
+    </footer>
+  {/if}
+</section>
+
+<style>
+  .link-library {
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-surface);
+    --row-columns: minmax(0, 1.45fr) minmax(0, 1fr) 7rem 6rem;
+  }
+  .toolbar {
+    display: grid;
+    grid-template-columns: minmax(9rem, 1.4fr) minmax(12rem, 1.5fr) auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: clamp(0.75rem, 2vw, 1.2rem);
+    border-bottom: 1px solid var(--ui-border);
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    position: relative;
+    color: var(--ui-text-muted);
+  }
+  .search-box :global(svg) {
+    position: absolute;
+    inset-inline-start: 0.7rem;
+    pointer-events: none;
+  }
+  .toolbar input:not([type='checkbox']),
+  .toolbar select {
+    width: 100%;
+    border: 1px solid var(--ui-control-border);
+    padding: 0.55rem 0.65rem;
+    color: var(--ui-text);
+    font-size: 0.86rem;
+  }
+  .toolbar input[type='search'] {
+    padding-inline-start: 2.4rem;
+  }
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.67rem;
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .apply,
+  .apply-compact,
+  .filter-toggle {
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid transparent;
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-accent-surface);
+    color: var(--ui-link);
+    font-size: 0.86rem;
+    font-weight: 640;
+    white-space: nowrap;
+  }
+  .apply {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .filter-control,
+  .filter-toggle,
+  .apply-compact {
+    display: none;
+  }
+  .clear-filters {
+    grid-column: 1 / -1;
+    justify-self: start;
+    color: var(--ui-link);
+    font-size: 0.82rem;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .column-labels,
+  .link-row {
+    display: grid;
+    grid-template-columns: var(--row-columns);
+    gap: 0.7rem 1rem;
+    align-items: center;
+    padding: 0.75rem clamp(0.75rem, 2vw, 1.2rem);
+  }
+  .column-labels {
+    color: var(--ui-text-muted);
+    font-size: 0.78rem;
+    font-weight: 640;
+    background: var(--ui-background);
+  }
+  .link-row {
+    border-top: 1px solid var(--ui-border);
+  }
+  .identity {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 0.7rem;
+  }
+  .link-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    min-height: 36px;
+    border-radius: 9px;
+    background: var(--ui-accent-surface);
+    color: var(--ui-link);
+  }
+  .link-title {
+    display: grid;
+    min-width: 0;
+    gap: 0.18rem;
+  }
+  .link-title a {
+    min-width: 0;
+    font-size: 0.92rem;
+    font-weight: 670;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+  }
+  .link-title a:hover {
+    color: var(--ui-link);
+    text-decoration: underline;
+  }
+  .link-title code {
+    font-family: var(--ui-mono);
+    font-size: 0.74rem;
+    color: var(--ui-text-muted);
+    overflow-wrap: anywhere;
+  }
+  .destination {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 0.4rem;
+    color: var(--ui-text-muted);
+    font-size: 0.8rem;
+  }
+  .destination :global(svg) {
+    flex: none;
+  }
+  .destination span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .status {
+    display: inline-flex;
+    justify-self: start;
+    align-items: center;
+    gap: 0.42rem;
+    border-radius: 20px;
+    padding: 0.25rem 0.65rem;
+    background: var(--ui-background);
+    color: var(--ui-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .status.enabled {
+    color: var(--ui-positive);
+    background: var(--ui-accent-surface);
+  }
+  .row-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .row-actions a,
+  .row-actions button {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--ui-radius-sm);
+    color: var(--ui-text-muted);
+  }
+  .row-actions a:hover,
+  .row-actions button:hover {
+    color: var(--ui-link);
+    background: var(--ui-accent-surface);
+  }
+  .metadata {
+    grid-column: 1 / -1;
+    padding-inline-start: 2.95rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.65rem;
+    color: var(--ui-text-muted);
+    font-size: 0.76rem;
+  }
+  .tag {
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    background: var(--ui-background);
+    color: var(--ui-link);
+    overflow-wrap: anywhere;
+  }
+  .tag:hover {
+    text-decoration: underline;
+  }
+  .copy-feedback {
+    padding: 0.65rem 1.2rem;
+    color: var(--ui-link);
+    font-size: 0.84rem;
+  }
+  .copy-feedback code {
+    overflow-wrap: anywhere;
+  }
+  .empty {
+    display: grid;
+    justify-items: center;
+    gap: 0.55rem;
+    padding: 2.75rem 1rem;
+    color: var(--ui-text-muted);
+  }
+  .empty :global(svg) {
+    color: var(--ui-link);
+  }
+  .results-footer {
+    padding: 0.65rem 1.2rem;
+    border-top: 1px solid var(--ui-border);
+    text-align: end;
+  }
+
+  @media (max-width: 1090px) {
+    .link-library {
+      --row-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) auto auto;
+    }
+  }
+  @media (max-width: 940px) {
+    .toolbar {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .apply {
+      grid-column: 2;
+    }
+    .filters {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+  }
+  @media (max-width: 660px) {
+    .column-labels {
+      display: none;
+    }
+    .link-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.55rem;
+    }
+    .identity {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .status {
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: end;
+    }
+    .destination {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .row-actions {
+      grid-column: 2;
+      grid-row: 2;
+    }
+    .metadata {
+      padding-inline-start: 0;
+    }
+    .link-icon {
+      flex-basis: 30px;
+      min-height: 30px;
+    }
+    .filter-control {
+      position: absolute;
+      display: block;
+      width: 1px;
+      height: 1px;
+      clip-path: inset(50%);
+    }
+    .filter-toggle {
+      display: inline-flex;
+      justify-self: start;
+      align-items: center;
+      gap: 0.45rem;
+      cursor: pointer;
+    }
+    .filter-control:focus-visible + .filter-toggle {
+      outline: 2px solid var(--ui-focus);
+      outline-offset: 2px;
+    }
+    .filter-control:not(:checked) ~ .filters {
+      display: none;
+    }
+    .filters {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .apply-compact {
+      display: block;
+    }
+  }
+</style>

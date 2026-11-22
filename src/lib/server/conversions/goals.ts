@@ -68,12 +68,14 @@ export function parseGoal(value: unknown): GoalInput | null {
   };
 }
 
-export async function listGoals(db: D1Database) {
+export async function listGoals(db: D1Database, linkId?: string) {
   const { results } = await db
     .prepare(
       `SELECT ${fields} FROM conversion_goals
-    WHERE backup_archived_at IS NULL ORDER BY name COLLATE NOCASE, id LIMIT 100`,
+    WHERE backup_archived_at IS NULL AND (?1 IS NULL OR link_id = ?1)
+    ORDER BY name COLLATE NOCASE, id LIMIT 100`,
     )
+    .bind(linkId ?? null)
     .all<GoalRow>();
   return results.map(asGoal);
 }
@@ -141,14 +143,14 @@ export async function saveGoal(
   return row ? asGoal(row) : null;
 }
 
-export async function archiveGoal(db: D1Database, id: string) {
+export async function archiveGoal(db: D1Database, id: string, linkId?: string) {
   return (
     (await db
       .prepare(
         `UPDATE conversion_goals SET backup_archived_at = unixepoch(), is_active = 0
-    WHERE id = ? AND backup_archived_at IS NULL RETURNING id`,
+    WHERE id = ?1 AND backup_archived_at IS NULL AND (?2 IS NULL OR link_id = ?2) RETURNING id`,
       )
-      .bind(id)
+      .bind(id, linkId ?? null)
       .first('id')) !== null
   );
 }
