@@ -23,39 +23,34 @@
 >
   {#snippet repair()}
     {#if data.repair}
-      <details
-        class="workspace-panel"
-        open={!!(
-          data.repair.latestRequest ||
-          data.repair.missingDates.length ||
-          form
-        )}
-      >
-        <summary>{m.title}</summary>
-        <p>{m.help}</p>
-        {#if data.repair.missingDates.length}
-          <p>{m.missing}</p>
-          <ul class="dates">
-            {#each data.repair.missingDates as date (date)}
-              <li><time datetime={date}>{date}</time></li>
-            {/each}
-          </ul>
-        {/if}
-        <form method="POST">
-          <input type="hidden" name="csrfToken" value={data.csrfToken} />
-          <label>
-            {m.day}
-            <input
-              type="date"
-              name="date"
-              min={data.repair.earliest}
-              max={data.repair.latest}
-              value={form?.date ?? data.repair.missingDates[0] ?? ''}
-              required
-            />
-          </label>
-          <button type="submit">{m.submit}</button>
-        </form>
+      <section class="workspace-panel repair" aria-label={m.title}>
+        <details>
+          <summary>{m.title}</summary>
+          <p>{m.help}</p>
+          {#if data.repair.missingDates.length}
+            <p>{m.missing}</p>
+            <ul class="dates">
+              {#each data.repair.missingDates as date (date)}
+                <li><time datetime={date}>{date}</time></li>
+              {/each}
+            </ul>
+          {/if}
+          <form method="POST">
+            <input type="hidden" name="csrfToken" value={data.csrfToken} />
+            <label>
+              {m.day}
+              <input
+                type="date"
+                name="date"
+                min={data.repair.earliest}
+                max={data.repair.latest}
+                value={form?.date ?? data.repair.missingDates[0] ?? ''}
+                required
+              />
+            </label>
+            <button type="submit">{m.submit}</button>
+          </form>
+        </details>
         {#if form}
           <p role="alert">{m.submissions[form.status]}</p>
         {/if}
@@ -67,13 +62,13 @@
             · {m.states[data.repair.latestRequest.status]}
           </p>
         {/if}
-      </details>
+      </section>
     {/if}
   {/snippet}
 </Analytics>
 
 <style>
-  details {
+  .repair {
     margin-bottom: 1rem;
   }
   summary {

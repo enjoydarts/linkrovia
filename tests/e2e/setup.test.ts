@@ -272,16 +272,20 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   });
 
   await test.step('queue a missing click day as the owner', async () => {
-    const date = new Date(Date.now() - 14 * 86_400_000)
+    const analytics = '/admin/analytics?range=7d';
+    await page.goto(analytics, { waitUntil: 'networkidle' });
+    const panel = page.getByRole('region', {
+      name: 'Restore missing click history',
+    });
+    await panel.locator('summary').click({ timeout: 5000 });
+    const field = panel.getByLabel('UTC date');
+    await expect(field).toBeVisible();
+    const latestDate = await field.getAttribute('max');
+    expect(latestDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const date = new Date(Date.parse(latestDate!) - 13 * 86_400_000)
       .toISOString()
       .slice(0, 10);
-    const analytics = '/admin/analytics?range=7d';
-    await page.goto(analytics);
-    const panel = page.locator('details').filter({
-      hasText: 'Restore missing click history',
-    });
-    await panel.getByText('Restore missing click history').click();
-    await panel.getByLabel('UTC date').fill(date);
+    await field.fill(date);
 
     const rejected = await context.request.post(analytics, {
       form: { date },
@@ -289,7 +293,17 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     });
     expect(rejected.status()).toBe(403);
 
-    await panel.getByRole('button', { name: 'Request recovery' }).click();
+    await expect(field).toHaveValue(date);
+    const submitted = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/admin/analytics',
+      { timeout: 10_000 },
+    );
+    await panel
+      .getByRole('button', { name: 'Request recovery' })
+      .click({ timeout: 5000 });
+    expect((await submitted).status()).toBe(303);
     await expect(page).toHaveURL(/\/admin\/analytics\?range=7d$/);
     await expect(panel.getByRole('status')).toContainText(`${date} · Queued`);
     await page.reload();
