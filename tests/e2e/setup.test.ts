@@ -106,8 +106,11 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       .filter({ hasText: 'A fixture link' });
     await expect(recentLink.getByText('Active', { exact: true })).toBeVisible();
     await recentLink.getByRole('link', { name: /A fixture link/ }).click();
+    await expect(page).toHaveURL(/\/admin\/links\/[a-f0-9-]{36}$/);
+    await page.waitForLoadState('networkidle');
 
     await page.locator('[name=active]').uncheck();
+    const editUrl = page.url();
     await Promise.all([
       page.waitForResponse(
         (response) =>
@@ -115,8 +118,16 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
           response.url().endsWith('?/save') &&
           response.status() === 303,
       ),
+      page.waitForResponse(
+        (response) =>
+          response.url() === editUrl &&
+          response.request().isNavigationRequest() &&
+          response.request().method() === 'GET' &&
+          response.ok(),
+      ),
       linkForm.locator('button[type=submit]').click(),
     ]);
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('[name=active]')).not.toBeChecked();
     expect((await request.get('/ci-link', { maxRedirects: 0 })).status()).toBe(
       404,

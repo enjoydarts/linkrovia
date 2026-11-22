@@ -161,6 +161,7 @@
     <input
       type="checkbox"
       name="active"
+      autocomplete="off"
       checked={values?.active ?? link?.isActive ?? true}
     />{m.enabled}
   </label>
