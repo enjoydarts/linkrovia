@@ -155,7 +155,7 @@
             {m.cloudflareSteps[0]}
           </a>
         </li>
-        {#each m.cloudflareSteps.slice(1) as step}<li>{step}</li>{/each}
+        {#each m.cloudflareSteps.slice(1) as step (step)}<li>{step}</li>{/each}
       </ol>
       <p class="text-sm">{m.automatic}</p>
       <p class="text-sm">{m.externalDns}</p>

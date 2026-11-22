@@ -48,6 +48,7 @@
     ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 
   --ui-series-1: light-dark(var(--brand-route), var(--brand-signal));
+  --ui-series-area: light-dark(rgb(15 118 110 / 18%), rgb(45 212 191 / 23%));
   --ui-series-2: light-dark(var(--brand-insight), #a5b4fc);
   --ui-series-3: var(--ui-info);
   --ui-series-4: var(--ui-warning);

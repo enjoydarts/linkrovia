@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Chart as ChartInstance } from 'chart.js';
+  import type { Chart as ChartInstance, ScriptableContext } from 'chart.js';
 
   let {
     kind,
@@ -31,6 +31,7 @@
       };
       const result = {
         series: resolve('--ui-series-1'),
+        area: resolve('--ui-series-area'),
         text: resolve('--ui-text-muted'),
         border: resolve('--ui-border'),
       };
@@ -42,6 +43,7 @@
       if (cancelled) return;
       chart?.destroy();
       const color = colors();
+      const line = chartKind === 'line';
       chart = new Chart(canvas, {
         type: chartKind,
         data: {
@@ -51,10 +53,28 @@
               label: chartLabel,
               data: chartValues,
               borderColor: color.series,
-              backgroundColor: color.series,
+              backgroundColor: ({
+                chart: graph,
+              }: ScriptableContext<'line' | 'bar'>) => {
+                if (!line) return color.series;
+                const { chartArea, ctx } = graph;
+                if (!chartArea) return color.area;
+                const gradient = ctx.createLinearGradient(
+                  0,
+                  chartArea.top,
+                  0,
+                  chartArea.bottom,
+                );
+                gradient.addColorStop(0, color.area);
+                gradient.addColorStop(1, 'transparent');
+                return gradient;
+              },
               borderWidth: 2,
+              borderRadius: line ? 0 : 4,
               tension: 0.25,
-              pointRadius: chartKind === 'line' ? 2 : 0,
+              fill: line ? 'start' : false,
+              pointRadius: 0,
+              pointHoverRadius: 4,
             },
           ],
         },
@@ -62,18 +82,26 @@
           responsive: true,
           maintainAspectRatio: false,
           animation: false,
-          indexAxis: chartKind === 'bar' ? 'y' : 'x',
+          indexAxis: line ? 'x' : 'y',
+          interaction: {
+            mode: 'index',
+            intersect: false,
+            axis: line ? 'x' : 'y',
+          },
           plugins: { legend: { display: false } },
           scales: {
             x: {
-              ticks: { color: color.text },
-              grid: { color: color.border },
-              ...(chartKind === 'bar' ? { beginAtZero: true } : {}),
+              ticks: {
+                color: color.text,
+                ...(line ? { maxRotation: 0, maxTicksLimit: 6 } : {}),
+              },
+              grid: { display: !line, color: color.border },
+              ...(!line ? { beginAtZero: true } : {}),
             },
             y: {
               ticks: { color: color.text },
-              grid: { color: color.border },
-              ...(chartKind === 'line' ? { beginAtZero: true } : {}),
+              grid: { display: line, color: color.border },
+              ...(line ? { beginAtZero: true } : {}),
             },
           },
         },
