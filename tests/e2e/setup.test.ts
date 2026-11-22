@@ -180,7 +180,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       const desktop = page.viewportSize()!;
       await page.setViewportSize({ width: 390, height: 844 });
       await expect(page.getByLabel('Group by')).toBeHidden();
-      await page.getByRole('button', { name: 'Filter', exact: true }).click();
+      await page.locator('label[for="report-filters-toggle"]').click();
+      await expect(
+        page.getByRole('checkbox', { name: 'Filter', exact: true }),
+      ).toBeChecked();
       await expect(page.getByLabel('Group by')).toBeVisible();
       await page.setViewportSize(desktop);
       await expect(page.getByText('No clicks for this period.')).toBeVisible();

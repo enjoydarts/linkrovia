@@ -30,7 +30,6 @@
     repair?: Snippet;
   } = $props();
   let m = $derived(analyticsMessages(locale));
-  let filtersExpanded = $state(false);
   let archive = $derived(analyticsArchiveMessages(locale));
   let periods = $derived(analyticsPeriodMessages(locale));
   let granularity = $derived(
@@ -150,22 +149,17 @@
   {/each}
   {#if fixedRange}<a href={customDatesUrl()}>{periods.customDates}</a>{/if}
 </nav>
-<button
-  type="button"
-  class="filter-toggle"
+<input
+  id="report-filters-toggle"
+  class="filter-toggle-control"
+  type="checkbox"
   aria-controls="report-filters"
-  aria-expanded={filtersExpanded}
-  onclick={() => (filtersExpanded = !filtersExpanded)}
->
+/>
+<label for="report-filters-toggle" class="filter-toggle">
   <SlidersHorizontal size={16} aria-hidden="true" />
   {linkMessages(locale).filter}
-</button>
-<form
-  id="report-filters"
-  method="GET"
-  class="filters"
-  class:expanded={filtersExpanded}
->
+</label>
+<form id="report-filters" method="GET" class="filters">
   {#if fixedRange}
     <input type="hidden" name="range" value={filters.range} />
   {:else}
@@ -396,7 +390,8 @@
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-sm);
   }
-  .filter-toggle {
+  .filter-toggle,
+  .filter-toggle-control {
     display: none;
   }
   label {
@@ -470,19 +465,33 @@
   td {
     width: 65%;
   }
-  @media (max-width: 600px) and (scripting: enabled) {
+  @media (max-width: 600px) {
+    .filter-toggle-control {
+      display: block;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      clip-path: inset(50%);
+    }
     .filter-toggle {
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
       min-height: 40px;
       margin-bottom: 0.8rem;
+      padding: 0.6rem 1rem;
+      border-radius: var(--ui-radius-sm);
+      background: var(--ui-accent-surface);
+      color: var(--ui-link);
+      cursor: pointer;
     }
-    .filters:not(.expanded) {
+    .filter-toggle-control:focus-visible + .filter-toggle {
+      outline: 2px solid var(--ui-focus);
+      outline-offset: 3px;
+    }
+    .filter-toggle-control:not(:checked) ~ .filters {
       display: none;
     }
-  }
-  @media (max-width: 600px) {
     .filters label {
       flex: 1 1 min(125px, 100%);
     }

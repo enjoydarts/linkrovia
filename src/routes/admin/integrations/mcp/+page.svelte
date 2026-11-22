@@ -1,6 +1,7 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
   import Clipboard from '@lucide/svelte/icons/clipboard';
+  import { onMount } from 'svelte';
   import type { Locale } from '$lib/i18n/locale';
   import type { PageProps } from './$types';
   import { mcpClientConfigurations } from './clients';
@@ -12,6 +13,10 @@
     mcpClientConfigurations(data.endpoint, copy.tokenPrompt),
   );
   let copyFeedback = $state<{ id: string; copied: boolean } | null>(null);
+  let clipboardReady = $state(false);
+  onMount(() => {
+    clipboardReady = typeof navigator.clipboard?.writeText === 'function';
+  });
   const clipboard = {
     en: [
       'Copy configuration',
@@ -129,14 +134,14 @@
                 class="overflow-x-auto rounded-md border border-line bg-canvas p-3 text-sm"><code
                   >{client.configuration}</code
                 ></pre>
-              <button
-                type="button"
-                class="workspace-link text-left"
-                onclick={() =>
-                  copyConfiguration(client.id, client.configuration)}
-              >
-                <Clipboard size={15} aria-hidden="true" />{clipboardText[0]}
-              </button>
+              {#if clipboardReady}<button
+                  type="button"
+                  class="workspace-link text-left"
+                  onclick={() =>
+                    copyConfiguration(client.id, client.configuration)}
+                >
+                  <Clipboard size={15} aria-hidden="true" />{clipboardText[0]}
+                </button>{/if}
               {#if copyFeedback?.id === client.id}
                 <p class="text-sm text-muted" role="status">
                   {clipboardText[copyFeedback.copied ? 1 : 2]}
