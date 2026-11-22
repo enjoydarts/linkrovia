@@ -1,0 +1,7 @@
+{
+  "home.description": "Acortador de URL y analítica autohospedados en Cloudflare Workers.",
+  "home.status": "Linkrovia está en desarrollo.",
+  "language.label": "Idioma",
+  "language.save": "Guardar",
+  "language.invalid": "Elige un idioma disponible."
+}

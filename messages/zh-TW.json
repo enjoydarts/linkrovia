@@ -1,0 +1,7 @@
+{
+  "home.description": "在 Cloudflare Workers 上自行託管的短網址與分析工具。",
+  "home.status": "Linkrovia 正在開發中。",
+  "language.label": "語言",
+  "language.save": "儲存",
+  "language.invalid": "請選擇支援的語言。"
+}

@@ -1,0 +1,7 @@
+{
+  "home.description": "Self-hosted URL shortening and analytics on Cloudflare Workers.",
+  "home.status": "Linkrovia is in development.",
+  "language.label": "Language",
+  "language.save": "Save",
+  "language.invalid": "Choose a supported language."
+}
