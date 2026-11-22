@@ -46,6 +46,14 @@ it('creates one unpredictable stable default token under concurrency', async () 
   expect(created[0]?.token).toMatch(/^[a-f0-9]{64}$/);
   expect(new Set(created.map((item) => item?.token)).size).toBe(1);
   expect(await qrLink(db, 'l')).not.toBeNull();
-  await db.prepare("UPDATE domains SET is_active = 0 WHERE id = 'd'").run();
+  await db
+    .prepare("UPDATE domains SET connection_status = 'draft' WHERE id = 'd'")
+    .run();
   expect(await qrLink(db, 'l')).toBeNull();
+  await db
+    .prepare(
+      "INSERT INTO links(id,domain_id,slug,destination_url) VALUES('draft','d','draft','https://example.com')",
+    )
+    .run();
+  expect(await ensureDefaultQr(db, 'draft')).toBeNull();
 });

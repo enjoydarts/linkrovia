@@ -45,15 +45,28 @@
     <input type="hidden" name="updatedAt" value={data.link.updatedAt} />
     <label class="block space-y-2">
       <span class="block font-medium">{m.title}</span>
-      <select
-        name="mode"
-        value={data.link.protectionMode}
-        class="w-full rounded-md border px-3 py-2"
-      >
-        <option value="none">{m.none}</option>
-        <option value="password">{m.password}</option>
-        <option value="one_time">{m.oneTime}</option>
-        <option value="password_one_time">{m.passwordOneTime}</option>
+      <select name="mode" class="w-full rounded-md border px-3 py-2">
+        <option value="none" selected={data.link.protectionMode === 'none'}>
+          {m.none}
+        </option>
+        <option
+          value="password"
+          selected={data.link.protectionMode === 'password'}
+        >
+          {m.password}
+        </option>
+        <option
+          value="one_time"
+          selected={data.link.protectionMode === 'one_time'}
+        >
+          {m.oneTime}
+        </option>
+        <option
+          value="password_one_time"
+          selected={data.link.protectionMode === 'password_one_time'}
+        >
+          {m.passwordOneTime}
+        </option>
       </select>
     </label>
     <label class="block space-y-2">

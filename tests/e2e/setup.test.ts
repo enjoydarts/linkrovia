@@ -190,8 +190,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(page).toHaveURL(/\/admin\/links\/[a-f0-9-]{36}$/);
     const editUrl = page.url();
     await page.getByRole('link', { name: 'Link protection' }).click();
-    await page.locator('[name=mode]').selectOption('password_one_time');
+    const mode = page.locator('[name=mode]');
+    await mode.selectOption('password_one_time');
     await page.locator('[name=password]').fill(password);
+    await expect(mode).toHaveValue('password_one_time');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(
       page.getByText('The protection settings were saved.'),
