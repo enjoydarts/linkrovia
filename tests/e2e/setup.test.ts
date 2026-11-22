@@ -128,6 +128,8 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await expect(
         page.getByRole('heading', { name: 'Daily clicks' }),
       ).toBeVisible();
+      await expect(page.locator('canvas')).toHaveCount(2);
+      await expect(page.locator('table').first()).toBeVisible();
       const clicks = await page.locator('.count').innerText();
       expect(Number(clicks.replaceAll(',', ''))).toBeGreaterThan(0);
 
@@ -136,6 +138,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         page.getByRole('heading', { name: 'Link analytics' }),
       ).toBeVisible();
       await expect(page.getByText('No clicks for this period.')).toBeVisible();
+      await expect(page.locator('canvas')).toHaveCount(0);
       const exportHref = await page
         .getByRole('link', { name: 'Export CSV' })
         .getAttribute('href');

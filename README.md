@@ -18,6 +18,12 @@ Owners can download, validate, and restore a configuration backup from **Backup*
 
 Use **Analytics** for click totals, daily trends, and breakdowns, or open a link for its own report and CSV. Use **Conversions** to manage goals and connect a server-side event sender. The analytics guide explains the local sample data and Cloudflare setup. [Analytics and conversions](docs/analytics.md)
 
+## Deploy to Cloudflare
+
+The [deployment guide](docs/deployment.md) covers Workers Builds, setting up your first owner passkey, and adding a short-link domain. The Deploy to Cloudflare button is pending an end-to-end installation test on Workers Free.
+
+If you already run Linkrovia, see the [upgrade guide](docs/upgrading.md) before updating your installation.
+
 ## Brand assets
 
 The distributable logo, mark, favicon, app icons, and OGP image are in [`static/brand/`](static/brand/). Usage guidance and the palette are documented in [`docs/BRAND.md`](docs/BRAND.md).

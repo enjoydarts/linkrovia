@@ -8,9 +8,23 @@
     "npm": ">=12.2.3 <13"
   },
   "packageManager": "npm@12.2.3",
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "Stores your links, settings, and owner account. Create a new D1 database for this installation."
+      },
+      "SETUP_TOKEN": {
+        "description": "Generate and save a private random password of at least 32 characters with your password manager. Enter the same value on the Linkrovia setup screen after deployment."
+      },
+      "TURNSTILE_SECRET_KEY": {
+        "description": "Optional. Leave blank unless you have created a Turnstile widget for this instance."
+      }
+    }
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "deploy": "node scripts/deploy.mjs",
     "preview": "vite preview",
     "types": "wrangler types --config wrangler.jsonc --include-main-module false --env-file .dev.vars.example",
     "check": "npm run types && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -30,6 +44,7 @@
     "@simplewebauthn/browser": "14.0.0",
     "@simplewebauthn/server": "14.1.0",
     "bowser": "2.15.0",
+    "chart.js": "4.6.1",
     "drizzle-orm": "0.45.4",
     "qrcode-generator": "2.0.4"
   },

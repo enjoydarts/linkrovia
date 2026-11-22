@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Locale } from '$lib/i18n/locale';
   import { analyticsMessages } from './messages';
+  import ReportChart from './ReportChart.svelte';
   import type { loadAnalyticsReport } from '$lib/server/analytics/report';
   let {
     locale,
@@ -34,9 +35,6 @@
   ] as const;
   let dimensions = $derived(
     linkScoped ? allDimensions.slice(0, -1) : allDimensions,
-  );
-  let max = $derived(
-    Math.max(1, ...(report?.series.map((row) => row.clicks) ?? [])),
   );
   let exportQuery = $derived(new URLSearchParams(filters).toString());
   let formatDay = $derived(
@@ -149,6 +147,16 @@
   {#if report.totalClicks === 0}<p>{m.empty}</p>{/if}
   <section>
     <h2>{m.daily}</h2>
+    {#if report.totalClicks > 0}
+      <ReportChart
+        kind="line"
+        labels={report.series.map((row) =>
+          formatDay.format(new Date(`${row.date}T00:00:00Z`)),
+        )}
+        values={report.series.map((row) => row.clicks)}
+        label={m.clicks}
+      />
+    {/if}
     <div class="table-wrap">
       <table>
         <thead>
@@ -160,13 +168,7 @@
                   {formatDay.format(new Date(`${row.date}T00:00:00Z`))}
                 </time>
               </th><td>
-                <div class="bar-row">
-                  <span
-                    class="bar"
-                    style:--width={`${(row.clicks / max) * 100}%`}
-                    aria-hidden="true"
-                  ></span><span>{row.clicks.toLocaleString(locale)}</span>
-                </div>
+                {row.clicks.toLocaleString(locale)}
               </td>
             </tr>{/each}
         </tbody>
@@ -180,6 +182,14 @@
         <a href={filterUrl('traffic', 'bot')}>{traffic[0]}</a>
         <a href={filterUrl('traffic', 'preview')}>{traffic[1]}</a>
       </p>
+    {/if}
+    {#if report.totalClicks > 0 && report.breakdown.length}
+      <ReportChart
+        kind="bar"
+        labels={report.breakdown.map((row) => row.key || '—')}
+        values={report.breakdown.map((row) => row.clicks)}
+        label={m.clicks}
+      />
     {/if}
     <div class="table-wrap">
       <table>
@@ -308,17 +318,6 @@
   }
   td {
     width: 65%;
-  }
-  .bar-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  .bar {
-    width: var(--width);
-    height: 0.75rem;
-    background: var(--brand-signal);
-    border-radius: 1rem;
   }
   @media (max-width: 600px) {
     .filters label {

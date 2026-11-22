@@ -1,6 +1,6 @@
 # Analytics and conversions
 
-Open **Analytics** in the admin console to see daily clicks and breakdowns. Open a link and choose **Link analytics** to narrow the report and download a CSV. Choose dates in the effective account time zone. The default report covers the last 14 calendar days, and live click reports are limited to the most recent three months and at most 90 days per request.
+Click collection starts as soon as the deployed Worker serves short links. Open **Analytics** in the admin console to see daily charts and traffic breakdowns. Open a link and choose **Link analytics** for charts and CSV downloads for that link. The charts, tables, and CSV use the selected filters. Choose dates in the effective account time zone. The default report covers the last 14 calendar days, and live click reports are limited to the most recent three months and at most 90 days per request.
 
 The development server uses labelled sample analytics. A deployed Worker writes to its `CLICKS` Analytics Engine dataset and reads with `ANALYTICS_SQL`. Both bindings are defined in the Worker configuration. Provider errors appear as unavailable statistics. The package and application flow are tested locally. Verify that the deployed account can write and query its development dataset before relying on live reports. [Cloudflare Analytics SQL binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/analytics-sql/)
 

@@ -1,6 +1,6 @@
-# Set a local bootstrap token before testing initial owner setup.
-# Generate a token with: openssl rand -hex 32
+# Generate a new private random setup token for each installation.
+# Use a password manager (32 characters or more), or generate one locally with openssl rand -hex 32.
 SETUP_TOKEN=
 
-# Needed only when enabling Turnstile protection.
+# Optional. Configure the public site key and enable protection under Security in Linkrovia.
 TURNSTILE_SECRET_KEY=
