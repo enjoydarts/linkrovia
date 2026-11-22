@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { brand } from '$lib/brand';
   import type { PageProps } from './$types';
   import { mcpMessages } from './messages';
 
@@ -24,7 +25,7 @@ bearer_token_env_var = "LINKROVIA_MCP_TOKEN"`);
   );
 </script>
 
-<svelte:head><title>MCP · Linkrovia</title></svelte:head>
+<svelte:head><title>MCP · {brand.name}</title></svelte:head>
 
 <div class="space-y-6">
   <h1 class="text-2xl font-semibold">MCP</h1>

@@ -272,6 +272,17 @@ describe('Archived click report', () => {
       estimated: true,
     });
     expect(report.totalClicks).toBe(11);
+    const monthly = await loadAnalyticsReport(
+      { DB: db, ANALYTICS_SQL: { query: live } },
+      { ...query, granularity: 'month' },
+      { development: false },
+    );
+    expect(monthly.meta).toMatchObject({
+      granularity: 'month',
+      gaps: ['2026-07-18'],
+    });
+    expect(monthly.totalClicks).toBe(11);
+    expect(monthly.series).toEqual([{ date: '2026-07-16', clicks: null }]);
     expect(report.series.map(({ clicks }) => clicks)).toEqual([9, 0, null, 2]);
     expect(report.breakdown).toEqual([
       { key: 'JP', clicks: 9 },

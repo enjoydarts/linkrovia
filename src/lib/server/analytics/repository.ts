@@ -29,12 +29,12 @@ export interface StatsQuery {
 }
 
 export interface TrendQuery extends StatsQuery {
-  granularity?: 'day';
+  granularity?: 'day' | 'hour';
 }
 
 export interface TrendResult {
   meta: Pick<StatsQuery, 'from' | 'to' | 'timezone'> & {
-    granularity: 'day';
+    granularity: 'day' | 'hour';
     dateBasis: 'UTC' | 'local';
     source: 'analytics-engine' | 'mock' | 'fixture';
     estimated: boolean;

@@ -144,14 +144,22 @@ LIMIT ${clickRollupMaxRows - rows.length + 1}`,
   async getClickTrend(query: TrendQuery): Promise<TrendResult> {
     const { where, params } = whereClause(query);
     const { timezone, dateBasis } = dayBuckets(query.timezone);
+    const granularity = query.granularity ?? 'day';
+    const hourly = granularity === 'hour';
+    const bucket = hourly
+      ? "formatDateTime(toStartOfInterval(timestamp, INTERVAL '1' HOUR, 'UTC'), '%Y-%m-%dT%H:00:00Z', 'UTC')"
+      : "formatDateTime(timestamp, '%Y-%m-%d', $timezone)";
+    const labelPattern = hourly
+      ? /^\d{4}-\d{2}-\d{2}T\d{2}:00:00Z$/
+      : /^\d{4}-\d{2}-\d{2}$/;
     const { data } = await this.binding.query({
-      query: `SELECT formatDateTime(timestamp, '%Y-%m-%d', $timezone) AS date, COUNT(*) AS clicks
+      query: `SELECT ${bucket} AS date, COUNT(*) AS clicks
 FROM ${dataset} WHERE ${where}
 GROUP BY date ORDER BY date ASC`,
-      params: { ...params, timezone },
+      params: hourly ? params : { ...params, timezone },
     });
     const series = data.map(({ date, clicks }) => {
-      if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      if (typeof date !== 'string' || !labelPattern.test(date)) {
         throw new Error('Invalid analytics SQL date');
       }
       return { date, clicks: clicksFrom(clicks) };
@@ -161,8 +169,8 @@ GROUP BY date ORDER BY date ASC`,
         from: query.from,
         to: query.to,
         timezone: query.timezone,
-        granularity: 'day',
-        dateBasis,
+        granularity,
+        dateBasis: hourly ? 'UTC' : dateBasis,
         source: 'analytics-engine',
         // The binding result does not identify whether represented events were sampled.
         estimated: series.length > 0,

@@ -10,7 +10,7 @@ The [scheduled Worker](deployment.md#keep-analytics-history) saves daily UTC cli
 
 ## Click reports API
 
-Use an API key with `analytics:read`. Requests accept `from` and `to` as inclusive `YYYY-MM-DD` dates and an optional IANA `tz`. Set `dimension` to `country`, `region`, `referrer`, `device`, `os`, `browser`, `rule`, `source`, `traffic`, or `link`. Optional `domainId`, `ruleId`, and `source=link|qr` narrow a query. To select a category, send its `filter` dimension and `key` value together. For CSV, use `bom=1` to add a UTF-8 BOM.
+Use an API key with `analytics:read`. Use `from` and `to` as inclusive `YYYY-MM-DD` dates or choose a `range` preset (`24h`, `7d`, `30d`, `90d`, or `1y`). Set `granularity` to `day`, `week`, or `month` for date ranges. Weeks begin on Monday. The year preset ends yesterday and uses monthly UTC archive buckets by default. The rolling `24h` preset uses `hour` granularity and returns UTC timestamps. Pass an IANA `tz` to query recent calendar dates or display hourly charts in that time zone. API requests default to UTC. Set `dimension` to `country`, `region`, `referrer`, `device`, `os`, `browser`, `rule`, `source`, `traffic`, or `link`. Optional `domainId`, `ruleId`, and `source=link|qr` narrow a query. To select a category, send its `filter` dimension and `key` value together. For CSV, use `bom=1` to add a UTF-8 BOM.
 
 | Method | Endpoint                          |
 | ------ | --------------------------------- |
@@ -18,7 +18,7 @@ Use an API key with `analytics:read`. Requests accept `from` and `to` as inclusi
 | GET    | `/api/v1/links/:id/analytics`     |
 | GET    | `/api/v1/links/:id/analytics.csv` |
 
-The CSV identifies each row as `daily` or `breakdown` and includes the time zone, date basis, estimate flag, and data source.
+The CSV identifies each row as `hourly`, `daily`, `weekly`, `monthly`, or `breakdown` and includes the granularity, time zone, date basis, estimate flag, and data source.
 
 ## Conversion setup
 

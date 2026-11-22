@@ -13,24 +13,28 @@ export const load = (async (event) => {
   if (!(await getLink(db, event.params.id))) error(404, 'Not found');
   const timezone = await effectiveTimeZone(db, session.user.timezone);
   event.setHeaders({ 'cache-control': 'private, no-store' });
+  const requestedFilters = Object.fromEntries(event.url.searchParams);
+  let filters: Record<string, string> = { ...requestedFilters, tz: timezone };
   try {
     const parsed = parseAnalyticsQuery(event.url.searchParams, timezone, {
       allowArchived: true,
       linkId: event.params.id,
     });
+    filters = {
+      ...requestedFilters,
+      from: parsed.from,
+      to: parsed.to,
+      dimension: parsed.dimension,
+      granularity: parsed.granularity,
+      tz: parsed.query.timezone,
+    };
     const report = await loadAnalyticsReport(event.locals.env, parsed, {
       development: dev,
     });
     return {
       report,
       failed: false,
-      filters: {
-        ...Object.fromEntries(event.url.searchParams),
-        from: parsed.from,
-        to: parsed.to,
-        dimension: parsed.dimension,
-        tz: parsed.query.timezone,
-      },
+      filters,
       linkId: event.params.id,
     };
   } catch (cause) {
@@ -41,7 +45,7 @@ export const load = (async (event) => {
         cause.code === 'unsupported_archive_filters'
           ? ('unsupported_archive_filters' as const)
           : true,
-      filters: { ...Object.fromEntries(event.url.searchParams), tz: timezone },
+      filters,
       linkId: event.params.id,
     };
   }

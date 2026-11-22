@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { Locale } from '$lib/i18n/locale';
-  import { analyticsArchiveMessages, analyticsMessages } from './messages';
+  import {
+    analyticsArchiveMessages,
+    analyticsMessages,
+    analyticsPeriodMessages,
+  } from './messages';
   import ReportChart from './ReportChart.svelte';
   import type { loadAnalyticsReport } from '$lib/server/analytics/report';
   let {
@@ -22,6 +26,20 @@
   } = $props();
   let m = $derived(analyticsMessages(locale));
   let archive = $derived(analyticsArchiveMessages(locale));
+  let periods = $derived(analyticsPeriodMessages(locale));
+  let granularity = $derived(
+    report?.meta.granularity ?? filters.granularity ?? 'day',
+  );
+  let hourly = $derived(granularity === 'hour');
+  let periodTitle = $derived(
+    hourly
+      ? periods.hourly
+      : granularity === 'week'
+        ? periods.weekly
+        : granularity === 'month'
+          ? periods.monthly
+          : m.daily,
+  );
   const allDimensions = [
     'country',
     'region',
@@ -37,13 +55,54 @@
   let dimensions = $derived(
     linkScoped ? allDimensions.slice(0, -1) : allDimensions,
   );
-  let exportQuery = $derived(new URLSearchParams(filters).toString());
+  let exportQuery = $derived.by(() => {
+    if (hourly) return interactiveFilters().toString();
+    const params = new URLSearchParams(filters);
+    params.delete('range');
+    return params.toString();
+  });
   let formatDay = $derived(
     new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }),
   );
+  let formatHour = $derived(
+    new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'shortOffset',
+      timeZone: report?.meta.timezone ?? 'UTC',
+    }),
+  );
 
-  function filterUrl(dimension?: string, key?: string) {
+  function formatBucket(date: string) {
+    return hourly
+      ? formatHour.format(new Date(date))
+      : formatDay.format(new Date(`${date}T00:00:00Z`));
+  }
+
+  function interactiveFilters() {
     const params = new URLSearchParams(filters);
+    if (params.has('range')) {
+      params.delete('from');
+      params.delete('to');
+    }
+    return params;
+  }
+  function presetUrl(range: string) {
+    const params = new URLSearchParams(filters);
+    for (const field of ['from', 'to', 'granularity']) params.delete(field);
+    params.set('range', range);
+    return `${base}?${params.toString()}`;
+  }
+  function customDatesUrl() {
+    const params = new URLSearchParams(filters);
+    params.delete('range');
+    params.set('granularity', 'day');
+    return `${base}?${params.toString()}`;
+  }
+  function filterUrl(dimension?: string, key?: string) {
+    const params = interactiveFilters();
     if (dimension && key) {
       params.set('filter', dimension);
       params.set('key', key);
@@ -54,7 +113,7 @@
     return `${base}?${params.toString()}`;
   }
   function clearArchiveFiltersUrl() {
-    const params = new URLSearchParams(filters);
+    const params = interactiveFilters();
     for (const key of ['ruleId', 'source', 'filter', 'key']) params.delete(key);
     return `${base}?${params.toString()}`;
   }
@@ -71,13 +130,35 @@
 </script>
 
 <h1>{linkScoped ? m.linkTitle : m.title}</h1>
+<nav class="presets" aria-label={periods.range}>
+  {#each Object.entries(periods.presets) as [range, label] (range)}
+    <a
+      href={presetUrl(range)}
+      aria-current={filters.range === range ? 'true' : undefined}
+    >
+      {label}
+    </a>
+  {/each}
+  {#if hourly}<a href={customDatesUrl()}>{periods.customDates}</a>{/if}
+</nav>
 <form method="GET" class="filters">
-  <label>
-    {m.from}<input type="date" name="from" value={filters.from} required />
-  </label>
-  <label>
-    {m.to}<input type="date" name="to" value={filters.to} required />
-  </label>
+  {#if hourly}
+    <input type="hidden" name="range" value="24h" />
+  {:else}
+    <label>
+      {m.from}<input type="date" name="from" value={filters.from} required />
+    </label>
+    <label>
+      {m.to}<input type="date" name="to" value={filters.to} required />
+    </label>
+    <label>
+      {periods.group}<select name="granularity">
+        {#each Object.entries(periods.granularities) as [value, label] (value)}
+          <option {value} selected={granularity === value}>{label}</option>
+        {/each}
+      </select>
+    </label>
+  {/if}
   <label>
     {m.dimension}<select name="dimension">
       {#each dimensions as dim (dim)}<option
@@ -148,13 +229,14 @@
   </div>
   <p class="meta">
     {m.timezone}: {report.meta
-      .timezone}{#if report.meta.dateBasis === 'UTC' && report.meta.timezone !== 'UTC'}
+      .timezone}{#if !hourly && report.meta.dateBasis === 'UTC' && report.meta.timezone !== 'UTC'}
       · UTC{/if}{#if report.meta.source === 'daily-rollup'}
       · {archive.dailySource}{:else if report.meta.source !== 'analytics-engine'}
       · {m.sample}{/if}{#if report.meta.estimated}
       · {m.estimated}{/if}{#if report.meta.gaps.length}
       · {m.incomplete}{/if}
   </p>
+  {#if hourly}<p class="meta">{periods.hourlyHint}</p>{/if}
   {#if report.meta.source === 'daily-rollup' && filters.domainId}
     <p class="meta">{archive.domainScope}</p>
   {/if}
@@ -167,13 +249,11 @@
       {m.empty}
     </p>{/if}
   <section>
-    <h2>{m.daily}</h2>
+    <h2>{periodTitle}</h2>
     {#if (report.totalClicks ?? 0) > 0}
       <ReportChart
         kind="line"
-        labels={report.series.map((row) =>
-          formatDay.format(new Date(`${row.date}T00:00:00Z`)),
-        )}
+        labels={report.series.map((row) => formatBucket(row.date))}
         values={report.series.map((row) => row.clicks)}
         label={m.clicks}
       />
@@ -181,12 +261,16 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th scope="col">{m.date}</th><th scope="col">{m.clicks}</th></tr>
+          <tr>
+            <th scope="col">
+              {granularity === 'day' ? m.date : periods.starts}
+            </th><th scope="col">{m.clicks}</th>
+          </tr>
         </thead><tbody>
           {#each report.series as row (row.date)}<tr>
               <th scope="row">
                 <time datetime={row.date}>
-                  {formatDay.format(new Date(`${row.date}T00:00:00Z`))}
+                  {formatBucket(row.date)}
                 </time>
               </th><td>
                 {row.clicks?.toLocaleString(locale) ?? archive.missing}
@@ -258,6 +342,25 @@
   th a {
     color: var(--ui-link);
     text-decoration: underline;
+  }
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .presets a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    padding-inline: 0.75rem;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    color: var(--ui-link);
+  }
+  .presets a[aria-current='true'] {
+    background: var(--ui-accent-surface);
+    font-weight: 650;
   }
   .filters {
     display: flex;

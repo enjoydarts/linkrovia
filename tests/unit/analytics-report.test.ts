@@ -76,6 +76,7 @@ it('escapes spreadsheet values and marks date basis and sampling in CSV', async 
         from: '2026-11-01',
         to: '2026-11-01',
         source: 'analytics-engine',
+        granularity: 'day',
         dateBasis: 'UTC',
         timezone: 'UTC',
         estimated: true,
@@ -95,4 +96,164 @@ it('escapes spreadsheet values and marks date basis and sampling in CSV', async 
     `"'＝SUM(1)","2","UTC","UTC","true","analytics-engine"`,
   );
   expect(response.headers.get('content-disposition')).toContain('attachment');
+});
+
+it('resolves calendar presets and retains explicit dates for custom ranges', () => {
+  const options = { now, allowArchived: true };
+  for (const [range, from] of [
+    ['7d', '2026-11-06'],
+    ['30d', '2026-10-14'],
+    ['90d', '2026-08-15'],
+  ]) {
+    expect(
+      parseAnalyticsQuery(new URLSearchParams({ range }), 'UTC', options),
+    ).toMatchObject({
+      from,
+      to: '2026-11-12',
+      archived: false,
+      range,
+    });
+  }
+  expect(
+    parseAnalyticsQuery(
+      new URLSearchParams({ range: '1y' }),
+      'Asia/Tokyo',
+      options,
+    ),
+  ).toMatchObject({
+    from: '2025-11-12',
+    to: '2026-11-11',
+    archived: true,
+    granularity: 'month',
+    range: '1y',
+  });
+  expect(() =>
+    parseAnalyticsQuery(
+      new URLSearchParams('range=7d&from=2026-11-09'),
+      'UTC',
+      options,
+    ),
+  ).toThrow('invalid_filters');
+  expect(() =>
+    parseAnalyticsQuery(new URLSearchParams('granularity=week'), 'UTC', {
+      now,
+    }),
+  ).toThrow('invalid_filters');
+});
+
+it('groups live local days by ISO week across a daylight saving transition', async () => {
+  const env = {
+    ANALYTICS_SQL: {
+      query: async <T>({ query }: { query: string }) => ({
+        rows: 3,
+        statistics: { elapsed_ms: 0, rows_read: 0, bytes_read: 0 },
+        data: (query.includes('GROUP BY date')
+          ? [
+              { date: '2026-11-01', clicks: 1 },
+              { date: '2026-11-02', clicks: 4 },
+              { date: '2026-11-08', clicks: 2 },
+            ]
+          : []) as T[],
+      }),
+    },
+  } as Parameters<typeof loadAnalyticsReport>[0];
+  const parsed = parseAnalyticsQuery(
+    new URLSearchParams('from=2026-11-01&to=2026-11-08&granularity=week'),
+    'America/New_York',
+    { allowArchived: true, now },
+  );
+  const result = await loadAnalyticsReport(env, parsed, { development: false });
+  expect(result.meta).toMatchObject({
+    granularity: 'week',
+    timezone: 'America/New_York',
+    dateBasis: 'local',
+  });
+  expect(result.totalClicks).toBe(7);
+  expect(result.series).toEqual([
+    { date: '2026-11-01', clicks: 1 },
+    { date: '2026-11-02', clicks: 6 },
+  ]);
+  expect(await analyticsCsv(result, false).text()).toContain(
+    '"weekly","2026-11-02","","","6","local","America/New_York","true","analytics-engine","week"',
+  );
+});
+
+it('bounds 24h reports to the exact rolling day and returns UTC hour buckets', async () => {
+  const midHour = Date.parse('2026-11-12T12:15:45Z') / 1000;
+  const calls: Array<{
+    query: string;
+    params?: Record<string, AnalyticsSQLParameter>;
+  }> = [];
+  const env = {
+    ANALYTICS_SQL: {
+      query: async <T>(request: (typeof calls)[number]) => {
+        calls.push(request);
+        return {
+          rows: 2,
+          statistics: { elapsed_ms: 0, rows_read: 0, bytes_read: 0 },
+          data: (request.query.includes('GROUP BY date')
+            ? [
+                { date: '2026-11-11T12:00:00Z', clicks: 1 },
+                { date: '2026-11-12T12:00:00Z', clicks: 2 },
+              ]
+            : []) as T[],
+        };
+      },
+    },
+  } as Parameters<typeof loadAnalyticsReport>[0];
+  const query = parseAnalyticsQuery(
+    new URLSearchParams('range=24h'),
+    'Australia/Adelaide',
+    {
+      allowArchived: true,
+      now: midHour,
+    },
+  );
+  const report = await loadAnalyticsReport(env, query, { development: false });
+  expect(report.meta).toMatchObject({
+    from: '2026-11-11T12:15:45.000Z',
+    to: '2026-11-12T12:15:45.000Z',
+    dateBasis: 'UTC',
+    timezone: 'Australia/Adelaide',
+    granularity: 'hour',
+    estimated: true,
+  });
+  expect(report.series).toHaveLength(25);
+  expect(report.series.at(0)).toEqual({
+    date: '2026-11-11T12:00:00Z',
+    clicks: 1,
+  });
+  expect(report.series.at(1)).toEqual({
+    date: '2026-11-11T13:00:00Z',
+    clicks: 0,
+  });
+  expect(report.series.at(-1)).toEqual({
+    date: '2026-11-12T12:00:00Z',
+    clicks: 2,
+  });
+  expect(report.totalClicks).toBe(3);
+  expect(calls[0].query).toContain(
+    "toStartOfInterval(timestamp, INTERVAL '1' HOUR, 'UTC')",
+  );
+  expect(
+    calls.every(
+      ({ params }) =>
+        params?.from === report.meta.from && params.to === report.meta.to,
+    ),
+  ).toBe(true);
+  expect(await analyticsCsv(report, false).text()).toContain(
+    '"hourly","2026-11-12T12:00:00Z"',
+  );
+  for (const params of [
+    'granularity=hour',
+    'range=24h&granularity=day',
+    'range=24h&to=2026-11-12',
+  ]) {
+    expect(() =>
+      parseAnalyticsQuery(new URLSearchParams(params), 'UTC', {
+        allowArchived: true,
+        now: midHour,
+      }),
+    ).toThrow('invalid_filters');
+  }
 });

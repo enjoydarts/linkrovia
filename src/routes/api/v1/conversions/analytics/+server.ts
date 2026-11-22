@@ -1,16 +1,13 @@
 import { AnalyticsInputError } from '$lib/server/analytics/report';
 import { conversionSummary } from '$lib/server/conversions/events';
 import { parseConversionReport } from '$lib/server/conversions/report';
-import { getDb } from '$lib/server/db/client';
-import { getEffectiveTimeZone } from '$lib/server/db/preferences';
 import { payload, problem, withScope } from '../../http';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = (event) =>
   withScope(event, 'analytics:read', async (db) => {
     try {
-      const timezone = await getEffectiveTimeZone(getDb(db));
-      const period = parseConversionReport(event.url.searchParams, timezone);
+      const period = parseConversionReport(event.url.searchParams, 'UTC');
       const { from, to, query } = period;
       return payload({
         meta: {

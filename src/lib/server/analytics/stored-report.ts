@@ -53,7 +53,12 @@ function archiveScope(query: StatsQuery, dimension: AnalyticsDimension) {
 
 export async function loadArchivedClickReport(
   db: D1Database,
-  { from, to, query, dimension }: Omit<AnalyticsQuery, 'archived' | 'bom'>,
+  {
+    from,
+    to,
+    query,
+    dimension,
+  }: Pick<AnalyticsQuery, 'from' | 'to' | 'query' | 'dimension'>,
 ): Promise<AnalyticsReport | null> {
   const scope = archiveScope(query, dimension);
   if (!scope) return null;
@@ -134,6 +139,7 @@ export async function loadArchivedClickReport(
       timezone: 'UTC',
       dateBasis: 'UTC',
       source: 'daily-rollup',
+      granularity: 'day',
       estimated:
         [...days.values()].some(({ estimated }) => estimated === 1) ||
         breakdown.some(({ estimated }) => estimated === 1),

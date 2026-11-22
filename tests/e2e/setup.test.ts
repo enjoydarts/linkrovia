@@ -137,6 +137,27 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       const clicks = await page.locator('.count').innerText();
       expect(Number(clicks.replaceAll(',', ''))).toBeGreaterThan(0);
 
+      await page.getByRole('link', { name: 'Last 24 hours' }).click();
+      await expect(
+        page.getByRole('heading', { name: 'Hourly clicks' }),
+      ).toBeVisible();
+      const hourExport = await page
+        .getByRole('link', { name: 'Export CSV' })
+        .getAttribute('href');
+      expect(hourExport).toContain('range=24h');
+      const hourlyCsv = await context.request.get(hourExport!);
+      expect(hourlyCsv.status()).toBe(200);
+      expect(await hourlyCsv.text()).toMatch(
+        /"hourly","\d{4}-\d{2}-\d{2}T\d{2}:00:00Z"/,
+      );
+
+      await page.getByRole('link', { name: 'Last 7 days' }).click();
+      await page.getByLabel('Group by').selectOption('week');
+      await page.getByRole('button', { name: 'Apply', exact: true }).click();
+      await expect(
+        page.getByRole('heading', { name: 'Weekly clicks' }),
+      ).toBeVisible();
+
       await page.goto(`${linkPage}/analytics`);
       await expect(
         page.getByRole('heading', { name: 'Link analytics' }),

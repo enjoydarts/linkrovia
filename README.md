@@ -20,6 +20,8 @@ Use **Analytics** for click totals, daily trends, and breakdowns, or open a link
 
 Owners can enable a scoped Model Context Protocol endpoint for clients that support bearer credentials. [Connect an MCP client](docs/mcp.md)
 
+The [OpenAPI 3.1 contract](static/openapi.yaml) describes the REST API, including required scopes and error responses. Deployed instances serve it at `/openapi.yaml`.
+
 ## Deploy to Cloudflare
 
 The [deployment guide](docs/deployment.md) covers Workers Builds, setting up your first owner passkey, and adding a short-link domain. The Deploy to Cloudflare button is pending an end-to-end installation test on Workers Free.

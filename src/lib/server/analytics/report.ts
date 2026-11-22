@@ -2,6 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import { csvCell } from '../../csv';
 import { isTimeZone } from '../../timezone/timezone';
 import { CloudflareAnalyticsRepository } from './cloudflare';
+import { hourSeconds, utcHourLabel, utcHourStart } from './date-buckets';
 import { MockAnalyticsRepository } from './mock';
 import { loadArchivedClickReport } from './stored-report';
 import type { AnalyticsDimension, StatsQuery, TrendResult } from './repository';
@@ -19,6 +20,7 @@ const analyticsDimensions = [
   'link',
 ] as const satisfies readonly AnalyticsDimension[];
 const queryFields = new Set([
+  'range',
   'from',
   'to',
   'tz',
@@ -31,6 +33,13 @@ const queryFields = new Set([
   'key',
   'bom',
 ]);
+const dayPresets = { '7d': 7, '30d': 30, '90d': 90 } as const;
+type RangePreset = keyof typeof dayPresets | '1y' | '24h';
+type ReportGranularity = 'hour' | 'day' | 'week' | 'month';
+
+function isRangePreset(value: string): value is RangePreset {
+  return value === '1y' || value === '24h' || Object.hasOwn(dayPresets, value);
+}
 
 export class AnalyticsInputError extends Error {
   constructor(
@@ -74,18 +83,57 @@ export function parseAnalyticsQuery(
       throw new AnalyticsInputError('invalid_filters');
   }
   const get = (key: string) => params.get(key) || undefined;
+  const rangeValue = params.get('range') ?? undefined;
+  if (
+    rangeValue !== undefined &&
+    (!allowArchived ||
+      !isRangePreset(rangeValue) ||
+      params.has('from') ||
+      params.has('to'))
+  ) {
+    throw new AnalyticsInputError('invalid_filters');
+  }
+  const range = rangeValue as RangePreset | undefined;
+  const hourly = range === '24h';
+  const defaultGranularity = hourly ? 'hour' : range === '1y' ? 'month' : 'day';
+  const granularity = get('granularity') ?? defaultGranularity;
+  if (
+    hourly
+      ? granularity !== 'hour'
+      : granularity !== 'day' &&
+        (!allowArchived || (granularity !== 'week' && granularity !== 'month'))
+  ) {
+    throw new AnalyticsInputError('invalid_filters');
+  }
   const timezone = get('tz') ?? defaultTimezone;
   if (!isTimeZone(timezone)) throw new AnalyticsInputError('invalid_timezone');
   const instant = Temporal.Instant.fromEpochMilliseconds(now * 1000);
   const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
   const utcToday = instant.toZonedDateTimeISO('UTC').toPlainDate();
-  let to = civilDay(get('to'), today);
-  const from = civilDay(get('from'), to.subtract({ days: 13 }));
+  const presetDays =
+    range && range !== '1y' && range !== '24h' ? dayPresets[range] : undefined;
+  let to =
+    range === '1y'
+      ? utcToday.subtract({ days: 1 })
+      : civilDay(get('to'), today);
+  let from =
+    range === '1y'
+      ? to.subtract({ years: 1 }).add({ days: 1 })
+      : hourly
+        ? instant
+            .subtract({ hours: 24 })
+            .toZonedDateTimeISO(timezone)
+            .toPlainDate()
+        : civilDay(get('from'), to.subtract({ days: (presetDays ?? 14) - 1 }));
   const retention = today.subtract({ months: 3 }).add({ days: 1 });
   const archived =
-    Temporal.PlainDate.compare(from, retention) < 0 ||
-    from.until(to).days >= 90;
-  if (archived && allowArchived && !get('to')) to = utcToday;
+    !hourly &&
+    (Temporal.PlainDate.compare(from, retention) < 0 ||
+      from.until(to).days >= 90);
+  if (archived && allowArchived && range !== '1y' && !get('to')) {
+    to = utcToday;
+    if (presetDays) from = to.subtract({ days: presetDays - 1 });
+  }
   if (
     Temporal.PlainDate.compare(from, to) > 0 ||
     Temporal.PlainDate.compare(
@@ -112,7 +160,6 @@ export function parseAnalyticsQuery(
     !validId(domainId) ||
     !validId(ruleId) ||
     (bom !== undefined && bom !== '0' && bom !== '1') ||
-    (get('granularity') ?? 'day') !== 'day' ||
     ((key !== undefined || filter !== undefined) &&
       (!filter ||
         !isDimension(filter) ||
@@ -126,8 +173,8 @@ export function parseAnalyticsQuery(
   const midnight = (date: Temporal.PlainDate) =>
     date.toZonedDateTime(archived ? 'UTC' : timezone).epochMilliseconds / 1000;
   const query: StatsQuery = {
-    from: midnight(from),
-    to: midnight(to.add({ days: 1 })),
+    from: hourly ? now - 24 * hourSeconds : midnight(from),
+    to: hourly ? now : midnight(to.add({ days: 1 })),
     timezone,
     domainId,
     linkId,
@@ -138,6 +185,8 @@ export function parseAnalyticsQuery(
   if (query.from >= query.to) throw new AnalyticsInputError('invalid_dates');
   return {
     query,
+    range,
+    granularity: granularity as ReportGranularity,
     archived,
     dimension,
     bom: bom === '1',
@@ -151,6 +200,7 @@ export type AnalyticsQuery = ReturnType<typeof parseAnalyticsQuery>;
 export type AnalyticsReport = {
   meta: Pick<TrendResult['meta'], 'timezone' | 'estimated' | 'dateBasis'> & {
     source: TrendResult['meta']['source'] | 'daily-rollup';
+    granularity: ReportGranularity;
     from: string;
     to: string;
     completeThrough: string | null;
@@ -162,9 +212,39 @@ export type AnalyticsReport = {
   breakdown: Array<{ key: string; clicks: number }>;
 };
 
+function groupReport(
+  report: AnalyticsReport,
+  granularity: ReportGranularity,
+): AnalyticsReport {
+  if (granularity === 'day' || granularity === 'hour') return report;
+  const grouped = new Map<string, AnalyticsReport['series'][number]>();
+  for (const row of report.series) {
+    const date = Temporal.PlainDate.from(row.date);
+    const start =
+      granularity === 'week'
+        ? date.subtract({ days: date.dayOfWeek - 1 })
+        : date.with({ day: 1 });
+    const key = start.toString();
+    const current = grouped.get(key);
+    if (!current) {
+      grouped.set(key, { ...row });
+    } else {
+      current.clicks =
+        current.clicks === null || row.clicks === null
+          ? null
+          : current.clicks + row.clicks;
+    }
+  }
+  return {
+    ...report,
+    meta: { ...report.meta, granularity },
+    series: [...grouped.values()],
+  };
+}
+
 export async function loadAnalyticsReport(
   env: Pick<Cloudflare.Env, 'ANALYTICS_SQL'> & { DB?: D1Database },
-  { query, dimension, from, to, archived }: AnalyticsQuery,
+  { query, dimension, from, to, archived, granularity }: AnalyticsQuery,
   { development }: { development: boolean },
 ): Promise<AnalyticsReport> {
   if (archived) {
@@ -176,13 +256,17 @@ export async function loadAnalyticsReport(
       to,
     });
     if (!report) throw new AnalyticsInputError('unsupported_archive_filters');
-    return report;
+    return groupReport(report, granularity);
   }
   const repository = development
     ? new MockAnalyticsRepository()
     : new CloudflareAnalyticsRepository(env.ANALYTICS_SQL);
+  const hourly = granularity === 'hour';
   const [trend, result] = await Promise.all([
-    repository.getClickTrend(query),
+    repository.getClickTrend({
+      ...query,
+      granularity: hourly ? 'hour' : 'day',
+    }),
     repository.getBreakdown(query, dimension),
   ]);
   const { timezone, source, dateBasis } = trend.meta;
@@ -195,36 +279,65 @@ export async function loadAnalyticsReport(
       ? new Date((query.to - 1) * 1000).toISOString().slice(0, 10)
       : to;
   const series = [];
-  const byDay = new Map(trend.series.map(({ date, clicks }) => [date, clicks]));
-  for (
-    let date = Temporal.PlainDate.from(fromDay);
-    Temporal.PlainDate.compare(date, toDay) <= 0;
-    date = date.add({ days: 1 })
-  ) {
-    const key = date.toString();
-    series.push({ date: key, clicks: byDay.get(key) ?? 0 });
+  const byDate = new Map(
+    trend.series.map(({ date, clicks }) => [date, clicks]),
+  );
+  if (hourly) {
+    for (
+      let hour = utcHourStart(query.from);
+      hour < query.to;
+      hour += hourSeconds
+    ) {
+      const date = utcHourLabel(hour);
+      series.push({ date, clicks: byDate.get(date) ?? 0 });
+    }
+  } else {
+    for (
+      let date = Temporal.PlainDate.from(fromDay);
+      Temporal.PlainDate.compare(date, toDay) <= 0;
+      date = date.add({ days: 1 })
+    ) {
+      const key = date.toString();
+      series.push({ date: key, clicks: byDate.get(key) ?? 0 });
+    }
   }
-  return {
-    meta: {
-      from,
-      to,
-      timezone,
-      source,
-      dateBasis,
-      estimated: trend.meta.estimated || result.estimated,
-      completeThrough: null,
-      gaps: [],
+  return groupReport(
+    {
+      meta: {
+        from: hourly ? new Date(query.from * 1000).toISOString() : from,
+        to: hourly ? new Date(query.to * 1000).toISOString() : to,
+        timezone,
+        source,
+        dateBasis,
+        granularity: trend.meta.granularity,
+        estimated: trend.meta.estimated || result.estimated,
+        completeThrough: null,
+        gaps: [],
+      },
+      totalClicks: series.reduce((total, row) => total + row.clicks, 0),
+      series,
+      dimension,
+      breakdown: result.breakdown,
     },
-    totalClicks: series.reduce((total, row) => total + row.clicks, 0),
-    series,
-    dimension,
-    breakdown: result.breakdown,
-  };
+    granularity,
+  );
 }
 
 export function analyticsCsv(report: AnalyticsReport, bom: boolean): Response {
-  const { dateBasis, estimated, source, timezone } = report.meta;
-  const metadata = [dateBasis, timezone, String(estimated), source];
+  const { dateBasis, estimated, source, timezone, granularity } = report.meta;
+  const metadata = [
+    dateBasis,
+    timezone,
+    String(estimated),
+    source,
+    granularity,
+  ];
+  const rowType = {
+    hour: 'hourly',
+    day: 'daily',
+    week: 'weekly',
+    month: 'monthly',
+  }[granularity];
   const rows = [
     [
       'type',
@@ -236,9 +349,10 @@ export function analyticsCsv(report: AnalyticsReport, bom: boolean): Response {
       'timezone',
       'estimated',
       'source',
+      'granularity',
     ],
     ...report.series.map((row) => [
-      'daily',
+      rowType,
       row.date,
       '',
       '',

@@ -15,7 +15,7 @@ import {
   clickRollupDimensions,
   compareKeys,
 } from './repository';
-import { dayBuckets } from './date-buckets';
+import { dayBuckets, utcHourLabel } from './date-buckets';
 
 export interface ClickSample {
   timestamp: number;
@@ -115,7 +115,10 @@ export class InMemoryAnalyticsRepository
     const { from, to, timezone, granularity = 'day' } = query;
     const { dateBasis, dateFor } = dayBuckets(timezone);
     const series = this.groupBy(query, (sample) => ({
-      date: dateFor(sample.timestamp),
+      date:
+        granularity === 'hour'
+          ? utcHourLabel(sample.timestamp)
+          : dateFor(sample.timestamp),
     }));
     series.sort((a, b) => a.date.localeCompare(b.date));
     return {
@@ -124,7 +127,7 @@ export class InMemoryAnalyticsRepository
         to,
         timezone,
         granularity,
-        dateBasis,
+        dateBasis: granularity === 'hour' ? 'UTC' : dateBasis,
         source: this.source,
         estimated: false,
       },

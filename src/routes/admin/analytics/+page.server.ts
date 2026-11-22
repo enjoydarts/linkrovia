@@ -15,10 +15,20 @@ export const load = (async (event) => {
     listDomains(db),
   ]);
   event.setHeaders({ 'cache-control': 'private, no-store' });
+  const requestedFilters = Object.fromEntries(event.url.searchParams);
+  let filters: Record<string, string> = { ...requestedFilters, tz: timezone };
   try {
     const parsed = parseAnalyticsQuery(event.url.searchParams, timezone, {
       allowArchived: true,
     });
+    filters = {
+      ...requestedFilters,
+      from: parsed.from,
+      to: parsed.to,
+      dimension: parsed.dimension,
+      granularity: parsed.granularity,
+      tz: parsed.query.timezone,
+    };
     const report = await loadAnalyticsReport(event.locals.env, parsed, {
       development: dev,
     });
@@ -26,13 +36,7 @@ export const load = (async (event) => {
       domains,
       report,
       failed: false,
-      filters: {
-        ...Object.fromEntries(event.url.searchParams),
-        from: parsed.from,
-        to: parsed.to,
-        dimension: parsed.dimension,
-        tz: parsed.query.timezone,
-      },
+      filters,
     };
   } catch (cause) {
     return {
@@ -43,7 +47,7 @@ export const load = (async (event) => {
         cause.code === 'unsupported_archive_filters'
           ? ('unsupported_archive_filters' as const)
           : true,
-      filters: { ...Object.fromEntries(event.url.searchParams), tz: timezone },
+      filters,
     };
   }
 }) satisfies PageServerLoad;

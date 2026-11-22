@@ -1,5 +1,17 @@
 import type { TrendResult } from './repository';
 
+export const hourSeconds = 3600;
+
+export function utcHourStart(timestamp: number) {
+  return Math.floor(timestamp / hourSeconds) * hourSeconds;
+}
+
+export function utcHourLabel(timestamp: number) {
+  return new Date(utcHourStart(timestamp) * 1000)
+    .toISOString()
+    .replace('.000Z', 'Z');
+}
+
 export function dayBuckets(timezone: string): {
   timezone: string;
   dateBasis: TrendResult['meta']['dateBasis'];

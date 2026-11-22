@@ -1,7 +1,5 @@
 import { dev } from '$app/env';
 import { getLink } from '$lib/server/links/store';
-import { getDb } from '$lib/server/db/client';
-import { getEffectiveTimeZone } from '$lib/server/db/preferences';
 import {
   AnalyticsInputError,
   analyticsCsv,
@@ -20,8 +18,7 @@ export function analyticsResponse(
     if (linkId !== undefined && !(await getLink(db, linkId)))
       return missingLink();
     try {
-      const timezone = await getEffectiveTimeZone(getDb(db));
-      const parsed = parseAnalyticsQuery(event.url.searchParams, timezone, {
+      const parsed = parseAnalyticsQuery(event.url.searchParams, 'UTC', {
         linkId,
         allowArchived: true,
       });
