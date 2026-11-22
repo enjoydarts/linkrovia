@@ -4,9 +4,18 @@ import zhCN from '../../../messages/zh-CN.json';
 import zhTW from '../../../messages/zh-TW.json';
 import es from '../../../messages/es.json';
 import it from '../../../messages/it.json';
+import fr from '../../../messages/fr.json';
 import { brand } from '../brand';
 
-export const locales = ['en', 'ja', 'zh-CN', 'zh-TW', 'es', 'it'] as const;
+export const locales = [
+  'en',
+  'ja',
+  'zh-CN',
+  'zh-TW',
+  'es',
+  'it',
+  'fr',
+] as const;
 export type Locale = (typeof locales)[number];
 
 const catalogs = {
@@ -16,6 +25,7 @@ const catalogs = {
   'zh-TW': zhTW,
   es,
   it,
+  fr,
 } satisfies Record<Locale, typeof en>;
 
 export const localeNames: Record<Locale, string> = {
@@ -25,6 +35,7 @@ export const localeNames: Record<Locale, string> = {
   'zh-TW': '繁體中文',
   es: 'Español',
   it: 'Italiano',
+  fr: 'Français',
 };
 
 export function isLocale(value: unknown): value is Locale {

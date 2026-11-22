@@ -206,6 +206,42 @@ const messages = {
     rotate:
       'Sostituisci la chiave segreta in Turnstile, aggiorna il segreto del Worker e ripeti la verifica.',
   },
+  fr: {
+    title: 'Paramètres de sécurité',
+    intro:
+      'Utilisez Cloudflare Turnstile pour protéger la connexion et la configuration initiale du compte propriétaire.',
+    status: 'Protection',
+    disabled: 'Désactivée',
+    enabled: 'Activée',
+    incomplete: 'Configuration incomplète',
+    manageWidget: 'Ouvrir Turnstile dans Cloudflare',
+    widgetSetup:
+      'Sélectionnez Add widget (Ajouter un widget). Choisissez Managed (Géré), ajoutez le nom d’hôte indiqué ci-dessous et laissez le précontrôle (pre-clearance) désactivé. Ajoutez chaque nouveau nom d’hôte ici si vous changez de domaine.',
+    hostname: 'Nom d’hôte à vérifier',
+    manageWorker: 'Ouvrir Workers & Pages dans Cloudflare',
+    secretSetup:
+      'Sélectionnez votre Worker, puis Settings → Variables and Secrets → Add. Choisissez Secret, nommez-le TURNSTILE_SECRET_KEY, collez la clé secrète du widget, puis déployez le Worker.',
+    siteKey: 'Clé de site',
+    siteKeyHint: 'Copiez la clé de site publique de votre widget.',
+    prepare: 'Passer à la vérification',
+    verifyEnable: 'Vérifier et activer',
+    verifySave: 'Vérifier et enregistrer',
+    verify:
+      'Effectuez le contrôle ci-dessous pour vérifier la clé de site et la clé secrète pour ce nom d’hôte.',
+    edit: 'Modifier la clé de site',
+    disable: 'Désactiver Turnstile',
+    saved: 'Vérification réussie. Turnstile est activé.',
+    turnedOff: 'Turnstile est désactivé.',
+    missingSiteKey: 'Saisissez la clé de site publique de votre widget.',
+    missingSecret:
+      'Ajoutez TURNSTILE_SECRET_KEY à votre Worker, déployez-le, puis réessayez.',
+    invalidKeys:
+      'Vérifiez que vous avez copié la clé de site publique. Utilisez des clés de production pour ce nom d’hôte.',
+    verificationFailed:
+      'La vérification a échoué. Vérifiez que le widget autorise ce nom d’hôte et que les deux clés appartiennent au même widget, puis réessayez.',
+    rotate:
+      'Générez une nouvelle clé secrète dans Turnstile, mettez à jour le secret du Worker, puis effectuez à nouveau cette vérification.',
+  },
 } satisfies Record<Locale, typeof en>;
 
 export function securityMessages(locale: Locale) {

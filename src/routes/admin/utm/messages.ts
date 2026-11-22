@@ -215,6 +215,43 @@ const messages = {
     saved: 'Modello salvato.',
     deleted: 'Modello eliminato.',
   },
+  fr: {
+    title: 'Générateur UTM',
+    description:
+      'Créez des modèles de campagne et prévisualisez les paramètres ajoutés à une URL de destination.',
+    templates: 'Modèles',
+    noTemplates: 'Aucun modèle pour le moment.',
+    newTemplate: 'Nouveau modèle',
+    editTemplate: 'Modifier le modèle',
+    name: 'Nom',
+    purpose: 'Objectif',
+    source: 'Source',
+    medium: 'Support',
+    campaign: 'Campagne',
+    term: 'Terme',
+    content: 'Contenu',
+    additionalFields: 'Champs UTM supplémentaires',
+    save: 'Enregistrer le modèle',
+    remove: 'Supprimer le modèle',
+    preview: 'Aperçu',
+    url: 'URL de destination',
+    template: 'Modèle',
+    noTemplate: 'Aucun modèle',
+    overrideHint:
+      'Les valeurs saisies ici remplacent celles du modèle sélectionné.',
+    previewAction: 'Prévisualiser l’URL',
+    before: 'Avant',
+    after: 'Après',
+    invalid_template: 'Saisissez un nom et au moins une valeur UTM valide.',
+    name_conflict: 'Un modèle porte déjà ce nom.',
+    stale_template:
+      'Le modèle a changé. Rouvrez-le pour accéder à la dernière version.',
+    not_found: 'Le modèle est introuvable.',
+    invalid_preview:
+      'Saisissez une URL HTTP ou HTTPS publique et des valeurs UTM valides.',
+    saved: 'Modèle enregistré.',
+    deleted: 'Modèle supprimé.',
+  },
 } satisfies Record<Locale, typeof en>;
 
 export function utmMessages(locale: Locale) {

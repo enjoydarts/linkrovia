@@ -77,5 +77,16 @@ const messages: Record<
     back: 'Torna al link',
     url: 'Indirizzo QR',
   },
+  fr: {
+    title: 'Code QR',
+    description:
+      'Créez un code QR pour distinguer les visites issues d’un scan des autres visites. Les mêmes règles de redirection que celles de ce lien s’appliquent.',
+    create: 'Créer un code QR',
+    preview: 'Aperçu du code QR',
+    downloadSvg: 'Télécharger le SVG',
+    downloadPng: 'Télécharger le PNG',
+    back: 'Retour au lien',
+    url: 'Destination du code QR',
+  },
 };
 export const qrMessages = (locale: Locale) => messages[locale];

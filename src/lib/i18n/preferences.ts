@@ -139,6 +139,33 @@ const messages = {
     defaultLanguageHelp:
       'Usata quando la lingua del visitatore non è disponibile.',
   },
+  fr: {
+    settings: 'Paramètres',
+    personal: 'Préférences',
+    intro:
+      'Choisissez la langue, le fuseau horaire et l’apparence de votre compte.',
+    appearance: 'Apparence',
+    systemTheme: 'Système',
+    lightTheme: 'Clair',
+    darkTheme: 'Sombre',
+    language: 'Langue',
+    userZone: 'Votre fuseau horaire',
+    userHelp:
+      'Saisissez une ville ou un identifiant de fuseau horaire pour rechercher. Laissez ce champ vide pour utiliser la valeur par défaut de l’instance.',
+    defaultZone: 'Fuseau horaire par défaut de l’instance',
+    defaultHelp:
+      'Utilisé pour les comptes qui n’ont pas leur propre fuseau horaire.',
+    effective: 'Fuseau horaire actuel',
+    save: 'Enregistrer',
+    invalid:
+      'Choisissez une langue, un fuseau horaire et une apparence pris en charge.',
+    invalidZone: 'Choisissez un fuseau horaire et une langue pris en charge.',
+    saved: 'Paramètres enregistrés.',
+    globalSaved: 'Valeurs par défaut de l’instance enregistrées.',
+    defaultLanguage: 'Langue par défaut de l’instance',
+    defaultLanguageHelp:
+      'Utilisée lorsque la langue du visiteur n’est pas disponible.',
+  },
 } satisfies Record<Locale, Record<string, string>>;
 export function preferenceMessages(locale: Locale) {
   return messages[locale];

@@ -4,6 +4,13 @@
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
   let m = $derived(linkMessages(data.locale));
+  let dateTime = $derived(
+    new Intl.DateTimeFormat(data.locale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: data.timeZone,
+    }),
+  );
   function nextPage(cursor: string) {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(data.filters))
@@ -127,16 +134,18 @@
             {m.destination}: {link.destinationUrl}
           </p>
           {#if link.startsAt !== null}<p class="text-sm">
-              {m.startsAt}: {new Date(link.startsAt * 1000)
-                .toISOString()
-                .replace('T', ' ')
-                .replace('Z', ' UTC')}
+              {m.startsAt}:
+              <time datetime={new Date(link.startsAt * 1000).toISOString()}>
+                {dateTime.format(link.startsAt * 1000)}
+              </time>
+              ({data.timeZone})
             </p>{/if}
           {#if link.expiresAt !== null}<p class="text-sm">
-              {m.expiresAt}: {new Date(link.expiresAt * 1000)
-                .toISOString()
-                .replace('T', ' ')
-                .replace('Z', ' UTC')}
+              {m.expiresAt}:
+              <time datetime={new Date(link.expiresAt * 1000).toISOString()}>
+                {dateTime.format(link.expiresAt * 1000)}
+              </time>
+              ({data.timeZone})
             </p>{/if}
           {#if link.tags.length}<p class="text-sm">
               {m.tags}: {link.tags.join(', ')}

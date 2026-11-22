@@ -2,6 +2,7 @@ export const localeAndTimezoneExamples = [
   { locale: 'en', timezone: 'UTC' },
   { locale: 'ja', timezone: 'Asia/Tokyo' },
   { locale: 'it', timezone: 'Europe/Rome' },
+  { locale: 'fr', timezone: 'Europe/Paris' },
   { locale: 'es', timezone: 'America/New_York' },
   { locale: 'zh-CN', timezone: 'Asia/Kolkata' },
   { locale: 'zh-TW', timezone: 'Asia/Kathmandu' },

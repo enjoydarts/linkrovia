@@ -66,6 +66,7 @@
     'zh-TW': '開啟導覽',
     es: 'Abrir navegación',
     it: 'Apri navigazione',
+    fr: 'Ouvrir la navigation',
   };
   const closeLabels = {
     en: 'Close navigation',
@@ -74,6 +75,7 @@
     'zh-TW': '關閉導覽',
     es: 'Cerrar navegación',
     it: 'Chiudi navigazione',
+    fr: 'Fermer la navigation',
   };
   function active(href: string, path: string) {
     return href === '/admin' || href === '/admin/settings'

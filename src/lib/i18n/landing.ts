@@ -129,4 +129,23 @@ export const landingCopy = {
     independent:
       'Progetto open source indipendente, senza affiliazione con Cloudflare.',
   },
+  fr: {
+    headline: ['Chaque lien.', 'La bonne destination.'],
+    features: [
+      'Raccourcir',
+      'Créez des liens courts et des codes QR sur votre propre nom d’hôte.',
+      'Rediriger',
+      'Envoyez les visiteurs vers la page appropriée selon leur appareil, leur pays ou leur langue.',
+      'Comprendre',
+      'L’exemple ci-dessous montre comment présenter l’activité des liens.',
+    ],
+    ownership: [
+      'Gérez vos liens',
+      'Exécutez Linkrovia sur votre compte Cloudflare et gérez vos propres domaines, liens et paramètres.',
+    ],
+    example: 'Exemple d’analyses avec des données fictives',
+    guide: 'Guide de développement',
+    home: 'Retour à l’accueil',
+    independent: 'Projet open source indépendant, sans lien avec Cloudflare.',
+  },
 } satisfies Record<Locale, LandingCopy>;

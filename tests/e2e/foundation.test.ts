@@ -7,7 +7,7 @@ const locales = Object.keys(landingCopy) as Locale[];
 
 test.use({ locale: 'ja-JP' });
 
-test('serves the six locales without a URL prefix', async ({ page }) => {
+test('serves all supported locales without a URL prefix', async ({ page }) => {
   const response = await page.goto('/');
   expect(response?.status()).toBe(200);
   expect(await response?.request().headerValue('accept-language')).toMatch(
@@ -40,7 +40,27 @@ test('serves the six locales without a URL prefix', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
 });
 
-test('renders the branded landing in six locales, two themes, and two widths', async ({
+test('negotiates French from a regional browser language', async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({ locale: 'fr-CA', baseURL });
+  try {
+    const page = await context.newPage();
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      landingCopy.fr.headline.join(' '),
+    );
+    await page.goto('/login');
+    await expect(page).toHaveURL(/\/(?:login|setup)$/);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  } finally {
+    await context.close();
+  }
+});
+
+test('renders the branded landing in all locales, two themes, and two widths', async ({
   page,
   context,
   baseURL,
@@ -84,7 +104,7 @@ test('renders the branded landing in six locales, two themes, and two widths', a
           fullPage: true,
         });
       }
-      if (locale === 'en') {
+      if (locale === 'en' || locale === 'fr') {
         const result = await new AxeBuilder({ page })
           .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
           .analyze();

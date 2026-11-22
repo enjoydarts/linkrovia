@@ -324,7 +324,65 @@ const it = {
   request_failed: 'Impossibile completare la richiesta. Riprova.',
 } satisfies typeof en;
 
-const catalogs = { en, ja, 'zh-CN': zhCN, 'zh-TW': zhTW, es, it };
+const fr = {
+  title: 'Import CSV',
+  description:
+    'Prévisualisez les liens d’un fichier CSV encodé en UTF-8 avant de les importer.',
+  file: 'Fichier CSV',
+  limits: 'Jusqu’à 1 Mio et 500 lignes de données.',
+  example: 'Télécharger un exemple de CSV',
+  format: 'Colonnes et formats du CSV',
+  required:
+    'Seule la colonne destination_url est obligatoire. Omettez domain pour utiliser le domaine principal et slug pour générer automatiquement un identifiant court.',
+  formats:
+    'Séparez les étiquettes par des virgules dans tags. Utilisez true ou false dans is_active. La colonne rules accepte un tableau JSON au format de l’API des liens.',
+  dateFormat:
+    'Saisissez les heures locales au format YYYY-MM-DDTHH:mm ou indiquez un décalage horaire, par exemple 2027-01-01T09:00:00+09:00.',
+  timeZone: 'Fuseau horaire',
+  policy: 'Identifiants courts en double',
+  skip: 'Ignorer les lignes en double',
+  error: 'Signaler les lignes en double comme erreurs',
+  preview: 'Prévisualiser les liens',
+  results: 'Résultats de l’import',
+  confirm: 'Importer les lignes prêtes',
+  retry: 'Réessayer les lignes restantes',
+  retryInfo:
+    'Réessayez ici pour conserver les mêmes identifiants courts. Les lignes déjà enregistrées seront traitées comme des doublons.',
+  working: 'Traitement du CSV…',
+  download: 'Télécharger le CSV des erreurs',
+  row: 'Ligne',
+  slug: 'Identifiant court',
+  destination: 'URL de destination',
+  status: 'État',
+  detail: 'Détails',
+  ready: 'Prête',
+  created: 'Importée',
+  skipped: 'Ignorée',
+  rowError: 'Erreur',
+  duplicate: 'Cet identifiant court est déjà utilisé sur ce domaine.',
+  column_count: 'Le nombre de champs doit correspondre à celui de l’en-tête.',
+  missing_domain: 'Choisissez un domaine connecté.',
+  slug_required: 'Utilisez l’identifiant court indiqué dans l’aperçu.',
+  invalid_fields: 'Vérifiez les colonnes indiquées.',
+  time_gap:
+    'Cette heure locale n’existe pas. Indiquez une date et une heure avec un décalage horaire.',
+  time_overlap:
+    'Cette heure locale se produit deux fois. Indiquez une date et une heure avec un décalage horaire.',
+  write_failed: 'La ligne n’a pas pu être enregistrée. Réessayez ici.',
+  invalid_encoding: 'Enregistrez le CSV avec l’encodage UTF-8.',
+  invalid_csv:
+    'Vérifiez les guillemets et incluez au moins une ligne de données.',
+  invalid_header:
+    'Incluez destination_url et utilisez des noms de colonnes uniques et pris en charge.',
+  file_too_large: 'Choisissez un fichier CSV de 1 Mio maximum.',
+  too_many_rows: 'Incluez au maximum 500 lignes de données.',
+  invalid_options:
+    'Si votre fuseau horaire a changé, rechargez la page, puis prévisualisez à nouveau le fichier.',
+  sign_in: 'Votre session a pris fin. Connectez-vous pour continuer.',
+  request_failed: 'La demande n’a pas pu aboutir. Réessayez.',
+};
+
+const catalogs = { en, ja, 'zh-CN': zhCN, 'zh-TW': zhTW, es, it, fr };
 
 export function csvMessages(locale: Locale) {
   return catalogs[locale];

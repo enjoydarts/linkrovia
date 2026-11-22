@@ -12,6 +12,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   test.setTimeout(60_000);
   const email = 'owner@example.com';
   const password = 'a long development passphrase';
+  const csvExpiry = '2099-12-31T00:15:00Z';
 
   const crossOrigin = await request.post('/setup?/verify', {
     headers: { origin: 'https://other.example.com' },
@@ -166,7 +167,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       name: 'links.csv',
       mimeType: 'text/csv',
       buffer: Buffer.from(
-        'destination_url,slug\r\nhttps://example.org/import,csv-e2e\r\nhttp://localhost,bad-destination\r\nhttps://example.org/duplicate,csv-e2e',
+        `destination_url,slug,expires_at\r\nhttps://example.org/import,csv-e2e,${csvExpiry}\r\nhttp://localhost,bad-destination,\r\nhttps://example.org/duplicate,csv-e2e,`,
       ),
     });
     await page.getByLabel('Duplicate slugs').selectOption('skip');
@@ -391,6 +392,86 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     } finally {
       if (originalViewport) await page.setViewportSize(originalViewport);
     }
+  });
+
+  await test.step('persists the French language preference', async () => {
+    await page.goto('/admin/settings', { waitUntil: 'networkidle' });
+    const personal = page.locator('form[action="?/personal"]');
+    await expect(personal.locator('[name=locale] option[value=fr]')).toHaveText(
+      'Français',
+    );
+    await personal.locator('[name=locale]').selectOption('fr');
+    await personal.locator('[name=timezone]').fill('Europe/Paris');
+    await personal.locator('button[type=submit]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await expect(
+      page.getByRole('link', { name: 'Liens', exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await expect(personal.locator('[name=locale]')).toHaveValue('fr');
+    await expect(personal.locator('[name=timezone]')).toHaveValue(
+      'Europe/Paris',
+    );
+    await expect(personal.locator('[name=theme]')).toHaveValue('dark');
+
+    const originalViewport = page.viewportSize();
+    await page.setViewportSize({ width: 360, height: 800 });
+    try {
+      await page.getByRole('button', { name: 'Ouvrir la navigation' }).click();
+      const drawer = page.getByRole('dialog');
+      await expect(
+        drawer.getByRole('link', { name: 'Linkrovia' }),
+      ).toBeVisible();
+      await expect(
+        drawer.getByRole('link', { name: 'Liens', exact: true }),
+      ).toBeVisible();
+      await drawer
+        .getByRole('button', { name: 'Fermer la navigation' })
+        .click();
+      await expect(drawer).not.toBeVisible();
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBe(360);
+    } finally {
+      if (originalViewport) await page.setViewportSize(originalViewport);
+    }
+
+    await page.goto('/admin/links?q=csv-e2e');
+    const expiry = page.locator(
+      `time[datetime="${new Date(csvExpiry).toISOString()}"]`,
+    );
+    await expect(expiry.locator('..')).toContainText('(Europe/Paris)');
+    await expect(expiry).toContainText('déc.');
+    await expect(expiry).toContainText('01:15');
+    await page.goto('/admin/settings', { waitUntil: 'networkidle' });
+    await personal.locator('[name=locale]').selectOption('en');
+    await personal.locator('[name=timezone]').fill('');
+    await personal.locator('button[type=submit]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+    const defaults = page.locator('form[action="?/defaultZone"]');
+    async function saveDefaultLocale(locale: string) {
+      await defaults.locator('[name=defaultLocale]').selectOption(locale);
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith('?/defaultZone') &&
+            response.status() === 303,
+        ),
+        defaults.locator('button[type=submit]').click(),
+      ]);
+      await expect(page).toHaveURL('/admin/settings?saved=global');
+      await expect(defaults.locator('[name=defaultLocale]')).toHaveValue(
+        locale,
+      );
+    }
+    await saveDefaultLocale('fr');
+    const guest = await request.get('/login', {
+      headers: { 'accept-language': 'nl' },
+    });
+    expect(await guest.text()).toMatch(/<html[^>]*\blang="fr"/);
+    await saveDefaultLocale('en');
   });
 
   await test.step('download, review, and safely replace from an owner backup', async () => {

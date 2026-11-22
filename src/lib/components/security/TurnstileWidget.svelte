@@ -111,6 +111,12 @@
       'Ripeti la verifica',
       'Abilita JavaScript per completare la verifica.',
     ],
+    fr: [
+      'La vérification est indisponible. Réessayez.',
+      'La vérification a expiré. Réessayez.',
+      'Réessayer la vérification',
+      'Activez JavaScript pour terminer la vérification.',
+    ],
   } satisfies Record<Locale, [string, string, string, string]>;
 
   let issue = $state<'expired' | 'unavailable' | undefined>();

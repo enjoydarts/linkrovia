@@ -10,7 +10,7 @@ import {
 } from '../../src/lib/server/backup/format';
 
 const data: BackupData = {
-  appSettings: { defaultTimeZone: 'Asia/Tokyo', defaultLocale: 'ja' },
+  appSettings: { defaultTimeZone: 'Asia/Tokyo', defaultLocale: 'fr' },
   domains: [
     {
       id: 'domain-1',
@@ -142,7 +142,7 @@ describe('backup format', () => {
     [
       'unsupported locale',
       (d) => {
-        d.appSettings.defaultLocale = 'fr';
+        d.appSettings.defaultLocale = 'de';
       },
     ],
     [

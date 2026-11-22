@@ -144,6 +144,32 @@ const catalogs = {
       'Indica un nome e una durata e seleziona almeno un’autorizzazione.',
     missing: 'La chiave non è disponibile o è già stata revocata.',
   },
+  fr: {
+    title: 'Clés API',
+    intro:
+      'Accordez à chaque automatisation uniquement les autorisations dont elle a besoin.',
+    name: 'Nom de la clé',
+    scopes: 'Autorisations',
+    expiry: 'Expire dans',
+    '30': '30 jours',
+    '90': '90 jours',
+    '365': '365 jours',
+    never: 'Jamais',
+    create: 'Créer une clé API',
+    created:
+      'Copiez cette clé maintenant. Elle ne s’affiche qu’une seule fois.',
+    existing: 'Vos clés',
+    empty: 'Vous n’avez aucune clé API.',
+    expires: 'Expiration',
+    lastUsed: 'Dernière utilisation',
+    expired: 'Expirée',
+    revoked: 'Révoquée',
+    revoke: 'Révoquer la clé',
+    revokedNotice: 'Clé API révoquée.',
+    invalid:
+      'Saisissez un nom pour la clé, choisissez une durée de validité et sélectionnez au moins une autorisation.',
+    missing: 'Cette clé est indisponible ou a déjà été révoquée.',
+  },
 } satisfies Record<Locale, typeof en>;
 
 export function apiKeyMessages(locale: Locale) {

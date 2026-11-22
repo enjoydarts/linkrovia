@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { resolveLocale } from '../../src/lib/i18n/locale';
+import en from '../../messages/en.json';
+import fr from '../../messages/fr.json';
+import { preferredLocale, resolveLocale } from '../../src/lib/i18n/locale';
+import { parseDefaultLocale } from '../../src/lib/server/db/preferences';
 import {
   interpretLocalDateTime,
   resolveTimeZone,
@@ -13,12 +16,27 @@ describe('locale preferences', () => {
     expect(
       resolveLocale(undefined, undefined, 'es;q=0.4,zh-Hant-HK;q=0.9'),
     ).toBe('zh-TW');
-    expect(resolveLocale(undefined, undefined, 'ja;q=0,fr;q=1')).toBe('en');
+    expect(resolveLocale(undefined, undefined, 'ja;q=0,de;q=1')).toBe('en');
   });
 
   it('uses the matching regional catalog', () => {
     expect(resolveLocale(undefined, undefined, 'zh-Hans-SG')).toBe('zh-CN');
     expect(resolveLocale(undefined, undefined, 'es-MX')).toBe('es');
+  });
+
+  it('negotiates and persists the French locale', () => {
+    expect(resolveLocale(undefined, undefined, 'FR-ca,en-US;q=0.8')).toBe('fr');
+    expect(resolveLocale(undefined, undefined, 'fr-CH;q=0.4,it;q=1')).toBe(
+      'it',
+    );
+    expect(resolveLocale(undefined, 'fr', 'ja')).toBe('fr');
+    expect(resolveLocale('fr', 'it', 'en')).toBe('fr');
+    expect(preferredLocale(undefined, undefined, 'fr-FR;q=0')).toBeUndefined();
+    expect(parseDefaultLocale('"fr"')).toBe('fr');
+  });
+
+  it('has the same shared message keys in French and English', () => {
+    expect(Object.keys(fr).sort()).toEqual(Object.keys(en).sort());
   });
 });
 

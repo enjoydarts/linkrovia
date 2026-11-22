@@ -115,6 +115,25 @@ const copies = {
     'Impossibile sbloccare il link. Controlla i dati e riprova.',
     'Impostazioni di protezione salvate.',
   ],
+  fr: [
+    'Protection du lien',
+    'Code QR',
+    'Désactivée',
+    'Mot de passe',
+    'Usage unique',
+    'Mot de passe et usage unique',
+    'Les liens protégés utilisent des redirections 302 ou 307. Définissez d’abord le type de redirection sur le lien.',
+    'Saisissez un mot de passe de 12 à 128 caractères. Laissez ce champ vide pour conserver le mot de passe actuel.',
+    'La vérification du mot de passe peut nécessiter le forfait Workers payant. Le temps CPU du forfait gratuit n’a pas été vérifié.',
+    'Ce lien a déjà été utilisé.',
+    'Ouvrir le lien protégé',
+    'Saisissez le mot de passe fourni par la personne qui a partagé ce lien.',
+    'Ce lien ne peut être ouvert qu’une seule fois. Continuez lorsque vous êtes prêt.',
+    'Continuer',
+    'Ce lien n’est pas disponible.',
+    'Impossible de déverrouiller le lien. Vérifiez vos informations et réessayez.',
+    'Les paramètres de protection ont été enregistrés.',
+  ],
 } as const satisfies Record<Locale, readonly string[]>;
 
 export function protectionMessages(locale: Locale) {
