@@ -440,6 +440,46 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     expect(await analytics.json()).toMatchObject({ meta: { source: 'mock' } });
   });
 
+  await test.step('guides the owner through custom domain setup and requires a secure check', async () => {
+    await page.goto('/admin/domains', { waitUntil: 'networkidle' });
+    await page.locator('[name=hostname]').fill('go.example.com');
+    await page.getByRole('button', { name: 'Add a domain' }).click();
+    await expect(page).toHaveURL(/\/admin\/domains\/[^/]+\/connect$/);
+    await expect(
+      page.getByRole('heading', { name: 'Connect domain' }),
+    ).toBeVisible();
+
+    const domainId = new URL(page.url()).pathname.split('/').at(-2)!;
+    const apiPath = `/api/v1/domains/${domainId}`;
+    expect((await request.get(`${apiPath}/connection`)).status()).toBe(401);
+    const connection = await context.request.get(`${apiPath}/connection`);
+    expect(connection.status()).toBe(200);
+    expect(await connection.json()).toMatchObject({
+      hostname: 'go.example.com',
+      status: 'draft',
+    });
+    expect(
+      (
+        await context.request.post(`${apiPath}/connect`, {
+          data: { confirmed: true },
+          headers: { origin: new URL(page.url()).origin },
+        })
+      ).status(),
+    ).toBe(403);
+
+    await page.waitForLoadState('networkidle');
+    const check = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`${apiPath}/connect`) &&
+        response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Check connection' }).click();
+    const response = await check;
+    expect(response.status()).toBe(400);
+    expect(await response.json()).toMatchObject({ code: 'https_required' });
+    await expect(page.getByRole('alert')).toBeVisible();
+  });
+
   await test.step('persists the chosen theme and provides keyboard navigation at 360 px', async () => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/admin/settings');

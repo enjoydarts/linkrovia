@@ -21,6 +21,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     id === '/logout' ||
     id === '/admin' ||
     id?.startsWith('/admin/') ||
+    id?.startsWith('/api/v1/domains/') ||
     id?.startsWith('/api/v1/backup/') ||
     id === '/api/v1/settings/export';
   if (management && event.locals.env.DB) {
