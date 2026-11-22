@@ -164,12 +164,12 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await expect(
         page.getByRole('heading', { name: 'Purchase' }),
       ).toBeVisible();
-      await page.goto(linkPage);
+      await page.goto(linkPage, { waitUntil: 'networkidle' });
     });
 
     await page.locator('[name=active]').uncheck();
     const editUrl = page.url();
-    await Promise.all([
+    const [saved] = await Promise.all([
       page.waitForResponse(
         (response) =>
           response.request().method() === 'POST' &&
@@ -185,11 +185,14 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       ),
       linkForm.locator('button[type=submit]').click(),
     ]);
+    expect(
+      new URLSearchParams(saved.request().postData() ?? '').has('active'),
+    ).toBe(false);
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('[name=active]')).not.toBeChecked();
     expect((await request.get('/ci-link', { maxRedirects: 0 })).status()).toBe(
       404,
     );
+    await expect(page.locator('[name=active]')).not.toBeChecked();
     await page.goto('/admin');
     await expect(
       recentLink.getByText('Inactive', { exact: true }),
