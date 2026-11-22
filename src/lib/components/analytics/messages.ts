@@ -492,6 +492,16 @@ const hourlyMessages = {
   ],
 } as const satisfies Record<Locale, readonly string[]>;
 
+const savedHistory: Record<Locale, string> = {
+  en: 'All saved history',
+  ja: '保存済みの全期間',
+  'zh-CN': '全部已保存历史',
+  'zh-TW': '全部已儲存歷史',
+  es: 'Todo el historial guardado',
+  it: 'Tutto lo storico salvato',
+  fr: 'Tout l’historique conservé',
+};
+
 export function analyticsPeriodMessages(locale: Locale) {
   const [last24, hourly, hourlyHint, customDates] = hourlyMessages[locale];
   const [
@@ -516,6 +526,7 @@ export function analyticsPeriodMessages(locale: Locale) {
       '30d': last30,
       '90d': last90,
       '1y': lastYear,
+      all: savedHistory[locale],
     },
     granularities: { day, week, month },
     group,

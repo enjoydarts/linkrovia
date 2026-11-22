@@ -293,6 +293,44 @@ describe('Archived click report', () => {
     );
   });
 
+  it('includes all saved months, including totals older than a one-year request', async () => {
+    await db.batch([
+      db.prepare(
+        "INSERT INTO rollup_jobs (day_utc, status, completed_at) VALUES ('2024-12-31', 'completed', 1)",
+      ),
+      db.prepare(
+        "INSERT INTO analytics_rollups (day_utc, link_id, dimension, dimension_value, click_count) VALUES ('2024-12-31', 'legacy', 'total', 'all', 7)",
+      ),
+    ]);
+    const parsed = parseAnalyticsQuery(
+      new URLSearchParams('range=all'),
+      'Asia/Tokyo',
+      { allowArchived: true, now },
+    );
+    const report = await loadAnalyticsReport(
+      {
+        DB: db,
+        ANALYTICS_SQL: {
+          query: async () => {
+            throw new Error('unexpected live query');
+          },
+        },
+      },
+      parsed,
+      { development: false },
+    );
+    expect(report.meta).toMatchObject({
+      from: '2024-12-31',
+      granularity: 'month',
+      timezone: 'UTC',
+    });
+    expect(report.totalClicks).toBe(7);
+    expect(report.series.slice(0, 2)).toEqual([
+      { date: '2024-12-31', clicks: 7 },
+      { date: '2025-01-01', clicks: null },
+    ]);
+  });
+
   it('scopes archived queries by current link domain and rejects unsupported cross-dimension filters', async () => {
     await db.batch([
       db.prepare(

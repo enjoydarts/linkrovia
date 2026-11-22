@@ -31,6 +31,7 @@
     report?.meta.granularity ?? filters.granularity ?? 'day',
   );
   let hourly = $derived(granularity === 'hour');
+  let fixedRange = $derived(hourly || filters.range === 'all');
   let periodTitle = $derived(
     hourly
       ? periods.hourly
@@ -56,7 +57,7 @@
     linkScoped ? allDimensions.slice(0, -1) : allDimensions,
   );
   let exportQuery = $derived.by(() => {
-    if (hourly) return interactiveFilters().toString();
+    if (fixedRange) return interactiveFilters().toString();
     const params = new URLSearchParams(filters);
     params.delete('range');
     return params.toString();
@@ -97,6 +98,7 @@
   }
   function customDatesUrl() {
     const params = new URLSearchParams(filters);
+    if (params.get('range') === 'all') params.delete('from');
     params.delete('range');
     params.set('granularity', 'day');
     return `${base}?${params.toString()}`;
@@ -139,11 +141,11 @@
       {label}
     </a>
   {/each}
-  {#if hourly}<a href={customDatesUrl()}>{periods.customDates}</a>{/if}
+  {#if fixedRange}<a href={customDatesUrl()}>{periods.customDates}</a>{/if}
 </nav>
 <form method="GET" class="filters">
-  {#if hourly}
-    <input type="hidden" name="range" value="24h" />
+  {#if fixedRange}
+    <input type="hidden" name="range" value={filters.range} />
   {:else}
     <label>
       {m.from}<input type="date" name="from" value={filters.from} required />

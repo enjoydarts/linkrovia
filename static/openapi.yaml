@@ -620,13 +620,13 @@ components:
         name: range,
         in: query,
         description: Use instead of `from` and `to`. The rolling `24h` range returns UTC hourly intervals.,
-        schema: { type: string, enum: [24h, 7d, 30d, 90d, 1y] },
+        schema: { type: string, enum: [24h, 7d, 30d, 90d, 1y, all] },
       }
     Granularity:
       {
         name: granularity,
         in: query,
-        description: Use `hour` with `24h`. Other ranges support day,
+        description: Use `hour` with `24h` and `month` with `all`. Other ranges support day,
         week and month.,
         schema: { type: string, enum: [hour, day, week, month] },
       }

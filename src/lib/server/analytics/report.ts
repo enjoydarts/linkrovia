@@ -34,11 +34,16 @@ const queryFields = new Set([
   'bom',
 ]);
 const dayPresets = { '7d': 7, '30d': 30, '90d': 90 } as const;
-type RangePreset = keyof typeof dayPresets | '1y' | '24h';
+type RangePreset = keyof typeof dayPresets | '1y' | '24h' | 'all';
 type ReportGranularity = 'hour' | 'day' | 'week' | 'month';
 
 function isRangePreset(value: string): value is RangePreset {
-  return value === '1y' || value === '24h' || Object.hasOwn(dayPresets, value);
+  return (
+    value === '1y' ||
+    value === '24h' ||
+    value === 'all' ||
+    Object.hasOwn(dayPresets, value)
+  );
 }
 
 export class AnalyticsInputError extends Error {
@@ -95,13 +100,18 @@ export function parseAnalyticsQuery(
   }
   const range = rangeValue as RangePreset | undefined;
   const hourly = range === '24h';
-  const defaultGranularity = hourly ? 'hour' : range === '1y' ? 'month' : 'day';
+  const all = range === 'all';
+  const endYesterday = all || range === '1y';
+  const defaultGranularity = hourly ? 'hour' : endYesterday ? 'month' : 'day';
   const granularity = get('granularity') ?? defaultGranularity;
   if (
     hourly
       ? granularity !== 'hour'
-      : granularity !== 'day' &&
-        (!allowArchived || (granularity !== 'week' && granularity !== 'month'))
+      : all
+        ? granularity !== 'month'
+        : granularity !== 'day' &&
+          (!allowArchived ||
+            (granularity !== 'week' && granularity !== 'month'))
   ) {
     throw new AnalyticsInputError('invalid_filters');
   }
@@ -111,13 +121,15 @@ export function parseAnalyticsQuery(
   const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
   const utcToday = instant.toZonedDateTimeISO('UTC').toPlainDate();
   const presetDays =
-    range && range !== '1y' && range !== '24h' ? dayPresets[range] : undefined;
-  let to =
-    range === '1y'
-      ? utcToday.subtract({ days: 1 })
-      : civilDay(get('to'), today);
-  let from =
-    range === '1y'
+    range && range !== '1y' && range !== '24h' && range !== 'all'
+      ? dayPresets[range]
+      : undefined;
+  let to = endYesterday
+    ? utcToday.subtract({ days: 1 })
+    : civilDay(get('to'), today);
+  let from = all
+    ? to
+    : range === '1y'
       ? to.subtract({ years: 1 }).add({ days: 1 })
       : hourly
         ? instant
@@ -128,9 +140,10 @@ export function parseAnalyticsQuery(
   const retention = today.subtract({ months: 3 }).add({ days: 1 });
   const archived =
     !hourly &&
-    (Temporal.PlainDate.compare(from, retention) < 0 ||
+    (all ||
+      Temporal.PlainDate.compare(from, retention) < 0 ||
       from.until(to).days >= 90);
-  if (archived && allowArchived && range !== '1y' && !get('to')) {
+  if (archived && allowArchived && !endYesterday && !get('to')) {
     to = utcToday;
     if (presetDays) from = to.subtract({ days: presetDays - 1 });
   }
@@ -219,12 +232,11 @@ function groupReport(
   if (granularity === 'day' || granularity === 'hour') return report;
   const grouped = new Map<string, AnalyticsReport['series'][number]>();
   for (const row of report.series) {
-    const date = Temporal.PlainDate.from(row.date);
-    const start =
-      granularity === 'week'
-        ? date.subtract({ days: date.dayOfWeek - 1 })
-        : date.with({ day: 1 });
-    const key = start.toString();
+    let key = row.date.slice(0, 7);
+    if (granularity === 'week') {
+      const date = Temporal.PlainDate.from(row.date);
+      key = date.subtract({ days: date.dayOfWeek - 1 }).toString();
+    }
     const current = grouped.get(key);
     if (!current) {
       grouped.set(key, { ...row });
@@ -244,11 +256,19 @@ function groupReport(
 
 export async function loadAnalyticsReport(
   env: Pick<Cloudflare.Env, 'ANALYTICS_SQL'> & { DB?: D1Database },
-  { query, dimension, from, to, archived, granularity }: AnalyticsQuery,
+  { query, dimension, from, to, archived, granularity, range }: AnalyticsQuery,
   { development }: { development: boolean },
 ): Promise<AnalyticsReport> {
   if (archived) {
     if (!env.DB) throw new Error('D1 binding is unavailable');
+    if (range === 'all') {
+      from =
+        (await env.DB.prepare(
+          'SELECT MIN(day_utc) AS first_day FROM rollup_jobs WHERE day_utc <= ? AND completed_at IS NOT NULL',
+        )
+          .bind(to)
+          .first<string>('first_day')) ?? to;
+    }
     const report = await loadArchivedClickReport(env.DB, {
       query,
       dimension,

@@ -1,4 +1,3 @@
-import { Temporal } from '@js-temporal/polyfill';
 import {
   breakdownLimit,
   type AnalyticsDimension,
@@ -110,13 +109,9 @@ export async function loadArchivedClickReport(
   const gaps: string[] = [];
   let completeThrough: string | null = null;
   let totalClicks = 0;
-  const end = Temporal.PlainDate.from(to);
-  for (
-    let day = Temporal.PlainDate.from(from);
-    Temporal.PlainDate.compare(day, end) <= 0;
-    day = day.add({ days: 1 })
-  ) {
-    const date = day.toString();
+  const end = Date.parse(to);
+  for (let day = Date.parse(from); day <= end; day += 86_400_000) {
+    const date = new Date(day).toISOString().slice(0, 10);
     const clicks = days.get(date)?.clicks ?? null;
     if (clicks === null) {
       gaps.push(date);

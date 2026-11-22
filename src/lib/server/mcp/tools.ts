@@ -296,7 +296,7 @@ export function registerMcpTools(
         .regex(/^\d{4}-\d{2}-\d{2}$/)
         .optional(),
       tz: z.string().max(100).optional(),
-      range: z.enum(['24h', '7d', '30d', '90d', '1y']).optional(),
+      range: z.enum(['24h', '7d', '30d', '90d', '1y', 'all']).optional(),
       granularity: z.enum(['hour', 'day', 'week', 'month']).optional(),
       ruleId: id.optional(),
       source: z.enum(['link', 'qr']).optional(),

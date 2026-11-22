@@ -189,6 +189,14 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await expect(page.getByRole('cell', { name: 'No data' })).toBeVisible();
       await expect(page.getByText('Sample data')).toHaveCount(0);
 
+      await page.getByRole('link', { name: 'All saved history' }).click();
+      await expect(
+        page.getByRole('heading', { name: 'Monthly clicks' }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: 'Export CSV' }),
+      ).toHaveAttribute('href', /range=all/);
+
       await page.goto(
         `/admin/conversions?linkId=${encodeURIComponent(linkId)}`,
       );
