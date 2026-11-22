@@ -1,3 +1,6 @@
 # Set a local bootstrap token before testing initial owner setup.
 # Generate a token with: openssl rand -hex 32
 SETUP_TOKEN=
+
+# Needed only when enabling Turnstile protection.
+TURNSTILE_SECRET_KEY=

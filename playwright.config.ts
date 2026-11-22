@@ -4,8 +4,7 @@ export default defineConfig({
   testDir: 'tests/e2e',
   use: { baseURL: 'http://127.0.0.1:4173' },
   webServer: {
-    command:
-      'npm run db:migrate:local && npm run dev -- --host 127.0.0.1 --port 4173 --strictPort',
+    command: 'node scripts/e2e-server.mjs',
     url: 'http://127.0.0.1:4173/health',
   },
 });

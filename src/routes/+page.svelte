@@ -20,11 +20,18 @@
     <p>{messages['home.status']}</p>
   </div>
 
+  <a
+    class="w-fit rounded-md border px-4 py-2 font-medium underline underline-offset-4"
+    href={data.initialized ? '/login' : '/setup'}
+  >
+    {data.initialized ? messages['login.title'] : messages['setup.title']}
+  </a>
+
   <form method="POST" class="flex flex-wrap items-end gap-3">
     <div class="space-y-1">
-      <label for="locale" class="block text-sm font-medium"
-        >{messages['language.label']}</label
-      >
+      <label for="locale" class="block text-sm font-medium">
+        {messages['language.label']}
+      </label>
       <select id="locale" name="locale" class="rounded-md border px-3 py-2">
         {#each locales as locale (locale)}
           <option

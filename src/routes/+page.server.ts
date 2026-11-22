@@ -1,14 +1,19 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { localeCookie } from '$lib/i18n/cookie';
 import { isLocale } from '$lib/i18n/locale';
+import { setupComplete } from '$lib/server/auth/setup';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = ({ locals, setHeaders }) => {
+export const load: PageServerLoad = async ({ locals, setHeaders }) => {
   setHeaders({
     'cache-control': 'private, no-store',
     vary: 'Cookie, Accept-Language',
   });
-  return { locale: locals.locale };
+  const db = locals.env.DB;
+  return {
+    locale: locals.locale,
+    initialized: db ? await setupComplete(db) : false,
+  };
 };
 
 export const actions: Actions = {

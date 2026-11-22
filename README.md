@@ -4,7 +4,7 @@ Linkrovia is an open source, self-hosted URL shortener and analytics project for
 
 Short links use a hostname configured by the operator, such as a Workers hostname or a custom domain.
 
-The initial development milestone includes a SvelteKit application, local D1 migrations and fixtures, six interface languages, and a database readiness check.
+The local development build includes guided owner setup, a six-language admin interface, link and domain management, scoped API keys, and host-based redirects. Linkrovia is in development. The development guide lists the current Cloudflare verification status.
 
 ## Development
 

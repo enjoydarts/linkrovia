@@ -3,11 +3,11 @@ import { getDb } from '$lib/server/db/client';
 import { setupState } from '$lib/server/db/schema';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ platform }) => {
+export const GET: RequestHandler = async ({ locals }) => {
   const headers = { 'cache-control': 'no-store' };
   try {
-    if (platform?.env.DB) {
-      const db = getDb(platform.env.DB);
+    if (locals.env.DB) {
+      const db = getDb(locals.env.DB);
       const row = await db
         .select({ singleton: setupState.singleton })
         .from(setupState)
