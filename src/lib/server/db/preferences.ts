@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { isLocale, type Locale } from '../../i18n/locale';
 import { resolveTimeZone } from '../../timezone/timezone';
 import { getDb } from './client';
 import { appSettings } from './schema';
@@ -22,4 +23,21 @@ export async function getEffectiveTimeZone(
     }
   }
   return resolveTimeZone(userTimeZone, defaultTimeZone);
+}
+
+export function parseDefaultLocale(value: string | undefined): Locale {
+  try {
+    const locale: unknown = JSON.parse(value ?? 'null');
+    if (isLocale(locale)) return locale;
+  } catch {
+    // A malformed stored preference falls back to English.
+  }
+  return 'en';
+}
+
+export async function getDefaultLocale(db: D1Database): Promise<Locale> {
+  const value = await db
+    .prepare("SELECT json_value FROM app_settings WHERE key = 'default_locale'")
+    .first<string>('json_value');
+  return parseDefaultLocale(value ?? undefined);
 }

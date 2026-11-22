@@ -97,6 +97,7 @@ export const domains = sqliteTable(
     verifiedAt: integer('verified_at'),
     connectionErrorCode: text('connection_error_code'),
     connectionVersion: integer('connection_version').notNull().default(0),
+    backupArchivedAt: integer('backup_archived_at'),
   },
   (table) => [
     check(
@@ -275,6 +276,17 @@ export const appSettings = sqliteTable('app_settings', {
     .default(sql`(unixepoch())`),
 });
 
+export const backupState = sqliteTable(
+  'backup_state',
+  {
+    singleton: integer('singleton').primaryKey(),
+    instanceId: text('instance_id').notNull(),
+    signingKey: text('signing_key').notNull(),
+    revision: integer('revision').notNull().default(0),
+  },
+  () => [check('backup_state_singleton_check', sql`singleton = 1`)],
+);
+
 export const setupState = sqliteTable(
   'setup_state',
   {
@@ -345,19 +357,30 @@ export const utmTemplates = sqliteTable('utm_templates', {
     .default(sql`(unixepoch())`),
 });
 
-export const conversionGoals = sqliteTable('conversion_goals', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  linkId: text('link_id').references(() => links.id),
-  eventName: text('event_name').notNull(),
-  attributionWindowHours: integer('attribution_window_hours')
-    .notNull()
-    .default(24),
-  isActive: integer('is_active').notNull().default(1),
-  createdAt: integer('created_at')
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
+export const conversionGoals = sqliteTable(
+  'conversion_goals',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    linkId: text('link_id').references(() => links.id),
+    eventName: text('event_name').notNull(),
+    backupArchivedAt: integer('backup_archived_at'),
+    attributionWindowHours: integer('attribution_window_hours')
+      .notNull()
+      .default(24),
+    isActive: integer('is_active').notNull().default(1),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index('conversion_goals_backup_lookup').on(
+      table.linkId,
+      table.eventName,
+      table.backupArchivedAt,
+    ),
+  ],
+);
 
 export const clickAttributions = sqliteTable(
   'click_attributions',

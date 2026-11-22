@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { fixtureSetupToken } from '../fixtures/setup.mjs';
@@ -390,6 +391,74 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     } finally {
       if (originalViewport) await page.setViewportSize(originalViewport);
     }
+  });
+
+  await test.step('download, review, and safely replace from an owner backup', async () => {
+    await page.goto('/admin/backup', { waitUntil: 'networkidle' });
+    const [backup] = await Promise.all([
+      page.waitForEvent('download'),
+      page
+        .getByRole('button', { name: 'Download backup', exact: true })
+        .click(),
+    ]);
+    expect(backup.suggestedFilename()).toBe('linkrovia-backup.json');
+    const path = await backup.path();
+    expect(path).toBeTruthy();
+    if (!path) throw new Error('Missing backup file');
+    await page.getByLabel('Backup JSON file').setInputFiles(path);
+    await page.getByLabel('Replace existing data').check();
+    await page.getByRole('button', { name: 'Review changes' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Restore preview' }),
+    ).toBeVisible();
+    const settingsExport = await context.request.get('/api/v1/settings/export');
+    expect(settingsExport.ok()).toBe(true);
+    expect(settingsExport.headers()['cache-control']).toContain('no-store');
+    const data = await readFile(path);
+    const headers = {
+      origin: new URL(page.url()).origin,
+      'content-type': 'application/json',
+      'x-csrf-token': await page
+        .locator('form[action="/logout"] input[name="csrfToken"]')
+        .inputValue(),
+    };
+    const validation = await context.request.post(
+      '/api/v1/backup/validate?mode=replace',
+      { headers, data },
+    );
+    expect(validation.ok()).toBe(true);
+    const signedPreview = await validation.json();
+    const premature = await context.request.post('/api/v1/backup/restore', {
+      headers: {
+        ...headers,
+        'x-backup-manifest': signedPreview.manifest,
+      },
+      data,
+    });
+    expect(premature.status()).toBe(409);
+    expect(await premature.json()).toMatchObject({
+      code: 'confirmation_required',
+    });
+    const restore = page.getByRole('button', { name: 'Restore data' });
+    const confirmation = page.getByLabel(
+      'I understand that existing data will be replaced.',
+    );
+    await expect(restore).toBeDisabled();
+    await expect(confirmation).toBeDisabled();
+    const [current] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Download current backup' }).click(),
+    ]);
+    expect(current.suggestedFilename()).toBe('linkrovia-backup.json');
+    await expect(confirmation).toBeEnabled();
+    await expect(restore).toBeDisabled();
+    await confirmation.check();
+    await expect(restore).toBeEnabled();
+    await restore.click();
+    await expect(page.getByRole('status')).toHaveText('Restore completed.');
+    expect((await request.get('/csv-e2e', { maxRedirects: 0 })).status()).toBe(
+      302,
+    );
   });
 
   const invalidLogout = await context.request.post('/logout', {

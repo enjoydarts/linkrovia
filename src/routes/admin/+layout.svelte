@@ -3,6 +3,8 @@
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import Link2 from '@lucide/svelte/icons/link-2';
   import Upload from '@lucide/svelte/icons/upload';
+  import Archive from '@lucide/svelte/icons/archive';
+  import { backupMessages } from './backup/messages';
   import Route from '@lucide/svelte/icons/route';
   import Globe from '@lucide/svelte/icons/globe';
   import Settings from '@lucide/svelte/icons/settings';
@@ -33,6 +35,15 @@
       label: csvMessages(data.locale).title,
       icon: Upload,
     },
+    ...(data.user.role === 'owner'
+      ? [
+          {
+            href: '/admin/backup',
+            label: backupMessages(data.locale).title,
+            icon: Archive,
+          },
+        ]
+      : []),
     { href: '/admin/utm', label: 'UTM', icon: Route },
     { href: '/admin/domains', label: links.domains, icon: Globe },
     { href: '/admin/settings', label: preferences.settings, icon: Settings },

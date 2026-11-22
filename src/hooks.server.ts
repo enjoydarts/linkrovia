@@ -2,7 +2,8 @@ import { env } from 'cloudflare:workers';
 import { dev } from '$app/env';
 import type { Handle } from '@sveltejs/kit/hooks';
 import { localeCookie } from '$lib/i18n/cookie';
-import { resolveLocale } from '$lib/i18n/locale';
+import { preferredLocale } from '$lib/i18n/locale';
+import { getDefaultLocale } from '$lib/server/db/preferences';
 import { getSession, sessionCookie } from '$lib/server/auth/session';
 import { publicLinkHeaders } from '$lib/server/links/public-response';
 import { normalizeHostname } from '$lib/server/security/url-policy';
@@ -19,7 +20,9 @@ export const handle: Handle = async ({ event, resolve }) => {
     id?.startsWith('/login/') ||
     id === '/logout' ||
     id === '/admin' ||
-    id?.startsWith('/admin/');
+    id?.startsWith('/admin/') ||
+    id?.startsWith('/api/v1/backup/') ||
+    id === '/api/v1/settings/export';
   if (management && event.locals.env.DB) {
     try {
       const host = await event.locals.env.DB.prepare(
@@ -44,11 +47,18 @@ export const handle: Handle = async ({ event, resolve }) => {
   const token = management ? event.cookies.get(sessionCookie) : undefined;
   const db = token && event.locals.env.DB;
   event.locals.session = db ? await getSession(db, token) : null;
-  const locale = resolveLocale(
+  const preferred = preferredLocale(
     event.locals.session?.user.locale,
     event.cookies.get(localeCookie),
     event.request.headers.get('accept-language'),
   );
+  // The default setting only affects pages rendered without a language preference.
+  const rendersPage = management || id === '/' || id === '/gate/[token]';
+  const locale =
+    preferred ??
+    (rendersPage && event.locals.env.DB
+      ? await getDefaultLocale(event.locals.env.DB).catch(() => 'en' as const)
+      : 'en');
   event.locals.locale = locale;
   const theme = resolveTheme(
     event.locals.session?.user.theme,

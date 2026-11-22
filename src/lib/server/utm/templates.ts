@@ -59,7 +59,7 @@ export function parseUtmTemplateInput(value: unknown): UtmTemplateInput | null {
   };
 }
 
-function parseRow({
+export function parseUtmTemplateRow({
   id,
   name,
   valuesJson,
@@ -88,7 +88,7 @@ export async function listUtmTemplates(db: D1Database): Promise<UtmTemplate[]> {
     )
     .all<TemplateRow>();
   return results.flatMap((row) => {
-    const template = parseRow(row);
+    const template = parseUtmTemplateRow(row);
     return template ? [template] : [];
   });
 }
@@ -101,7 +101,7 @@ export async function getUtmTemplate(
     .prepare(`SELECT ${fields} FROM utm_templates WHERE id = ?`)
     .bind(id)
     .first<TemplateRow>();
-  return row ? parseRow(row) : null;
+  return row ? parseUtmTemplateRow(row) : null;
 }
 
 type TemplateMutation =
@@ -131,7 +131,7 @@ export async function createUtmTemplate(
     )
     .first<TemplateRow>();
   if (!row) return { code: 'name_conflict' };
-  const template = parseRow(row);
+  const template = parseUtmTemplateRow(row);
   return template ? { template } : { code: 'invalid_template' };
 }
 
@@ -162,7 +162,7 @@ export async function updateUtmTemplate(
     )
     .first<TemplateRow>();
   if (row) {
-    const template = parseRow(row);
+    const template = parseUtmTemplateRow(row);
     return template ? { template } : { code: 'invalid_template' };
   }
 
@@ -184,5 +184,5 @@ export async function deleteUtmTemplate(
     .prepare('DELETE FROM utm_templates WHERE id = ? AND updated_at = ?')
     .bind(id, expected)
     .run();
-  return meta.changes === 1;
+  return meta.changes > 0;
 }

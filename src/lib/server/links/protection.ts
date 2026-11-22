@@ -91,7 +91,7 @@ export async function setLinkProtection(
       )
       .bind(uuidV7(), userId, id),
   ]);
-  return result.meta.changes === 1
+  return result.meta.changes > 0
     ? { ok: true }
     : { ok: false, code: 'stale_link' };
 }

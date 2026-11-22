@@ -6,7 +6,12 @@ import { readSmallForm, requireSameOrigin } from '$lib/server/security/request';
 import { isValidSlug } from '$lib/server/security/slug';
 import { parseDestinationUrl } from '$lib/server/security/url-policy';
 import { interpretLocalDateTime } from '$lib/timezone/timezone';
-import type { LinkInput, LinkSummary, RedirectType } from './store';
+import {
+  isAvailableLinkDomain,
+  type LinkInput,
+  type LinkSummary,
+  type RedirectType,
+} from './store';
 
 export function requireSession(event: RequestEvent) {
   const session = event.locals.session;
@@ -104,10 +109,7 @@ export async function parseLinkForm(
         .map((t) => [t.toLowerCase(), t]),
     ).values(),
   ];
-  const domain = await db
-    .prepare('SELECT id FROM domains WHERE id = ?')
-    .bind(values.domainId)
-    .first<{ id: string }>();
+  const domain = await isAvailableLinkDomain(db, values.domainId);
   if (
     !domain ||
     !destination ||

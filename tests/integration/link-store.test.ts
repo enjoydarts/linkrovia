@@ -1,9 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { getPlatformProxy } from 'wrangler';
+import { getPlatformProxy, unstable_splitSqlQuery } from 'wrangler';
 import {
   createLink,
   getLink,
+  listDomains,
   listLinks,
   listLinkRules,
   updateLink,
@@ -38,16 +39,13 @@ beforeAll(async () => {
     '0001_initial.sql',
     '0002_domain_connections.sql',
     '0004_link_protection.sql',
+    '0006_backup.sql',
   ]) {
     const sql = await readFile(
       new URL('../../migrations/' + name, import.meta.url),
       'utf8',
     );
-    const statements = sql
-      .replace(/--.*$/gm, '')
-      .split(';')
-      .map((part) => part.trim())
-      .filter(Boolean);
+    const statements = unstable_splitSqlQuery(sql);
     await platform.env.DB.batch(
       statements.map((statement) => platform.env.DB.prepare(statement)),
     );
@@ -68,6 +66,41 @@ beforeAll(async () => {
 afterAll(async () => platform?.dispose());
 
 describe('link management and delivery', () => {
+  it('hides archived domains and rejects new or edited links on those domains', async () => {
+    const db = platform.env.DB;
+    await db
+      .prepare(
+        "INSERT INTO domains (id, hostname, is_active, backup_archived_at) VALUES ('archived', 'old.example.org', 0, 100)",
+      )
+      .run();
+
+    expect((await listDomains(db)).map(({ id }) => id)).not.toContain(
+      'archived',
+    );
+    const archivedLink = {
+      ...draft,
+      slug: 'archive-check',
+      domainId: 'archived',
+    };
+    expect(await createLink(db, null, archivedLink)).toEqual({
+      ok: false,
+      code: 'missing_domain',
+    });
+    const created = await createLink(db, null, {
+      ...draft,
+      slug: 'archive-check',
+    });
+    if (!created.ok) throw new Error(created.code);
+    const link = await getLink(db, created.id);
+    if (!link) throw new Error('missing link');
+    expect(
+      await updateLink(db, null, link.id, link.updatedAt, archivedLink),
+    ).toEqual({
+      ok: false,
+      code: 'missing_domain',
+    });
+  });
+
   it('enforces domain-scoped uniqueness and case-sensitive lookup', async () => {
     const db = platform.env.DB;
     const first = await createLink(db, null, draft);

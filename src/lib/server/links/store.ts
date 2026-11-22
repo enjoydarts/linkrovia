@@ -150,7 +150,7 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
 export async function listDomains(db: D1Database): Promise<DomainSummary[]> {
   const { results } = await db
     .prepare(
-      'SELECT id, hostname, is_active AS isActive, connection_status AS connectionStatus FROM domains ORDER BY is_primary DESC, hostname',
+      'SELECT id, hostname, is_active AS isActive, connection_status AS connectionStatus FROM domains WHERE backup_archived_at IS NULL ORDER BY is_primary DESC, hostname',
     )
     .all<Omit<DomainSummary, 'isActive'> & { isActive: number }>();
   return results.map((domain) => ({
@@ -165,11 +165,13 @@ export async function addDraftDomain(
 ): Promise<boolean> {
   const result = await db
     .prepare(
-      "INSERT INTO domains (id, hostname, is_active, connection_status) VALUES (?, ?, 0, 'draft') ON CONFLICT(hostname) DO NOTHING",
+      `INSERT INTO domains (id, hostname, is_active, connection_status) VALUES (?, ?, 0, 'draft')
+       ON CONFLICT(hostname) DO UPDATE SET backup_archived_at = NULL, updated_at = unixepoch()
+       WHERE domains.backup_archived_at IS NOT NULL`,
     )
     .bind(uuidV7(), hostname)
     .run();
-  return result.meta.changes === 1;
+  return result.meta.changes > 0;
 }
 
 function writeAudit(
@@ -271,16 +273,21 @@ function ruleStatements(
   ];
 }
 
+const availableDomain =
+  'SELECT 1 FROM domains WHERE id = ? AND backup_archived_at IS NULL';
+
+export async function isAvailableLinkDomain(db: D1Database, id: string) {
+  return (await db.prepare(availableDomain).bind(id).first()) !== null;
+}
+
 export async function createLink(
   db: D1Database,
   actorId: string | null,
   input: LinkInput,
 ): Promise<MutationResult> {
-  const domain = await db
-    .prepare('SELECT id FROM domains WHERE id = ?')
-    .bind(input.domainId)
-    .first();
-  if (!domain) return { ok: false, code: 'missing_domain' };
+  if (!(await isAvailableLinkDomain(db, input.domainId))) {
+    return { ok: false, code: 'missing_domain' };
+  }
 
   for (let attempt = 0; attempt < (input.slug ? 1 : 5); attempt++) {
     const id = uuidV7();
@@ -289,7 +296,8 @@ export async function createLink(
       db
         .prepare(
           `INSERT INTO links (id, domain_id, slug, destination_url, title, redirect_type, is_active, starts_at, expires_at, created_by, utm_config_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(domain_id, slug) DO NOTHING`,
+         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+         WHERE EXISTS (${availableDomain}) ON CONFLICT(domain_id, slug) DO NOTHING`,
         )
         .bind(
           id,
@@ -303,14 +311,20 @@ export async function createLink(
           input.expiresAt,
           actorId,
           input.utmConfigJson ?? null,
+          input.domainId,
         ),
       writeAudit(db, audit, actorId, 'link.created', id),
       ...tagStatements(db, audit, id, input.tags),
       ...ruleStatements(db, audit, id, input.rules),
     ]);
-    if (insert.meta.changes === 1) return { ok: true, id };
+    if (insert.meta.changes > 0) return { ok: true, id };
   }
-  return { ok: false, code: 'slug_conflict' };
+  return {
+    ok: false,
+    code: (await isAvailableLinkDomain(db, input.domainId))
+      ? 'slug_conflict'
+      : 'missing_domain',
+  };
 }
 
 export async function updateLink(
@@ -321,12 +335,7 @@ export async function updateLink(
   input: LinkInput,
 ): Promise<UpdateMutationResult> {
   if (!input.slug) return { ok: false, code: 'slug_conflict' };
-  if (
-    !(await db
-      .prepare('SELECT id FROM domains WHERE id = ?')
-      .bind(input.domainId)
-      .first())
-  ) {
+  if (!(await isAvailableLinkDomain(db, input.domainId))) {
     return { ok: false, code: 'missing_domain' };
   }
 
@@ -343,6 +352,7 @@ export async function updateLink(
         END,
         updated_at = MAX(unixepoch(), updated_at + 1)
        WHERE id = ? AND updated_at = ? AND deleted_at IS NULL
+         AND EXISTS (${availableDomain})
          AND (protection_mode = 'none' OR ? IN (302, 307))
          AND NOT EXISTS (SELECT 1 FROM links other WHERE other.domain_id = ? AND other.slug = ? AND other.id <> ?)`,
       )
@@ -360,6 +370,7 @@ export async function updateLink(
         Number(input.rules !== undefined),
         id,
         expected,
+        input.domainId,
         input.redirectType,
         input.domainId,
         input.slug,
@@ -374,7 +385,10 @@ export async function updateLink(
     ...tagStatements(db, audit, id, input.tags),
     ...ruleStatements(db, audit, id, input.rules),
   ]);
-  if (update.meta.changes === 1) return { ok: true, id };
+  if (update.meta.changes > 0) return { ok: true, id };
+  if (!(await isAvailableLinkDomain(db, input.domainId))) {
+    return { ok: false, code: 'missing_domain' };
+  }
   const row = await getLink(db, id);
   if (
     row?.updatedAt === expected &&
@@ -403,5 +417,5 @@ export async function removeLink(
       .bind(id, expected),
     writeAudit(db, uuidV7(), actorId, 'link.deleted', id),
   ]);
-  return removed.meta.changes === 1;
+  return removed.meta.changes > 0;
 }

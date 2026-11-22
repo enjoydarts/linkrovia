@@ -28,6 +28,7 @@ export function isEpochSecond(value: unknown): value is number {
 
 export async function readApiJson(
   request: Request,
+  maxBytes = maxJsonBytes,
 ): Promise<{ body: unknown } | { status: 400 | 413 | 415 }> {
   const mediaType = request.headers
     .get('content-type')
@@ -35,7 +36,7 @@ export async function readApiJson(
     ?.trim()
     .toLowerCase();
   if (mediaType !== 'application/json') return { status: 415 };
-  if (Number(request.headers.get('content-length')) > maxJsonBytes)
+  if (Number(request.headers.get('content-length')) > maxBytes)
     return { status: 413 };
   if (!request.body) return { status: 400 };
 
@@ -48,7 +49,7 @@ export async function readApiJson(
       const { value, done } = await reader.read();
       if (done) return { body: JSON.parse(json + decoder.decode()) };
       bytes += value.byteLength;
-      if (bytes > maxJsonBytes) {
+      if (bytes > maxBytes) {
         await reader.cancel();
         return { status: 413 };
       }

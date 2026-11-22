@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { getTableConfig, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { getPlatformProxy } from 'wrangler';
+import { getPlatformProxy, unstable_splitSqlQuery } from 'wrangler';
 import { getDb } from '../../src/lib/server/db/client';
 import { getEffectiveTimeZone } from '../../src/lib/server/db/preferences';
 import * as schema from '../../src/lib/server/db/schema';
@@ -19,11 +19,7 @@ beforeAll(async () => {
     .filter((name) => name.endsWith('.sql'))
     .sort()) {
     const sql = await readFile(new URL(migration, migrations), 'utf8');
-    const statements = sql
-      .replace(/--.*$/gm, '')
-      .split(';')
-      .map((part) => part.trim())
-      .filter(Boolean);
+    const statements = unstable_splitSqlQuery(sql);
     await platform.env.DB.batch(
       statements.map((statement) => platform.env.DB.prepare(statement)),
     );

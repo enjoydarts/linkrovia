@@ -41,11 +41,11 @@ export function messagesFor(locale: Locale): typeof en {
   return messages;
 }
 
-export function resolveLocale(
+export function preferredLocale(
   user: unknown,
   cookie: unknown,
   acceptLanguage: string | null = null,
-): Locale {
+): Locale | undefined {
   if (isLocale(user)) return user;
   if (isLocale(cookie)) return cookie;
 
@@ -73,6 +73,12 @@ export function resolveLocale(
     }
     if (isLocale(language)) return language;
   }
+}
 
-  return 'en';
+export function resolveLocale(
+  user: unknown,
+  cookie: unknown,
+  acceptLanguage: string | null = null,
+): Locale {
+  return preferredLocale(user, cookie, acceptLanguage) ?? 'en';
 }

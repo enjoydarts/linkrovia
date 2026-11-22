@@ -109,6 +109,28 @@
           {m.defaultHelp}
         </p>
       </div>
+      <div class="space-y-2">
+        <label for="default-locale" class="block font-medium">
+          {m.defaultLanguage}
+        </label>
+        <select
+          id="default-locale"
+          name="defaultLocale"
+          aria-describedby="default-locale-help"
+          class="w-full rounded-md border border-control bg-surface px-3 py-2"
+        >
+          {#each locales as locale (locale)}<option
+              value={locale}
+              lang={locale}
+              selected={locale === data.defaultLocale}
+            >
+              {localeNames[locale]}
+            </option>{/each}
+        </select>
+        <p id="default-locale-help" class="text-sm text-muted">
+          {m.defaultLanguageHelp}
+        </p>
+      </div>
       {#if form?.section === 'global'}<p role="alert" class="text-negative">
           {m.invalidZone}
         </p>{/if}
