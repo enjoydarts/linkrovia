@@ -162,6 +162,27 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await expect(
         page.getByRole('heading', { name: 'Link analytics' }),
       ).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+      const linkTabs = page.getByRole('navigation', {
+        name: 'Links',
+        exact: true,
+      });
+      await expect(
+        linkTabs.getByRole('link', { name: 'Analytics' }),
+      ).toHaveAttribute('aria-current', 'page');
+      await expect(
+        page.getByText('A fixture link', { exact: true }),
+      ).toBeVisible();
+      await linkTabs.locator('a[href$="/qr"]').click();
+      await expect(page).toHaveURL(`${linkPage}/qr`);
+      await linkTabs.getByRole('link', { name: 'Analytics' }).click();
+      await expect(page).toHaveURL(`${linkPage}/analytics`);
+      const desktop = page.viewportSize()!;
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.getByLabel('Group by')).toBeHidden();
+      await page.getByRole('button', { name: 'Filter', exact: true }).click();
+      await expect(page.getByLabel('Group by')).toBeVisible();
+      await page.setViewportSize(desktop);
       await expect(page.getByText('No clicks for this period.')).toBeVisible();
       await expect(page.locator('canvas')).toHaveCount(0);
       const exportHref = await page
@@ -245,6 +266,31 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(
       recentLink.getByText('Inactive', { exact: true }),
     ).toBeVisible();
+  });
+
+  await test.step('queue a missing click day as the owner', async () => {
+    const date = new Date(Date.now() - 14 * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    const analytics = '/admin/analytics?range=7d';
+    await page.goto(analytics);
+    const panel = page.locator('details').filter({
+      hasText: 'Restore missing click history',
+    });
+    await panel.getByText('Restore missing click history').click();
+    await panel.getByLabel('UTC date').fill(date);
+
+    const rejected = await context.request.post(analytics, {
+      form: { date },
+      headers: { origin: new URL(page.url()).origin },
+    });
+    expect(rejected.status()).toBe(403);
+
+    await panel.getByRole('button', { name: 'Request recovery' }).click();
+    await expect(page).toHaveURL(/\/admin\/analytics\?range=7d$/);
+    await expect(panel.getByRole('status')).toContainText(`${date} · Queued`);
+    await page.reload();
+    await expect(panel.getByRole('status')).toContainText('Queued');
   });
 
   await test.step('preview and import CSV rows with partial success', async () => {
@@ -464,6 +510,28 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(
       page.getByRole('button', { name: 'Disable MCP' }),
     ).toBeVisible();
+    const cursor = page
+      .locator('details')
+      .filter({ has: page.getByText('Cursor', { exact: true }) });
+    await cursor.getByText('Cursor', { exact: true }).click();
+    await expect(cursor.locator('pre')).toContainText(
+      'Bearer ${env:LINKROVIA_MCP_TOKEN}',
+    );
+    const gemini = page
+      .locator('details')
+      .filter({ has: page.getByText('Gemini CLI', { exact: true }) });
+    await gemini.getByText('Gemini CLI', { exact: true }).click();
+    await expect(gemini.locator('pre')).toContainText('httpUrl');
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await gemini.getByRole('button', { name: 'Copy configuration' }).click();
+    await expect(gemini.getByRole('status')).toHaveText(
+      'Configuration copied.',
+    );
+    expect(
+      JSON.parse(await page.evaluate(() => navigator.clipboard.readText())),
+    ).toMatchObject({
+      mcpServers: { linkrovia: { httpUrl: new URL('/mcp', page.url()).href } },
+    });
     expect(
       (
         await context.request.post('/mcp', { headers, data: initialize })

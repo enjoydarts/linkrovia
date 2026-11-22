@@ -16,6 +16,7 @@
   import Menu from '@lucide/svelte/icons/menu';
   import X from '@lucide/svelte/icons/x';
   import { csvMessages } from './import/messages';
+  import { brand } from '$lib/brand';
   import Brand from '$lib/components/Brand.svelte';
   import { messagesFor } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
@@ -76,6 +77,18 @@
       icon: KeyRound,
     },
   ]);
+  const groupLabels = {
+    en: ['Workspace', 'Manage'],
+    ja: ['ワークスペース', '管理'],
+    'zh-CN': ['工作区', '管理'],
+    'zh-TW': ['工作區', '管理'],
+    es: ['Espacio de trabajo', 'Administrar'],
+    it: ['Area di lavoro', 'Gestione'],
+    fr: ['Espace de travail', 'Gestion'],
+  } as const;
+  let currentItem = $derived(
+    nav.find((item) => active(item.href, page.url.pathname)) ?? nav[0],
+  );
   let drawer: HTMLDialogElement;
   const menuLabels = {
     en: 'Open navigation',
@@ -104,7 +117,10 @@
 
 {#snippet navigation()}
   <nav aria-label={messages['admin.title']} class="navigation">
-    {#each nav as item (item.href)}
+    {#each nav as item, index (item.href)}
+      {#if index === 0 || item.href === '/admin/import'}
+        <p class="nav-group">{groupLabels[data.locale][index === 0 ? 0 : 1]}</p>
+      {/if}
       <a
         href={item.href}
         aria-current={active(item.href, page.url.pathname) ? 'page' : undefined}
@@ -153,6 +169,9 @@
       >
         <Menu size={23} />
       </button>
+      <div class="topbar-context">
+        <span>{brand.name}</span><strong>{currentItem.label}</strong>
+      </div>
       <div class="topbar-account">
         <span class="account-mark" aria-hidden="true">
           {data.user.email.slice(0, 1).toUpperCase()}
@@ -192,22 +211,35 @@
     color: var(--brand-on-ink);
   }
   .sidebar {
-    padding: 28px 16px;
+    padding: 30px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
   }
   .brand-wrap {
-    padding: 0 10px 35px;
+    padding: 0 10px 24px;
   }
   .navigation {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
+  .nav-group {
+    margin: 20px 13px 8px;
+    color: var(--brand-muted-on-ink);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
   .navigation a {
     display: flex;
     align-items: center;
     gap: 13px;
-    min-height: 44px;
-    padding: 10px 13px;
+    min-height: 40px;
+    padding: 9px 13px;
     border-radius: var(--ui-radius-sm);
     color: var(--brand-muted-on-ink);
     font-size: 14px;
@@ -242,6 +274,23 @@
     padding: 14px 40px;
     border-bottom: 1px solid var(--ui-border);
     background: var(--ui-surface);
+  }
+  .topbar-context {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: auto;
+    color: var(--ui-text-muted);
+    font-size: 13px;
+  }
+  .topbar-context strong {
+    color: var(--ui-text);
+    font-weight: 650;
+  }
+  .topbar-context strong::before {
+    content: '/';
+    color: var(--ui-border);
+    margin-right: 12px;
   }
   .topbar-account {
     display: flex;
@@ -339,6 +388,9 @@
       height: 44px;
       margin-right: auto;
       color: var(--ui-text);
+    }
+    .topbar-context {
+      display: none;
     }
     .account-mark {
       display: none;

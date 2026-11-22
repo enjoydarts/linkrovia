@@ -220,12 +220,14 @@
 </svelte:head>
 
 <div class="space-y-6">
-  <header class="space-y-2">
-    <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
-    <p class="text-muted">{messages.description}</p>
+  <header class="workspace-intro">
+    <div>
+      <h1>{messages.title}</h1>
+      <p>{messages.description}</p>
+    </div>
   </header>
 
-  <section class="space-y-5 rounded-xl border border-line bg-surface p-6">
+  <section class="workspace-panel space-y-5">
     <form class="space-y-5" onsubmit={previewFile}>
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">

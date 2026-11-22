@@ -1,5 +1,8 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import type { Locale } from '$lib/i18n/locale';
+  import { linkMessages } from '$lib/i18n/links';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import {
     analyticsArchiveMessages,
     analyticsMessages,
@@ -15,6 +18,7 @@
     filters,
     domains = [],
     linkScoped = false,
+    repair,
   }: {
     locale: Locale;
     report: Awaited<ReturnType<typeof loadAnalyticsReport>> | null;
@@ -23,8 +27,10 @@
     filters: Record<string, string>;
     domains?: readonly { id: string; hostname: string }[];
     linkScoped?: boolean;
+    repair?: Snippet;
   } = $props();
   let m = $derived(analyticsMessages(locale));
+  let filtersExpanded = $state(false);
   let archive = $derived(analyticsArchiveMessages(locale));
   let periods = $derived(analyticsPeriodMessages(locale));
   let granularity = $derived(
@@ -131,7 +137,8 @@
   let traffic = $derived(trafficLabels[locale]);
 </script>
 
-<h1>{linkScoped ? m.linkTitle : m.title}</h1>
+{#if !linkScoped}<h1>{m.title}</h1>{/if}
+{@render repair?.()}
 <nav class="presets" aria-label={periods.range}>
   {#each Object.entries(periods.presets) as [range, label] (range)}
     <a
@@ -143,7 +150,22 @@
   {/each}
   {#if fixedRange}<a href={customDatesUrl()}>{periods.customDates}</a>{/if}
 </nav>
-<form method="GET" class="filters">
+<button
+  type="button"
+  class="filter-toggle"
+  aria-controls="report-filters"
+  aria-expanded={filtersExpanded}
+  onclick={() => (filtersExpanded = !filtersExpanded)}
+>
+  <SlidersHorizontal size={16} aria-hidden="true" />
+  {linkMessages(locale).filter}
+</button>
+<form
+  id="report-filters"
+  method="GET"
+  class="filters"
+  class:expanded={filtersExpanded}
+>
   {#if fixedRange}
     <input type="hidden" name="range" value={filters.range} />
   {:else}
@@ -374,6 +396,9 @@
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-sm);
   }
+  .filter-toggle {
+    display: none;
+  }
   label {
     display: grid;
     gap: 0.35rem;
@@ -445,12 +470,27 @@
   td {
     width: 65%;
   }
+  @media (max-width: 600px) and (scripting: enabled) {
+    .filter-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-height: 40px;
+      margin-bottom: 0.8rem;
+    }
+    .filters:not(.expanded) {
+      display: none;
+    }
+  }
   @media (max-width: 600px) {
     .filters label {
-      flex: 1 1 140px;
+      flex: 1 1 min(125px, 100%);
     }
     .filters button {
       width: 100%;
+    }
+    .report-head {
+      margin-top: 0.9rem;
     }
   }
 </style>

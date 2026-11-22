@@ -1,5 +1,7 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import { messagesFor } from '$lib/i18n/locale';
+  import '../admin-context.css';
   import { locales, localeNames } from '$lib/i18n/locale';
   import { preferenceMessages } from '$lib/i18n/preferences';
   import { themes } from '$lib/theme/theme';
@@ -38,7 +40,14 @@
 
 <svelte:head><title>{m.personal} · {brand.name}</title></svelte:head>
 <div class="max-w-2xl space-y-8">
-  <header class="space-y-2">
+  <header class="context-header space-y-2">
+    <nav class="context-nav" aria-label={m.settings}>
+      <span aria-current="page">{m.personal}</span><a
+        href="/admin/settings/security"
+      >
+        {messagesFor(data.locale)['admin.security']}
+      </a>
+    </nav>
     <h1 class="text-3xl font-semibold tracking-tight">{m.personal}</h1>
     <p>{m.intro}</p>
     <p class="text-sm text-muted">
@@ -59,7 +68,7 @@
   <form
     method="POST"
     action="?/personal"
-    class="space-y-5 rounded-lg border border-line bg-surface p-5"
+    class="context-panel space-y-5 rounded-lg border border-line bg-surface p-5"
   >
     <input type="hidden" name="csrfToken" value={data.csrfToken} />
     <div class="space-y-2">
@@ -126,7 +135,7 @@
   {#if data.isOwner}<form
       method="POST"
       action="?/defaultZone"
-      class="space-y-5 rounded-lg border border-line bg-surface p-5"
+      class="context-panel space-y-5 rounded-lg border border-line bg-surface p-5"
     >
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
       <div class="space-y-2">

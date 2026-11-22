@@ -1,6 +1,5 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
-  import { analyticsMessages } from '$lib/components/analytics/messages';
   import LinkForm from '$lib/components/links/LinkForm.svelte';
   import { linkExtra, linkMessages } from '$lib/i18n/links';
   import { protectionMessages } from '$lib/i18n/protection';
@@ -13,46 +12,12 @@
 
 <svelte:head><title>{m.edit} · {brand.name}</title></svelte:head>
 <div class="space-y-6">
-  <a href="/admin/links" class="text-link underline">
-    ← {m.back}
-  </a>
-  <h1 class="text-3xl font-semibold tracking-tight">{m.edit}</h1>
   {#if data.link}<p class="break-all">
       <span class="font-medium">{m.shortUrl}:</span>
       <a href={data.link.shortUrl} class="text-link underline">
         {data.link.shortUrl}
       </a>
     </p>
-    <div class="flex flex-wrap gap-3">
-      <a
-        href={`/admin/links/${data.link.id}/analytics`}
-        class="rounded-md border px-3 py-2 font-medium hover:underline"
-        style="border-color: var(--ui-border)"
-      >
-        {analyticsMessages(data.locale).title}
-      </a>
-      <a
-        href={`/admin/conversions?linkId=${encodeURIComponent(data.link.id)}`}
-        class="rounded-md border px-3 py-2 font-medium hover:underline"
-        style="border-color: var(--ui-border)"
-      >
-        {analyticsMessages(data.locale).conversions}
-      </a>
-      <a
-        href={`/admin/links/${data.link.id}/qr`}
-        class="rounded-md border px-3 py-2 font-medium hover:underline"
-        style="border-color: var(--ui-border)"
-      >
-        {protection.qr}
-      </a>
-      <a
-        href={`/admin/links/${data.link.id}/protection`}
-        class="rounded-md border px-3 py-2 font-medium hover:underline"
-        style="border-color: var(--ui-border)"
-      >
-        {protection.title}
-      </a>
-    </div>
   {/if}
   {#if form?.code === 'temporary_redirect'}
     <p role="alert" class="text-negative">

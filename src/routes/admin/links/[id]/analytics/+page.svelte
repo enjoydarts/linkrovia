@@ -9,11 +9,13 @@
 <svelte:head>
   <title>{analyticsMessages(data.locale).linkTitle} · {brand.name}</title>
 </svelte:head>
-<Analytics
-  locale={data.locale}
-  report={data.report}
-  failed={data.failed}
-  filters={data.filters}
-  base={`/admin/links/${data.linkId}/analytics`}
-  linkScoped
-/>
+<div class="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6">
+  <Analytics
+    locale={data.locale}
+    report={data.report}
+    failed={data.failed}
+    filters={data.filters}
+    base={`/admin/links/${data.linkId}/analytics`}
+    linkScoped
+  />
+</div>

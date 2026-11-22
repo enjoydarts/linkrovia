@@ -21,23 +21,16 @@
 </script>
 
 <svelte:head><title>{m.links} · {brand.name}</title></svelte:head>
-<div class="space-y-8">
-  <header class="flex flex-wrap items-center justify-between gap-4">
-    <h1 class="text-3xl font-semibold tracking-tight">{m.links}</h1>
-    <div class="flex flex-wrap gap-4">
-      <a
-        href="/admin/domains"
-        class="rounded-md border border-control px-4 py-2 font-medium"
-      >
-        {m.domains}
-      </a><a
-        href="/admin/links/new"
-        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
-      >
-        {m.create}
-      </a>
-    </div>
-  </header>
+<div class="space-y-6">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <p class="text-sm text-muted">{m.searchLinks}</p>
+    <a
+      href="/admin/domains"
+      class="text-sm font-medium text-link hover:underline"
+    >
+      {m.domains} →
+    </a>
+  </div>
   <form
     method="GET"
     class="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5"

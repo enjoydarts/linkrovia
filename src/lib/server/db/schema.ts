@@ -349,6 +349,22 @@ export const rollupJobs = sqliteTable(
   ],
 );
 
+export const clickRollupRepair = sqliteTable(
+  'click_rollup_repair',
+  {
+    id: integer('id').primaryKey(),
+    dayUtc: text('day_utc').notNull(),
+    requestedAt: integer('requested_at').notNull(),
+    nextAttemptAt: integer('next_attempt_at').notNull(),
+    attemptCount: integer('attempt_count').notNull().default(0),
+    finished: integer('finished').notNull().default(0),
+  },
+  () => [
+    check('click_rollup_repair_singleton', sql`id = 1`),
+    check('click_rollup_repair_finished_check', sql`finished IN (0, 1)`),
+  ],
+);
+
 export const utmTemplates = sqliteTable('utm_templates', {
   id: text('id').primaryKey(),
   name: text('name').notNull().unique(),

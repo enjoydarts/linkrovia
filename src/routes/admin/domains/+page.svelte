@@ -1,5 +1,6 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import '../admin-context.css';
   import { domainMessages } from './messages';
   import type { PageProps } from './$types';
   let { data, form }: PageProps = $props();
@@ -8,7 +9,7 @@
 
 <svelte:head><title>{m.domains} · {brand.name}</title></svelte:head>
 <div class="max-w-3xl space-y-8">
-  <header class="space-y-3">
+  <header class="context-header space-y-3">
     <h1 class="text-3xl font-semibold tracking-tight">{m.domains}</h1>
     <p>{m.listHelp}</p>
     <a href="/admin/links" class="inline-block text-link underline">
@@ -16,7 +17,7 @@
     </a>
   </header>
   <ul
-    class="divide-y divide-line rounded-lg border border-line"
+    class="context-panel context-list divide-y divide-line rounded-lg border border-line"
     aria-label={m.domains}
   >
     {#each data.domains as domain (domain.id)}
@@ -56,7 +57,7 @@
     {:else}<li class="p-4">{m.none}</li>{/each}
   </ul>
   {#if data.isOwner}
-    <section class="space-y-4" aria-labelledby="add-domain">
+    <section class="context-panel space-y-4" aria-labelledby="add-domain">
       <h2 id="add-domain" class="text-xl font-semibold">{m.addDomain}</h2>
       <p class="text-sm">{m.addHelp}</p>
       <form method="POST" class="space-y-4">

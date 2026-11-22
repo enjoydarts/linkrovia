@@ -1,6 +1,7 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
   import { analyticsMessages } from '$lib/components/analytics/messages';
+  import { linkMessages } from '$lib/i18n/links';
   import {
     conversionMessages,
     manageHelp,
@@ -12,17 +13,34 @@
   let { data, form }: PageProps = $props();
   let m = $derived(conversionMessages(data.locale));
   let dateLabels = $derived(analyticsMessages(data.locale));
+  let contextLink = $derived(
+    data.links.find((link) => link.id === data.linkId),
+  );
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<header>
-  <h1>{m.title}</h1>
-  <p>{m.intro}</p>
+<header class="workspace-intro">
+  <div>
+    <h1>{m.title}</h1>
+    <p>
+      {contextLink?.title ??
+        (contextLink ? `${contextLink.hostname}/${contextLink.slug}` : m.intro)}
+    </p>
+  </div>
+  <a
+    class="workspace-link"
+    href={contextLink
+      ? `/admin/links/${encodeURIComponent(contextLink.id)}`
+      : '/admin/analytics'}
+  >
+    {contextLink ? linkMessages(data.locale).edit : dateLabels.title}
+    <span aria-hidden="true">→</span>
+  </a>
 </header>
 {#if data.saved}<p class="notice" role="status">{m.saved}</p>{/if}
 {#if form?.code}<p class="notice" role="alert">{m.error}</p>{/if}
 {#if !data.isOwner}<p class="notice">{m.readOnly}</p>{/if}
-<section aria-labelledby="report">
+<section class="workspace-panel" aria-labelledby="report">
   <h2 id="report">{m.report}</h2>
   <form method="GET" class="inline">
     {#if data.linkId}<input
@@ -242,10 +260,6 @@
   header,
   section {
     margin-bottom: 2rem;
-  }
-  h1 {
-    font-size: 2rem;
-    font-weight: 650;
   }
   h2 {
     font-size: 1.3rem;

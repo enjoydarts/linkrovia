@@ -26,10 +26,7 @@
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 <section class="max-w-2xl space-y-5">
-  <a href={`/admin/links/${data.link.id}`} class="text-link underline">
-    ← {link.edit}
-  </a>
-  <h1 class="text-3xl font-semibold tracking-tight">{m.title}</h1>
+  <h2 class="text-xl font-semibold tracking-tight">{m.title}</h2>
   {#if data.link.redirectType === 301 || data.link.redirectType === 308}
     <p>{m.temporaryRedirect}</p>
   {/if}

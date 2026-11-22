@@ -1,5 +1,6 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import '../../../admin-context.css';
   import { invalidateAll } from '$app/navigation';
   import { domainMessages } from '../../messages';
   import type { PageProps } from './$types';
@@ -131,7 +132,7 @@
 
 <svelte:head><title>{m.wizardTitle} · {brand.name}</title></svelte:head>
 <div class="max-w-3xl space-y-8">
-  <header class="space-y-3">
+  <header class="context-header space-y-3">
     <a href="/admin/domains" class="text-link underline">← {m.backToDomains}</a>
     <h1 class="text-3xl font-semibold tracking-tight">{m.wizardTitle}</h1>
     <p>{m.wizardIntro}</p>
@@ -141,7 +142,7 @@
   </header>
 
   {#if data.isOwner && data.domain.hostname !== data.managementHostname}
-    <section class="space-y-4 rounded-lg border border-line p-5">
+    <section class="context-panel space-y-4 rounded-lg border border-line p-5">
       <h2 class="text-xl font-semibold">Cloudflare Workers &amp; Pages</h2>
       <ol class="list-decimal space-y-2 pl-5">
         <li>
@@ -160,7 +161,7 @@
       <p class="text-sm">{m.externalDns}</p>
       <p class="text-sm font-medium">{m.noWorkersCname}</p>
     </section>
-    <section class="space-y-4 rounded-lg border border-line p-5">
+    <section class="context-panel space-y-4 rounded-lg border border-line p-5">
       <h2 class="text-xl font-semibold">{m.checkConnection}</h2>
       <p class="text-sm">{m.httpsOnly}</p>
       <button
@@ -178,7 +179,7 @@
           {message}
         </p>{/if}
     </section>
-    <details class="space-y-4 rounded-lg border border-line p-5">
+    <details class="context-panel space-y-4 rounded-lg border border-line p-5">
       <summary class="cursor-pointer text-xl font-semibold">
         {m.diagnose}
       </summary>

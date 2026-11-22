@@ -8,15 +8,9 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<div class="mx-auto max-w-4xl space-y-6">
-  <a
-    href={`/admin/links/${encodeURIComponent(data.link.id)}`}
-    class="text-sm font-medium text-link hover:underline"
-  >
-    ← {m.back}
-  </a>
+<div class="max-w-4xl space-y-6">
   <header class="space-y-2">
-    <h1 class="text-3xl font-semibold tracking-tight">{m.title}</h1>
+    <h2 class="text-xl font-semibold tracking-tight">{m.title}</h2>
     <p class="text-muted">{m.description}</p>
     <p class="font-medium">{data.link.title || data.link.slug}</p>
   </header>

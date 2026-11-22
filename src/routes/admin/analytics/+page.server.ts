@@ -1,18 +1,28 @@
 import { dev } from '$app/env';
-import { requireSession, effectiveTimeZone } from '$lib/server/links/form';
+import {
+  requireSession,
+  requireForm,
+  effectiveTimeZone,
+} from '$lib/server/links/form';
 import { listDomains } from '$lib/server/links/store';
 import {
   AnalyticsInputError,
   parseAnalyticsQuery,
   loadAnalyticsReport,
 } from '$lib/server/analytics/report';
-import type { PageServerLoad } from './$types';
+import {
+  loadClickRepair,
+  queueClickRepair,
+} from '$lib/server/analytics/click-repair';
+import { error, fail, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
   const { db, session } = requireSession(event);
-  const [timezone, domains] = await Promise.all([
+  const [timezone, domains, repair] = await Promise.all([
     effectiveTimeZone(db, session.user.timezone),
     listDomains(db),
+    session.user.role === 'owner' ? loadClickRepair(db) : null,
   ]);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   const requestedFilters = Object.fromEntries(event.url.searchParams);
@@ -34,6 +44,7 @@ export const load = (async (event) => {
     });
     return {
       domains,
+      repair,
       report,
       failed: false,
       filters,
@@ -41,6 +52,7 @@ export const load = (async (event) => {
   } catch (cause) {
     return {
       domains,
+      repair,
       report: null,
       failed:
         cause instanceof AnalyticsInputError &&
@@ -51,3 +63,15 @@ export const load = (async (event) => {
     };
   }
 }) satisfies PageServerLoad;
+
+export const actions = {
+  default: async (event) => {
+    const { session, db, form } = await requireForm(event);
+    if (session.user.role !== 'owner') error(403, 'Forbidden');
+    const date = form.get('date') ?? '';
+    const status = await queueClickRepair(db, date);
+    if (status === 'queued')
+      redirect(303, event.url.pathname + event.url.search);
+    return fail(status === 'invalid' ? 400 : 409, { status, date });
+  },
+} satisfies Actions;

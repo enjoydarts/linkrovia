@@ -1,6 +1,11 @@
 <script lang="ts">
   import { asset } from '$app/paths';
   import ChartNoAxesColumnIncreasing from '@lucide/svelte/icons/chart-no-axes-column-increasing';
+  import ArrowDownRight from '@lucide/svelte/icons/arrow-down-right';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
+  import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+  import Globe2 from '@lucide/svelte/icons/globe-2';
+  import Smartphone from '@lucide/svelte/icons/smartphone';
   import Link2 from '@lucide/svelte/icons/link-2';
   import Route from '@lucide/svelte/icons/route';
   import { brand } from '$lib/brand';
@@ -40,61 +45,61 @@
 </svelte:head>
 
 <main class="landing">
-  <div class="landing-inner">
-    <header class="landing-bar">
-      <Brand tone="dark" />
-      <a href={brand.repository} class="landing-source">
-        GitHub <span aria-hidden="true">↗</span>
-      </a>
-    </header>
-    <section class="hero">
+  <header class="landing-bar landing-inner">
+    <Brand />
+    <a href={brand.repository} class="landing-source">
+      GitHub <ArrowUpRight size={15} aria-hidden="true" />
+    </a>
+  </header>
+
+  <div class="hero-wrap">
+    <section class="hero landing-inner">
       <div class="hero-copy">
-        <h1>
-          {copy.headline[0]} <span>{copy.headline[1]}</span>
-        </h1>
+        <h1>{copy.headline[0]} <span>{copy.headline[1]}</span></h1>
         <p class="description">{messages['home.description']}</p>
         <a class="landing-action" href={data.initialized ? '/login' : '/setup'}>
           {data.initialized ? messages['login.title'] : messages['setup.title']}
-          <span aria-hidden="true">→</span>
+          <ArrowRight size={18} aria-hidden="true" />
         </a>
       </div>
-      <div class="route-art" aria-hidden="true">
-        <div class="art-grid"></div>
-        <svg
-          viewBox="0 0 480 320"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M85 87v106c0 24 19 43 43 43h260"
-            stroke="var(--brand-on-ink)"
-            stroke-width="9"
-            stroke-linecap="round"
-          />
-          <path
-            d="M216 236l116-116h57"
-            stroke="var(--brand-signal)"
-            stroke-width="9"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <circle cx="85" cy="87" r="13" fill="var(--brand-on-ink)" /><circle
-            cx="389"
-            cy="120"
-            r="13"
-            fill="var(--brand-signal)"
-          /><circle cx="388" cy="236" r="13" fill="var(--brand-on-ink)" />
-        </svg>
-      </div>
+      <figure class="route-preview">
+        <div class="route-map" aria-hidden="true">
+          <div class="route-input">
+            <img src={asset(brand.mark)} alt="" width="30" height="30" />
+            <span class="route-name">go.example.org<span>/launch</span></span>
+          </div>
+          <div class="route-targets">
+            <div class="route-target">
+              <Globe2 size={16} />
+              <span>example.org<span>/launch</span></span>
+              <ArrowUpRight size={13} />
+            </div>
+            <div class="route-target route-target-accent">
+              <Smartphone size={16} />
+              <span>example.org<span>/app</span></span>
+              <ArrowUpRight size={13} />
+            </div>
+          </div>
+        </div>
+        <div class="analytics-example">
+          <div class="example-bars" aria-hidden="true">
+            {#each [26, 38, 31, 55, 44, 72, 91, 60, 76, 83, 70, 94] as height (height)}
+              <span style:block-size={`${height}%`}></span>
+            {/each}
+          </div>
+        </div>
+        <figcaption>{copy.example}</figcaption>
+      </figure>
     </section>
   </div>
+
   <div class="landing-content">
     <div class="landing-inner">
       <div class="features">
         {#each features as feature (feature.title)}
           <article>
             <div class="feature-icon">
-              <feature.icon size={22} aria-hidden="true" />
+              <feature.icon size={20} aria-hidden="true" />
             </div>
             <h2>{feature.title}</h2>
             <p>{feature.detail}</p>
@@ -105,25 +110,19 @@
         <div>
           <h2>{copy.ownership[0]}</h2>
           <p>{copy.ownership[1].replaceAll('Linkrovia', () => brand.name)}</p>
-          <a
-            class="guide-link"
-            href={brand.repository + '/blob/main/docs/development.md'}
-          >
-            {copy.guide} <span aria-hidden="true">↗</span>
-          </a>
         </div>
-        <figure class="analytics-example">
-          <figcaption>{copy.example}</figcaption>
-          <div class="example-bars" aria-hidden="true">
-            {#each [38, 49, 42, 67, 58, 80, 74] as height (height)}
-              <span style:block-size={`${height}%`}></span>
-            {/each}
-          </div>
-        </figure>
+        <a
+          class="guide-link"
+          href={brand.repository + '/blob/main/docs/deployment.md'}
+        >
+          {copy.guide}
+          <ArrowDownRight size={16} aria-hidden="true" />
+        </a>
       </section>
     </div>
   </div>
-  <div class="landing-inner">
+
+  <div class="footer-wrap landing-inner">
     <form method="POST" class="landing-footer">
       <div>
         <label for="locale">{messages['language.label']}</label>
@@ -143,8 +142,8 @@
         </p>{/if}
     </form>
     <footer class="site-footer">
-      <a href={brand.repository + '/blob/main/LICENSE'}>MIT</a>
       <p>{copy.independent}</p>
+      <a href={brand.repository + '/blob/main/LICENSE'}>MIT</a>
     </footer>
   </div>
 </main>
@@ -152,230 +151,340 @@
 <style>
   .landing {
     min-height: 100dvh;
-    background: var(--brand-ink);
-    color: var(--brand-on-ink);
+    background: var(--ui-background);
+    color: var(--ui-text);
   }
   .landing-inner {
-    max-width: 1280px;
-    margin: auto;
-    padding: 0 32px;
+    width: min(100%, 82rem);
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 5vw, 4rem);
   }
   .landing-bar {
-    min-height: 88px;
+    min-height: 76px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 24px;
-    border-bottom: 1px solid var(--brand-ink-panel);
+    gap: 1rem;
   }
-  .landing-source {
-    color: var(--brand-on-ink);
-    font-size: 0.9rem;
-    font-weight: 600;
+  .landing-source,
+  .guide-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 0;
+    color: var(--ui-text);
+    font-size: 0.875rem;
+    font-weight: 650;
     text-decoration: none;
   }
-  .landing-source span {
-    color: var(--brand-signal);
-    margin-left: 0.25rem;
+  .landing-source:hover,
+  .guide-link:hover {
+    color: var(--ui-link);
+  }
+  .hero-wrap {
+    overflow: hidden;
+    border-block: 1px solid var(--ui-border);
+    background: radial-gradient(
+      ellipse at 83% 31%,
+      var(--ui-accent-surface),
+      transparent 60%
+    );
   }
   .hero {
-    min-height: 570px;
+    min-height: 34rem;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
     align-items: center;
-    gap: 48px;
-    padding: 72px 0;
+    gap: clamp(2.25rem, 5vw, 5rem);
+    padding-block: clamp(3.25rem, 8vw, 7.5rem);
   }
   h1 {
-    font-size: clamp(2.7rem, 5.2vw, 4.6rem);
-    font-weight: 700;
-    letter-spacing: -0.045em;
-    line-height: 1.08;
+    color: var(--ui-text);
+    font-size: clamp(2.8rem, 5.25vw, 5rem);
+    font-weight: 710;
+    letter-spacing: -0.06em;
+    line-height: 1.04;
     overflow-wrap: anywhere;
   }
   h1 span {
     display: block;
-    color: var(--brand-signal);
+    color: var(--ui-link);
   }
   .description {
-    max-width: 35rem;
-    margin-top: 24px;
-    color: var(--brand-muted-on-ink);
-    font-size: 1.1rem;
+    max-width: 34rem;
+    margin-top: 1.45rem;
+    color: var(--ui-text-muted);
+    font-size: clamp(1rem, 1.15vw, 1.125rem);
     line-height: 1.7;
   }
   .landing-action {
     display: inline-flex;
     align-items: center;
-    gap: 36px;
+    gap: 1.2rem;
     min-height: 48px;
-    margin-top: 32px;
-    padding: 12px 18px;
+    margin-top: 1.85rem;
+    padding: 0.7rem 1.1rem;
     border-radius: var(--ui-radius-sm);
-    background: var(--brand-signal);
-    color: var(--brand-ink);
-    font-weight: 700;
+    background: var(--ui-primary);
+    color: var(--ui-on-primary);
+    font-weight: 680;
     text-decoration: none;
+    transition: background 150ms ease;
   }
   .landing-action:hover {
-    filter: brightness(1.1);
+    background: var(--ui-primary-hover);
   }
-  .route-art {
+  .route-preview {
     position: relative;
+    min-width: 0;
+    isolation: isolate;
     overflow: hidden;
-    border: 1px solid var(--brand-ink-panel);
+    border: 1px solid var(--brand-ink-border);
     border-radius: var(--ui-radius-lg);
+    background: var(--brand-ink);
+    color: var(--brand-on-ink);
+    box-shadow: var(--ui-shadow);
+  }
+  .route-map {
+    display: grid;
+    position: relative;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2.75rem;
+    align-items: center;
+    padding: 2.25rem 1.4rem;
+    background:
+      radial-gradient(
+        circle at 42% 29%,
+        rgb(45 212 191 / 11%),
+        transparent 58%
+      ),
+      radial-gradient(circle, rgb(255 255 255 / 18%) 1px, transparent 1.2px) 0
+        0 / 18px 18px;
+  }
+  .route-input,
+  .route-target {
+    z-index: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.48rem;
+    padding: 0.65rem;
+    border-radius: var(--ui-radius-sm);
+    border: 1px solid var(--brand-ink-border);
     background: var(--brand-ink-panel);
   }
-  .art-grid {
-    position: absolute;
-    inset: 0;
-    opacity: 0.12;
-    background-image:
-      linear-gradient(var(--brand-muted-on-ink) 1px, transparent 1px),
-      linear-gradient(90deg, var(--brand-muted-on-ink) 1px, transparent 1px);
-    background-size: 32px 32px;
-  }
-  .route-art svg {
+  .route-input {
     position: relative;
-    display: block;
-    width: 100%;
   }
-  .landing-content {
-    background: var(--ui-background);
-    color: var(--ui-text);
-    padding-block: clamp(2.5rem, 7vw, 5rem);
+  .route-input::after {
+    content: '';
+    position: absolute;
+    inset-inline: 100% -2.8rem;
+    inset-block-start: 50%;
+    border-top: 1px solid var(--brand-signal);
   }
-  .features,
-  .ownership {
+  .route-input img {
+    flex: none;
+    border-radius: 7px;
+  }
+  .route-targets {
     display: grid;
-    gap: 24px;
+    position: relative;
+    gap: 1.15rem;
   }
-  .features {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .route-targets::before {
+    content: '';
+    position: absolute;
+    inset: 20px 100% 20px auto;
+    width: 1.45rem;
+    border-block: 1px solid var(--brand-signal);
+    border-inline-start: 1px solid var(--brand-signal);
+    border-radius: 10px 0 0 10px;
   }
-  .features article,
+  .route-target {
+    color: var(--brand-muted-on-ink);
+  }
+  .route-target-accent {
+    color: var(--brand-signal);
+  }
+  .route-name,
+  .route-target span {
+    min-width: 0;
+    flex: 1;
+    color: var(--brand-on-ink);
+    font-family: var(--ui-mono);
+    font-size: clamp(0.55rem, 0.92vw, 0.74rem);
+    overflow-wrap: anywhere;
+  }
+  .route-name span,
+  .route-target span > span {
+    color: var(--brand-muted-on-ink);
+  }
   .analytics-example {
-    padding: 24px;
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-md);
-    background: var(--ui-surface);
+    padding: 0.8rem 1.4rem 0.65rem;
+    border-top: 1px solid var(--brand-ink-border);
   }
-  .feature-icon {
-    display: grid;
-    width: 40px;
-    height: 40px;
-    place-items: center;
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-accent-surface);
-    color: var(--ui-link);
-  }
-  .landing-content h2 {
-    margin: 14px 0 8px;
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.3;
-  }
-  .landing-content p {
-    color: var(--ui-text-muted);
-    line-height: 1.6;
-  }
-  .ownership {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: center;
-    margin-top: 40px;
-  }
-  .guide-link {
-    display: inline-flex;
-    gap: 8px;
-    margin-top: 16px;
-    color: var(--ui-link);
-    font-weight: 650;
-    text-decoration: underline;
-  }
-  .analytics-example figcaption {
-    color: var(--ui-text-muted);
-    font-size: 0.875rem;
-    font-weight: 600;
+  figcaption {
+    padding: 0 1.4rem 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 580;
+    color: var(--brand-muted-on-ink);
   }
   .example-bars {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
     align-items: end;
-    gap: 10px;
-    height: 8rem;
-    border-bottom: 1px solid var(--ui-control-border);
+    gap: 4%;
+    height: 6.6rem;
+    background: repeating-linear-gradient(
+      to top,
+      var(--brand-ink-border) 0 1px,
+      transparent 1px 25%
+    );
   }
   .example-bars span {
+    background: linear-gradient(
+      180deg,
+      var(--brand-signal),
+      var(--brand-route)
+    );
     border-radius: 4px 4px 0 0;
-    background: var(--ui-series-2);
   }
-  .landing-content :focus-visible {
-    outline-color: var(--ui-focus);
+  .landing-content {
+    background-color: var(--ui-background);
   }
-  .landing-footer {
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-block: clamp(2.5rem, 5.5vw, 4.7rem);
+    border-block: 1px solid var(--ui-border);
+  }
+  .features article {
+    padding: 1.35rem clamp(1rem, 2vw, 2rem);
+  }
+  .features article:first-child {
+    padding-inline-start: 0;
+  }
+  .features article + article {
+    border-inline-start: 1px solid var(--ui-border);
+  }
+  .feature-icon {
+    color: var(--ui-link);
+    margin-bottom: 0.8rem;
+  }
+  .features h2 {
+    font-size: 1.08rem;
+    font-weight: 680;
+  }
+  .features p,
+  .ownership p {
+    margin-top: 0.35rem;
+    color: var(--ui-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+  .ownership {
     display: flex;
     align-items: end;
+    justify-content: space-between;
+    gap: 1.15rem;
+    margin-bottom: clamp(2.5rem, 5.5vw, 4rem);
+  }
+  .ownership h2 {
+    font-size: clamp(1.65rem, 3vw, 2.35rem);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+  }
+  .ownership p {
+    max-width: 40rem;
+  }
+  .guide-link {
+    color: var(--ui-link);
+    flex: none;
+  }
+  .footer-wrap {
+    display: flex;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
-    padding: 28px 0;
+    justify-content: space-between;
+    gap: 1.3rem;
+    min-height: 5.2rem;
+    border-top: 1px solid var(--ui-border);
+    padding-block: 1rem;
   }
-  .landing-footer label {
-    display: block;
-    margin-bottom: 6px;
-    color: var(--brand-muted-on-ink);
-    font-size: 0.8rem;
-  }
-  .landing-footer select,
-  .landing-footer button {
-    min-height: 42px;
-    border: 1px solid var(--brand-muted-on-ink);
-    border-radius: var(--ui-radius-sm);
-    padding: 8px 12px;
-    background: var(--brand-ink);
-    color: var(--brand-on-ink);
-  }
-  .landing-footer p {
-    width: 100%;
-  }
+  .landing-footer,
   .site-footer {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    padding: 20px 0 32px;
-    border-top: 1px solid var(--brand-ink-border);
-    color: var(--brand-muted-on-ink);
-    font-size: 0.875rem;
+    align-items: end;
+    gap: 0.65rem;
+    color: var(--ui-text-muted);
+    font-size: 0.8rem;
+  }
+  .landing-footer label {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  .landing-footer select,
+  .landing-footer button {
+    border: 1px solid var(--ui-control-border);
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    padding-inline: 0.65rem;
+    min-height: 44px;
   }
   .site-footer a {
-    color: var(--brand-on-ink);
+    color: var(--ui-link);
     text-decoration: underline;
   }
-  a:focus-visible,
-  button:focus-visible,
-  select:focus-visible {
-    outline: 3px solid var(--brand-focus-on-ink);
-    outline-offset: 3px;
-  }
-  @media (max-width: 767px) {
-    .landing-inner {
-      padding: 0 20px;
-    }
-    .landing-bar {
-      min-height: 72px;
-    }
+
+  @media (max-width: 800px) {
     .hero {
-      min-height: auto;
       grid-template-columns: minmax(0, 1fr);
-      gap: 40px;
-      padding: 64px 0 48px;
+      min-height: 0;
     }
-    .route-art {
-      max-width: 460px;
+    .route-preview {
+      width: min(100%, 34rem);
     }
-    .features,
+    .route-name,
+    .route-target span {
+      font-size: 0.7rem;
+    }
+  }
+  @media (max-width: 540px) {
+    .route-map {
+      padding-inline: 0.75rem;
+      gap: 1.5rem;
+    }
+    .route-input,
+    .route-target {
+      padding: 0.45rem;
+    }
+    .route-input::after {
+      inset-inline-end: -1.55rem;
+    }
+    .route-targets::before {
+      width: 0.75rem;
+    }
+    .route-name,
+    .route-target span {
+      font-size: 0.625rem;
+    }
+    .features {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .features article {
+      padding-inline: 0;
+    }
+    .features article + article {
+      border-inline-start: 0;
+      border-top: 1px solid var(--ui-border);
+    }
     .ownership {
-      grid-template-columns: minmax(0, 1fr);
+      flex-direction: column;
+      align-items: start;
     }
   }
 </style>

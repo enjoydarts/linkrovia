@@ -9,10 +9,7 @@
 
 <svelte:head><title>{m.create} · {brand.name}</title></svelte:head>
 <div class="space-y-6">
-  <a href="/admin/links" class="text-link underline">
-    ← {m.back}
-  </a>
-  <h1 class="text-3xl font-semibold tracking-tight">{m.create}</h1>
+  <p class="max-w-2xl text-muted">{m.destination}</p>
   <LinkForm
     locale={data.locale}
     csrfToken={data.csrfToken}

@@ -72,7 +72,11 @@
   }
 </script>
 
-<form method="POST" action={formAction} class="max-w-2xl space-y-6">
+<form
+  method="POST"
+  action={formAction}
+  class="max-w-3xl space-y-6 rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-7"
+>
   <input type="hidden" name="csrfToken" value={csrfToken} />
   {#if link}<input
       type="hidden"
@@ -102,7 +106,7 @@
       type="url"
       required
       value={values?.destinationUrl ?? link?.destinationUrl ?? ''}
-      class="w-full rounded-md border border-control bg-surface px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
     />
   </div>
   <div class="space-y-2">
@@ -110,7 +114,7 @@
       id="title"
       name="title"
       value={values?.title ?? link?.title ?? ''}
-      class="w-full rounded-md border border-control bg-surface px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
     />
   </div>
   <div class="space-y-2">
@@ -118,7 +122,7 @@
       id="domainId"
       name="domainId"
       required
-      class="w-full rounded-md border border-control bg-surface px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
     >
       {#each domains as domain (domain.id)}<option
           value={domain.id}
@@ -136,7 +140,7 @@
       name="slug"
       value={values?.slug ?? link?.slug ?? ''}
       aria-describedby="slug-help"
-      class="w-full rounded-md border border-control bg-surface px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
     />
     <p id="slug-help" class="text-sm text-muted">
       {m.slugHelp}
@@ -146,7 +150,7 @@
     <label for="status" class="block font-medium">{m.redirect}</label><select
       id="status"
       name="status"
-      class="rounded-md border border-control bg-surface px-3 py-2"
+      class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
     >
       {#each [301, 302, 307, 308] as status (status)}<option
           value={status}
@@ -165,8 +169,10 @@
       checked={values?.active ?? link?.isActive ?? true}
     />{m.enabled}
   </label>
-  <fieldset class="space-y-4">
-    <legend class="font-medium">{m.timezone} {timeZone}</legend>
+  <fieldset
+    class="space-y-4 rounded-xl border border-line bg-canvas/40 p-4 sm:p-5"
+  >
+    <legend class="px-1 font-medium">{m.timezone} {timeZone}</legend>
     <div class="space-y-2">
       <label for="startsAt" class="block font-medium">{m.startsAt}</label><input
         id="startsAt"
@@ -181,7 +187,7 @@
       </label><select
         id="startFold"
         name="startFold"
-        class="rounded-md border border-control bg-surface px-3 py-2"
+        class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
         <option value="">{x.choose}</option><option
           value="earlier"
@@ -209,7 +215,7 @@
       </label><select
         id="expiryFold"
         name="expiryFold"
-        class="rounded-md border border-control bg-surface px-3 py-2"
+        class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
         <option value="">{x.choose}</option><option
           value="earlier"
@@ -231,7 +237,7 @@
       name="tags"
       value={values?.tags ?? link?.tags.join(', ') ?? ''}
       aria-describedby="tags-help"
-      class="w-full rounded-md border border-control bg-surface px-3 py-2"
+      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
     />
     <p id="tags-help" class="text-sm text-muted">
       {m.tagsHelp}

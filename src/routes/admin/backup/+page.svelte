@@ -203,14 +203,13 @@
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 <div class="space-y-8 max-w-3xl">
-  <header>
-    <h1 class="text-3xl font-bold">{m.title}</h1>
-    <p class="mt-2 text-muted">{m.intro}</p>
+  <header class="workspace-intro">
+    <div>
+      <h1>{m.title}</h1>
+      <p>{m.intro}</p>
+    </div>
   </header>
-  <section
-    class="rounded-lg border border-line bg-surface p-6 space-y-4"
-    aria-labelledby="export-heading"
-  >
+  <section class="workspace-panel space-y-4" aria-labelledby="export-heading">
     <h2 id="export-heading" class="text-xl font-semibold">{m.export}</h2>
     <p>{m.exportHelp}</p>
     <button
@@ -222,10 +221,7 @@
       {m.download}
     </button>
   </section>
-  <section
-    class="rounded-lg border border-line bg-surface p-6 space-y-5"
-    aria-labelledby="restore-heading"
-  >
+  <section class="workspace-panel space-y-5" aria-labelledby="restore-heading">
     <h2 id="restore-heading" class="text-xl font-semibold">{m.restore}</h2>
     <p>{m.restoreHelp}</p>
     <p>{m.limits}</p>

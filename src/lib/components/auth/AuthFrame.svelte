@@ -31,28 +31,50 @@
 <style>
   .auth-shell {
     display: grid;
-    grid-template-columns: minmax(17rem, 39%) minmax(0, 1fr);
+    grid-template-columns: minmax(17rem, 41%) minmax(0, 1fr);
     min-height: 100dvh;
-    background: var(--ui-background);
+    background:
+      radial-gradient(
+        ellipse at 90% 10%,
+        var(--ui-accent-surface),
+        transparent 50%
+      ),
+      var(--ui-background);
     color: var(--ui-text);
   }
   .auth-brand {
     position: relative;
     display: grid;
-    align-content: start;
-    padding: 2rem;
-    background: var(--brand-ink);
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    padding: clamp(1.5rem, 5vw, 4rem);
+    overflow: hidden;
+    background:
+      radial-gradient(
+        circle at 65% 57%,
+        rgb(45 212 191 / 13%),
+        transparent 62%
+      ),
+      radial-gradient(circle, rgb(255 255 255 / 16%) 1px, transparent 1.15px) 0
+        0 / 24px 24px,
+      var(--brand-ink);
     color: var(--brand-on-ink);
   }
   .brand-art {
     display: grid;
     place-items: center;
-    align-self: center;
+    align-self: stretch;
     margin: auto;
-    padding: 4rem 0;
+    width: min(100%, 18rem);
+    aspect-ratio: 1;
+    border: 1px solid var(--brand-ink-border);
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 2.3rem rgb(166 184 201 / 5%),
+      0 0 0 4.6rem rgb(166 184 201 / 4%);
   }
   .brand-art img {
-    width: min(128px, 100%);
+    width: min(112px, 65%);
     height: auto;
   }
   .auth-main {
@@ -62,7 +84,7 @@
     padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 5vw, 4.5rem);
   }
   .auth-inner {
-    width: min(100%, 33rem);
+    width: min(100%, 31rem);
   }
   .auth-heading {
     margin-bottom: 1.5rem;
@@ -71,7 +93,7 @@
     font-size: clamp(2rem, 4vw, 2.5rem);
     font-weight: 700;
     line-height: 1.15;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.05em;
   }
   .auth-heading p {
     margin-top: 0.6rem;
@@ -82,7 +104,8 @@
     padding: clamp(1.1rem, 3vw, 2rem);
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-lg);
-    background: var(--ui-surface);
+    background: var(--ui-surface-raised);
+    box-shadow: var(--ui-shadow-raised);
   }
   .auth-card
     :global(input:not([type='hidden'], [type='checkbox'], [type='radio'])) {

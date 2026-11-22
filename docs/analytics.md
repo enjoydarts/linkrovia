@@ -8,6 +8,12 @@ Linkrovia records successful redirect requests. It excludes HEAD requests, expli
 
 The [scheduled Worker](deployment.md#keep-analytics-history) saves daily UTC click totals. A report that starts outside the live data window or spans more than 90 days reads saved daily totals for the full selected range, up to 366 days for custom dates. Choose **All saved history** for monthly UTC totals from the first saved day through yesterday. In these reports, missing days are marked as gaps, and a successful day with no clicks shows zero. The archive supports a single breakdown filter on its matching dimension. Domain reports group archived link totals using each link's current domain. The charts and tables show the archive uses UTC, and CSV shows gaps as empty click counts.
 
+## Recover missing click history
+
+An owner can open **Restore missing click history** on the **Analytics** page and request a completed UTC day within the live retention window. The recovery panel shows eligible gaps from the known daily history and the status of the latest request. You can request one missing day per 24 hours. A saved day with zero clicks requires no recovery.
+
+The scheduled Worker checks the queue hourly and handles at most one click rollup per hourly run. Hourly runs prioritize pending recovery requests over automatic seven-day reconciliation. An unsuccessful request is retried up to two more times while the full day is available. Refresh Analytics to see the current status. When Analytics Engine no longer retains all events for that day, the gap stays visible in archive reports.
+
 ## Click reports API
 
 Use an API key with `analytics:read`. Use `from` and `to` as inclusive `YYYY-MM-DD` dates or choose a `range` preset (`24h`, `7d`, `30d`, `90d`, `1y`, or `all`). Set `granularity` to `day`, `week`, or `month` for date ranges. Weeks begin on Monday. The year preset ends yesterday and uses monthly UTC archive buckets by default. The rolling `24h` preset uses `hour` granularity and returns UTC timestamps. The `all` preset uses monthly UTC archive buckets. Pass an IANA `tz` to query recent calendar dates or display hourly charts in that time zone. API requests default to UTC. Set `dimension` to `country`, `region`, `referrer`, `device`, `os`, `browser`, `rule`, `source`, `traffic`, or `link`. Optional `domainId`, `ruleId`, and `source=link|qr` narrow a query. To select a category, send its `filter` dimension and `key` value together. For CSV, use `bom=1` to add a UTF-8 BOM.

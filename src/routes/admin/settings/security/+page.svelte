@@ -1,5 +1,7 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import { preferenceMessages } from '$lib/i18n/preferences';
+  import '../../admin-context.css';
   import { resolve } from '$app/paths';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
   import type { PageProps } from './$types';
@@ -17,12 +19,20 @@
 </svelte:head>
 
 <div class="max-w-2xl space-y-6">
-  <header class="space-y-2">
+  <header class="context-header space-y-2">
+    <nav
+      class="context-nav"
+      aria-label={preferenceMessages(data.locale).settings}
+    >
+      <a href="/admin/settings">
+        {preferenceMessages(data.locale).personal}
+      </a><span aria-current="page">{messages.title}</span>
+    </nav>
     <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
     <p>{messages.intro}</p>
   </header>
 
-  <dl class="space-y-2 rounded-md border border-line p-4 text-sm">
+  <dl class="context-panel space-y-2 rounded-md border border-line p-4 text-sm">
     <div class="flex flex-wrap gap-x-3">
       <dt class="font-medium">{messages.status}</dt>
       <dd>
@@ -50,7 +60,7 @@
   {/if}
 
   {#if form?.reviewSiteKey}
-    <form method="POST" action="?/enable" class="space-y-3">
+    <form method="POST" action="?/enable" class="context-panel space-y-3">
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
       <input type="hidden" name="siteKey" value={form.reviewSiteKey} />
       <p>{messages.verify}</p>
@@ -97,7 +107,7 @@
       </li>
     </ol>
 
-    <form method="POST" action="?/prepare" class="space-y-3">
+    <form method="POST" action="?/prepare" class="context-panel space-y-3">
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
       <div class="space-y-1">
         <label for="site-key" class="block font-medium">

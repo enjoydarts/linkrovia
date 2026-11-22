@@ -76,9 +76,11 @@
 {/snippet}
 
 <div class="space-y-6">
-  <header class="space-y-2">
-    <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
-    <p class="text-muted">{messages.description}</p>
+  <header class="workspace-intro">
+    <div>
+      <h1>{messages.title}</h1>
+      <p>{messages.description}</p>
+    </div>
   </header>
 
   {#if form?.issue}
@@ -92,7 +94,7 @@
   <div class="grid items-start gap-6 lg:grid-cols-2">
     <section
       aria-labelledby="utm-templates-title"
-      class="min-w-0 space-y-5 rounded-xl border border-line bg-surface p-5"
+      class="workspace-panel space-y-5"
     >
       <div class="space-y-3">
         <h2 id="utm-templates-title" class="text-xl font-semibold">

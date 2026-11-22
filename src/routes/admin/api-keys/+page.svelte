@@ -20,9 +20,16 @@
 </svelte:head>
 
 <div class="max-w-2xl space-y-8">
-  <header class="space-y-2">
-    <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
-    <p>{messages.intro}</p>
+  <header class="workspace-intro">
+    <div>
+      <h1>{messages.title}</h1>
+      <p>{messages.intro}</p>
+    </div>
+    {#if data.user.role === 'owner'}
+      <a class="workspace-link" href="/admin/integrations/mcp">
+        MCP <span aria-hidden="true">→</span>
+      </a>
+    {/if}
   </header>
 
   {#if form?.newToken}
@@ -41,7 +48,12 @@
     <p role="status" class="font-medium">{messages.revokedNotice}</p>
   {/if}
 
-  <form method="POST" action="?/create" use:enhance class="space-y-4">
+  <form
+    method="POST"
+    action="?/create"
+    use:enhance
+    class="workspace-panel space-y-4"
+  >
     <input type="hidden" name="csrfToken" value={data.csrfToken} />
     <div class="space-y-1">
       <label for="key-name" class="block font-medium">{messages.name}</label>
@@ -82,7 +94,7 @@
     </button>
   </form>
 
-  <section class="space-y-4" aria-labelledby="your-api-keys">
+  <section class="workspace-panel space-y-4" aria-labelledby="your-api-keys">
     <h2 id="your-api-keys" class="text-xl font-semibold">
       {messages.existing}
     </h2>
