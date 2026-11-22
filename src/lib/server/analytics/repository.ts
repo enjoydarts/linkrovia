@@ -1,4 +1,15 @@
 export type ClickSource = 'link' | 'qr';
+export type AnalyticsDimension =
+  | 'country'
+  | 'region'
+  | 'referrer'
+  | 'device'
+  | 'os'
+  | 'browser'
+  | 'rule'
+  | 'source'
+  | 'traffic'
+  | 'link';
 export type Device = 'mobile' | 'tablet' | 'desktop' | 'other';
 
 export interface StatsQuery {
@@ -12,6 +23,9 @@ export interface StatsQuery {
   linkId?: string;
   ruleId?: string;
   source?: ClickSource;
+  /** Optional additional filter. Supply both dimension and key together. */
+  dimension?: AnalyticsDimension;
+  key?: string;
 }
 
 export interface TrendQuery extends StatsQuery {
@@ -45,7 +59,22 @@ export interface DeviceStat {
   clicks: number;
 }
 
+export interface BreakdownResult {
+  breakdown: Array<{ key: string; clicks: number }>;
+  estimated: boolean;
+}
+
+export const breakdownLimit = 25;
+
+export function compareKeys(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 export interface AnalyticsRepository {
+  getBreakdown(
+    query: StatsQuery,
+    dimension: AnalyticsDimension,
+  ): Promise<BreakdownResult>;
   getClickTrend(query: TrendQuery): Promise<TrendResult>;
   getCountries(query: StatsQuery): Promise<CountryStat[]>;
   getReferrers(query: StatsQuery): Promise<ReferrerStat[]>;

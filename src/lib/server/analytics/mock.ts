@@ -7,6 +7,7 @@ const profiles = [
     device: 'mobile',
     browser: 'safari',
     country: 'JP',
+    region: 'Tokyo',
     referrer: 'direct',
   },
   {
@@ -14,6 +15,7 @@ const profiles = [
     device: 'tablet',
     browser: 'safari',
     country: 'IT',
+    region: 'Lazio',
     referrer: 'example.com',
   },
   {
@@ -21,6 +23,7 @@ const profiles = [
     device: 'mobile',
     browser: 'chrome',
     country: 'TW',
+    region: 'Taipei',
     referrer: 'example.org',
   },
   {
@@ -28,6 +31,7 @@ const profiles = [
     device: 'desktop',
     browser: 'edge',
     country: 'US',
+    region: 'California',
     referrer: 'example.net',
   },
   {
@@ -35,6 +39,7 @@ const profiles = [
     device: 'desktop',
     browser: 'safari',
     country: 'ES',
+    region: 'Madrid',
     referrer: 'direct',
   },
   {
@@ -42,6 +47,7 @@ const profiles = [
     device: 'desktop',
     browser: 'firefox',
     country: 'CN',
+    region: 'Beijing',
     referrer: 'example.com',
   },
   {
@@ -49,12 +55,20 @@ const profiles = [
     device: 'other',
     browser: 'unknown',
     country: 'XX',
+    region: 'unknown',
     referrer: 'unknown',
   },
 ] as const satisfies readonly Pick<
   ClickSample,
-  'os' | 'device' | 'browser' | 'country' | 'referrer'
+  'os' | 'device' | 'browser' | 'country' | 'region' | 'referrer'
 >[];
+
+function demoTraffic(os: string, utcDay: number): ClickSample['traffic'] {
+  if (os === 'other' && utcDay % 3 !== 0) {
+    return utcDay % 2 === 0 ? 'bot' : 'preview';
+  }
+  return 'human';
+}
 
 function demoSamples(referenceTime: number): ClickSample[] {
   const today = Math.floor(referenceTime / daySeconds);
@@ -69,6 +83,7 @@ function demoSamples(referenceTime: number): ClickSample[] {
           linkId: usesRule ? 'seed-link-001' : 'seed-link-002',
           ruleId: usesRule ? `seed-rule-${profile.os}` : 'default',
           source: (utcDay + index) % 3 === 0 ? 'qr' : 'link',
+          traffic: demoTraffic(profile.os, utcDay),
           clicks: 1 + (Math.abs(utcDay * (index + 3)) % 29),
         };
       }),

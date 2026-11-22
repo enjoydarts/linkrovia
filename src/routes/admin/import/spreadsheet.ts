@@ -1,14 +1,5 @@
-/** Quote one CSV field for transport without changing its value. */
-export function csvField(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
-}
-
-/** Quote an inert spreadsheet display value, including common Unicode formula prefixes. */
-export function csvCell(value: string): string {
-  const needsProtection =
-    /^[\t\r\n]/u.test(value) || /^[\s\p{Cf}]*[=+\-@＝＋－＠]/u.test(value);
-  return csvField(needsProtection ? "'" + value : value);
-}
+import { csvField } from '../../../lib/csv';
+export { csvCell, csvField } from '../../../lib/csv';
 
 function csvRecord(row: string[]): string {
   return row

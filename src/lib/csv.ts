@@ -76,3 +76,13 @@ export function parseCsv(value: string): CsvFile {
   if (!rows.length) throw new CsvInputError('invalid_csv');
   return { headers, rows };
 }
+export function csvField(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+/** Quote an inert spreadsheet display value, including common Unicode formula prefixes. */
+export function csvCell(value: string): string {
+  const needsProtection =
+    /^[\t\r\n]/u.test(value) || /^[\s\p{Cf}]*[=+\-@＝＋－＠]/u.test(value);
+  return csvField(needsProtection ? "'" + value : value);
+}

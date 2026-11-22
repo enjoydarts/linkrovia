@@ -9,7 +9,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   request,
   browser,
 }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
   const email = 'owner@example.com';
   const password = 'a long development passphrase';
   const csvExpiry = '2099-12-31T00:15:00Z';
@@ -110,6 +110,62 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await recentLink.getByRole('link', { name: /A fixture link/ }).click();
     await expect(page).toHaveURL(/\/admin\/links\/[a-f0-9-]{36}$/);
     await page.waitForLoadState('networkidle');
+
+    await test.step('view analytics and create a conversion goal', async () => {
+      const linkPage = page.url();
+      const linkId = new URL(linkPage).pathname.split('/').at(-1)!;
+      await page.goto('/admin/analytics');
+      await expect(
+        page.getByRole('heading', { name: 'Analytics', exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText('Sample data')).toBeVisible();
+      await expect(
+        page
+          .getByRole('combobox', { name: 'Domain', exact: true })
+          .locator('option')
+          .last(),
+      ).toHaveText(new URL(linkPage).hostname);
+      await expect(
+        page.getByRole('heading', { name: 'Daily clicks' }),
+      ).toBeVisible();
+      const clicks = await page.locator('.count').innerText();
+      expect(Number(clicks.replaceAll(',', ''))).toBeGreaterThan(0);
+
+      await page.goto(`${linkPage}/analytics`);
+      await expect(
+        page.getByRole('heading', { name: 'Link analytics' }),
+      ).toBeVisible();
+      await expect(page.getByText('No clicks for this period.')).toBeVisible();
+      const exportHref = await page
+        .getByRole('link', { name: 'Export CSV' })
+        .getAttribute('href');
+      expect(exportHref).toContain(`/admin/links/${linkId}/analytics/export?`);
+      const csv = await context.request.get(exportHref!);
+      expect(csv.status()).toBe(200);
+      expect(csv.headers()['content-type']).toContain('text/csv');
+      const rows = (await csv.text()).trim().split('\r\n');
+      expect(rows[0]).toContain('date_basis');
+      expect(rows.slice(1).every((row) => row.split(',')[4] === '"0"')).toBe(
+        true,
+      );
+
+      await page.goto(
+        `/admin/conversions?linkId=${encodeURIComponent(linkId)}`,
+      );
+      await expect(
+        page.getByRole('heading', { name: 'Conversions' }),
+      ).toBeVisible();
+      const goal = page.locator('form[action="?/create"]');
+      await goal.locator('[name=name]').fill('Purchase');
+      await goal.locator('[name=eventName]').fill('purchase');
+      await goal.locator('[name=linkId]').selectOption(linkId);
+      await goal.getByRole('button', { name: 'Create goal' }).click();
+      await expect(page.getByRole('status')).toContainText('Changes saved.');
+      await expect(
+        page.getByRole('heading', { name: 'Purchase' }),
+      ).toBeVisible();
+      await page.goto(linkPage);
+    });
 
     await page.locator('[name=active]').uncheck();
     const editUrl = page.url();
@@ -335,6 +391,47 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     expect((await request.get('/api/v1/links', { headers })).status()).toBe(
       401,
     );
+  });
+
+  await test.step('receives a conversion only with the scoped API key', async () => {
+    const endpoint = '/api/v1/conversions/events';
+    expect((await request.post(endpoint, { data: {} })).status()).toBe(401);
+    await page.goto('/admin/api-keys', { waitUntil: 'networkidle' });
+    await page.locator('[name=name]').fill('Conversion sender');
+    await page.locator('[name=scope][value="conversions:write"]').check();
+    await page.locator('[name=scope][value="analytics:read"]').check();
+    await page.locator('form[action="?/create"] button[type=submit]').click();
+    const displayed = page.locator(
+      'input[readonly][aria-labelledby="new-api-key"]',
+    );
+    await expect(displayed).toBeVisible();
+    const headers = { Authorization: `Bearer ${await displayed.inputValue()}` };
+    const response = await request.get('/api/v1/conversion-goals', { headers });
+    expect(response.ok()).toBe(true);
+    const {
+      data: [goal],
+    } = await response.json();
+    const event = {
+      goalId: goal.id,
+      occurredAt: Math.floor(Date.now() / 1000),
+    };
+    const accepted = await request.post(endpoint, {
+      headers: { ...headers, 'Idempotency-Key': 'fixture-purchase-1' },
+      data: event,
+    });
+    expect(accepted.status()).toBe(201);
+    const { receipt } = await accepted.json();
+    expect(receipt.status).toBe('unattributed');
+    const retry = await request.post(endpoint, {
+      headers: { ...headers, 'Idempotency-Key': 'fixture-purchase-1' },
+      data: event,
+    });
+    expect(retry.status()).toBe(200);
+    expect(await retry.json()).toEqual({ receipt, duplicate: true });
+    const analytics = await request.get('/api/v1/analytics/overview', {
+      headers,
+    });
+    expect(await analytics.json()).toMatchObject({ meta: { source: 'mock' } });
   });
 
   await test.step('persists the chosen theme and provides keyboard navigation at 360 px', async () => {

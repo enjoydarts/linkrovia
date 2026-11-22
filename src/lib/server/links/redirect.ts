@@ -1,5 +1,7 @@
+import { clickDataPoint } from '../analytics/click-event';
 import { verifyPassword } from '../auth/credential';
 import { hex, randomHex, sha256 } from '../auth/crypto';
+import { issueClickReference } from '../conversions/attribution';
 import { isValidSlug } from '../security/slug';
 import {
   getVisitorContext,
@@ -19,6 +21,7 @@ import type { RedirectType } from './store';
 
 type RedirectLink = {
   id: string;
+  domainId: string;
   slug: string;
   destinationUrl: string;
   redirectType: RedirectType;
@@ -29,6 +32,7 @@ type RedirectLink = {
   passwordHash: string | null;
   gateToken: string | null;
   consumedAt: number | null;
+  conversionTracking: number;
   qrCodeId: string | null;
   rulesJson: string;
   utmConfigJson: string | null;
@@ -59,10 +63,12 @@ async function findPublicLink(
   const filter = fromQr ? 'q.token' : isGate ? 'l.gate_token' : 'l.slug';
   return db
     .prepare(
-      `SELECT l.id, l.slug, l.destination_url AS destinationUrl, l.redirect_type AS redirectType,
+      `SELECT l.id, l.domain_id AS domainId, l.slug, l.destination_url AS destinationUrl,
+            l.redirect_type AS redirectType,
             l.starts_at AS startsAt, l.expires_at AS expiresAt, l.updated_at AS updatedAt,
             l.protection_mode AS protectionMode, l.gate_token AS gateToken,
-            l.consumed_at AS consumedAt, l.utm_config_json AS utmConfigJson,
+            l.consumed_at AS consumedAt, l.conversion_tracking AS conversionTracking,
+            l.utm_config_json AS utmConfigJson,
             ${fromQr ? 'q.id' : 'NULL'} AS qrCodeId,
             ${isGate ? 'l.protection_password_hash' : 'NULL'} AS passwordHash,
             (SELECT json_group_array(json_object(
@@ -192,12 +198,6 @@ export async function unlockedGatePath(
   return valid ? gate.nextPath : null;
 }
 
-function isPreview(request: Request) {
-  return ['sec-purpose', 'purpose'].some((header) =>
-    /\bprefetch\b/i.test(request.headers.get(header) ?? ''),
-  );
-}
-
 async function resolveLink(
   db: D1Database,
   hostname: string,
@@ -206,12 +206,20 @@ async function resolveLink(
   request: Request,
   cf: VisitorCloudflareMetadata | undefined,
   unlockToken: string | undefined,
+  clicks: AnalyticsEngineDataset | undefined,
 ): Promise<ShortLinkResponse> {
   const link = await findPublicLink(db, hostname, lookup, value);
   if (!link) return { status: 404 };
   const status = unavailable(link);
   if (status) return { status };
 
+  const visitor = getVisitorContext(request, cf);
+  const isSpeculative = ['sec-purpose', 'purpose'].some((header) =>
+    /\b(?:prefetch|prerender|preview)\b/i.test(
+      request.headers.get(header) ?? '',
+    ),
+  );
+  const isClick = request.method === 'GET' && !isSpeculative;
   let unlockHash: string | undefined;
   if (link.protectionMode !== 'none') {
     if (
@@ -224,8 +232,8 @@ async function resolveLink(
       location: `/gate/${lookup === 'qr' ? `q-${value}` : link.gateToken}`,
     };
     if (
-      request.method !== 'GET' ||
-      isPreview(request) ||
+      !isClick ||
+      visitor.trafficKind === 'preview' ||
       !unlockToken ||
       !gateTokenPattern.test(unlockToken)
     )
@@ -235,17 +243,13 @@ async function resolveLink(
   }
 
   const rules: TargetingRule[] = JSON.parse(link.rulesJson);
-  const destination = selectDestination(
-    link,
-    rules,
-    getVisitorContext(request, cf),
-  );
+  const destination = selectDestination(link, rules, visitor);
   if (!destination) return { status: 404 };
   const location = applyUtmConfig(
     destination.url,
     link.utmConfigJson,
     destination.matchedRuleId,
-  ).href;
+  );
 
   if (unlockHash && isOneTime(link.protectionMode)) {
     const used = await db
@@ -262,9 +266,40 @@ async function resolveLink(
     if (!used) return { status: 410 };
   }
 
+  if (
+    isClick &&
+    link.conversionTracking === 1 &&
+    (link.redirectType === 302 || link.redirectType === 307) &&
+    visitor.trafficKind !== 'bot' &&
+    visitor.trafficKind !== 'preview'
+  ) {
+    try {
+      const reference = await issueClickReference(db, link.id, link.updatedAt);
+      if (reference) location.searchParams.set('cl_ref', reference);
+    } catch {
+      console.error('Click attribution write failed');
+    }
+  }
+
+  if (clicks && isClick) {
+    try {
+      const point = clickDataPoint({
+        linkId: link.id,
+        domainId: link.domainId,
+        matchedRuleId: destination.matchedRuleId,
+        source: lookup === 'qr' ? 'qr' : 'link',
+        referrer: request.headers.get('referer'),
+        visitor,
+      });
+      if (point) clicks.writeDataPoint(point);
+    } catch {
+      console.error('Click analytics write failed');
+    }
+  }
+
   return {
     status: link.redirectType,
-    location,
+    location: location.href,
     linkId: link.id,
     qrCodeId: link.qrCodeId,
     matchedRuleId: destination.matchedRuleId,
@@ -278,9 +313,10 @@ export async function resolveShortLink(
   request: Request,
   cf?: VisitorCloudflareMetadata,
   unlockToken?: string,
+  clicks?: AnalyticsEngineDataset,
 ): Promise<ShortLinkResponse> {
   return isValidSlug(slug)
-    ? resolveLink(db, hostname, 'slug', slug, request, cf, unlockToken)
+    ? resolveLink(db, hostname, 'slug', slug, request, cf, unlockToken, clicks)
     : { status: 404 };
 }
 
@@ -291,8 +327,9 @@ export async function resolveQrLink(
   request: Request,
   cf?: VisitorCloudflareMetadata,
   unlockToken?: string,
+  clicks?: AnalyticsEngineDataset,
 ): Promise<ShortLinkResponse> {
   return gateTokenPattern.test(token)
-    ? resolveLink(db, hostname, 'qr', token, request, cf, unlockToken)
+    ? resolveLink(db, hostname, 'qr', token, request, cf, unlockToken, clicks)
     : { status: 404 };
 }

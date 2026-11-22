@@ -298,7 +298,7 @@ export function planRestore(
     if (match) {
       write(
         `UPDATE links SET domain_id = ?, slug = ?, destination_url = ?, title = ?, description = ?, redirect_type = ?,
-        is_active = ?, starts_at = ?, expires_at = ?, utm_config_json = ?, protection_mode = ?,
+        is_active = ?, starts_at = ?, expires_at = ?, utm_config_json = ?, protection_mode = ?, conversion_tracking = 0,
         consumed_at = ?, gate_token = ?, protection_password_hash = CASE
           WHEN ? THEN protection_password_hash WHEN ? THEN '!backup-locked' END,
         deleted_at = NULL, updated_at = MAX(unixepoch(), updated_at + 1) WHERE id = ?`,
@@ -486,7 +486,7 @@ export function planRestore(
       state.data.links,
       pending.links,
       retainedLinks,
-      'UPDATE links SET is_active = 0, deleted_at = unixepoch(), updated_at = MAX(unixepoch(), updated_at + 1) WHERE id IN (SELECT value FROM json_each(?))',
+      'UPDATE links SET is_active = 0, conversion_tracking = 0, deleted_at = unixepoch(), updated_at = MAX(unixepoch(), updated_at + 1) WHERE id IN (SELECT value FROM json_each(?))',
     );
     if (removedLinks.length) {
       const removed = new Set(removedLinks);

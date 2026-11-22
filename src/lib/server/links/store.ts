@@ -345,6 +345,10 @@ export async function updateLink(
       .prepare(
         `UPDATE links SET domain_id = ?, slug = ?, destination_url = ?, title = ?, redirect_type = ?,
         is_active = ?, starts_at = ?, expires_at = ?,
+        conversion_tracking = CASE
+          WHEN destination_url <> ? OR domain_id <> ? OR redirect_type <> ? OR ? THEN 0
+          ELSE conversion_tracking
+        END,
         utm_config_json = CASE
           WHEN ? THEN ?
           WHEN ? AND json_valid(utm_config_json) THEN json_remove(utm_config_json, '$.rules')
@@ -365,6 +369,10 @@ export async function updateLink(
         Number(input.isActive),
         input.startsAt,
         input.expiresAt,
+        input.destinationUrl,
+        input.domainId,
+        input.redirectType,
+        Number(input.rules !== undefined),
         Number(input.utmConfigJson !== undefined),
         input.utmConfigJson ?? null,
         Number(input.rules !== undefined),

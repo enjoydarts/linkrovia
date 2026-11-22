@@ -135,6 +135,7 @@ export const links = sqliteTable(
     consumedAt: integer('consumed_at'),
     utmConfigJson: text('utm_config_json'),
     redirectType: integer('redirect_type').notNull().default(302),
+    conversionTracking: integer('conversion_tracking').notNull().default(0),
     isActive: integer('is_active').notNull().default(1),
     startsAt: integer('starts_at'),
     expiresAt: integer('expires_at'),
@@ -153,6 +154,10 @@ export const links = sqliteTable(
       sql`protection_mode IN ('none','password','one_time','password_one_time')`,
     ),
     check('links_redirect_type_check', sql`redirect_type IN (301,302,307,308)`),
+    check(
+      'links_conversion_tracking_check',
+      sql`conversion_tracking IN (0, 1)`,
+    ),
     unique().on(table.domainId, table.slug),
     uniqueIndex('links_gate_token')
       .on(table.gateToken)
@@ -379,6 +384,9 @@ export const conversionGoals = sqliteTable(
       table.eventName,
       table.backupArchivedAt,
     ),
+    uniqueIndex('conversion_goals_live_event')
+      .on(sql`coalesce(${table.linkId}, '')`, table.eventName)
+      .where(sql`${table.backupArchivedAt} IS NULL`),
   ],
 );
 
@@ -393,9 +401,17 @@ export const clickAttributions = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
     expiresAt: integer('expires_at').notNull(),
+    eligibleGoalsJson: text('eligible_goals_json').notNull().default('{}'),
     consumedAt: integer('consumed_at'),
   },
-  (table) => [index('click_attributions_expires').on(table.expiresAt)],
+  (table) => [
+    index('click_attributions_expires').on(table.expiresAt),
+    index('click_attributions_cohort').on(table.createdAt, table.linkId),
+    check(
+      'click_attributions_eligible_goals_check',
+      sql`json_valid(${table.eligibleGoalsJson})`,
+    ),
+  ],
 );
 
 export const conversionReceipts = sqliteTable(
@@ -421,6 +437,10 @@ export const conversionReceipts = sqliteTable(
     ),
     unique().on(table.goalId, table.dedupeKeyHash),
     index('conversion_receipts_link_time').on(table.linkId, table.occurredAt),
+    index('conversion_receipts_goal_time').on(table.goalId, table.occurredAt),
+    uniqueIndex('conversion_receipts_goal_click')
+      .on(table.goalId, table.clickRefHash)
+      .where(sql`${table.clickRefHash} IS NOT NULL`),
   ],
 );
 

@@ -35,6 +35,7 @@ export async function servePublicLink(
       request,
       (request as Request & { cf?: IncomingRequestCfProperties }).cf,
       cookies.get(linkUnlockCookie),
+      dev ? undefined : locals.env.CLICKS,
     );
     const headers = new Headers(publicLinkHeaders);
     if ('location' in result)

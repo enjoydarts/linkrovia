@@ -123,7 +123,7 @@ export async function withScope(
     db: D1Database,
     principal: ApiPrincipal,
   ) => Response | Promise<Response>,
-  { recordUse = true } = {},
+  { recordUse = true, limitByKey = false } = {},
 ) {
   const db = event.locals.env?.DB;
   if (!db)
@@ -164,7 +164,9 @@ export async function withScope(
     }
 
     const limiterKey = `api:${principal.id}:${event.request.method}:${event.route.id}`;
-    if (!(await allowAuthAttempt(event, limiterKey))) {
+    if (
+      !(await allowAuthAttempt(event, limiterKey, { byAddress: !limitByKey }))
+    ) {
       return problem(
         429,
         'rate_limited',

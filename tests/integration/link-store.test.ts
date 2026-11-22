@@ -40,6 +40,7 @@ beforeAll(async () => {
     '0002_domain_connections.sql',
     '0004_link_protection.sql',
     '0006_backup.sql',
+    '0007_conversions.sql',
   ]) {
     const sql = await readFile(
       new URL('../../migrations/' + name, import.meta.url),
@@ -263,10 +264,32 @@ describe('link management and delivery', () => {
       .bind(link.id, qr)
       .run();
 
+    const points: AnalyticsEngineDataPoint[] = [];
+    const clicks: AnalyticsEngineDataset = {
+      writeDataPoint(point) {
+        if (point) points.push(point);
+      },
+    };
     const shortRequest = new Request(`https://${hostname}/${slug}`);
     const qrRequest = new Request(`https://${hostname}/q/${qr}`);
-    const short = await resolveShortLink(db, hostname, slug, shortRequest);
-    const fromQr = await resolveQrLink(db, hostname, qr, qrRequest);
+    const short = await resolveShortLink(
+      db,
+      hostname,
+      slug,
+      shortRequest,
+      undefined,
+      undefined,
+      clicks,
+    );
+    const fromQr = await resolveQrLink(
+      db,
+      hostname,
+      qr,
+      qrRequest,
+      undefined,
+      undefined,
+      clicks,
+    );
     expect(short).toMatchObject({
       status: 302,
       location: expect.stringContaining('/gate/'),
@@ -293,6 +316,7 @@ describe('link management and delivery', () => {
       new Request(shortRequest, { method: 'HEAD' }),
       undefined,
       first.token,
+      clicks,
     );
     expect(head).toEqual(short);
     const prefetch = new Request(shortRequest, {
@@ -306,6 +330,7 @@ describe('link management and delivery', () => {
         prefetch,
         undefined,
         first.token,
+        clicks,
       ),
     ).toEqual(short);
     expect(await resolveQrLink(db, 'links.example.org', qr, qrRequest)).toEqual(
@@ -322,13 +347,41 @@ describe('link management and delivery', () => {
               shortRequest,
               undefined,
               first.token,
+              clicks,
             )
-          : resolveQrLink(db, hostname, qr, qrRequest, undefined, second.token),
+          : resolveQrLink(
+              db,
+              hostname,
+              qr,
+              qrRequest,
+              undefined,
+              second.token,
+              clicks,
+            ),
       ),
     );
     expect(results.filter(({ status }) => status === 410)).toHaveLength(9);
     expect(results.filter((result) => 'location' in result)).toMatchObject([
       { status: 302, location: draft.destinationUrl, linkId: link.id },
+    ]);
+    expect(points).toEqual([
+      {
+        indexes: [link.id],
+        blobs: [
+          draft.domainId,
+          'XX',
+          'unknown',
+          'direct',
+          'other',
+          'other',
+          'unknown',
+          'default',
+          expect.stringMatching(/^(link|qr)$/),
+          'unknown',
+          'none',
+        ],
+        doubles: [1],
+      },
     ]);
     expect(await getLink(db, link.id)).toMatchObject({
       consumedAt: expect.any(Number),
@@ -437,5 +490,118 @@ describe('link management and delivery', () => {
     expect(
       await loadLinkGate(db, hostname, gated.location.slice('/gate/'.length)),
     ).toEqual({ status: 404 });
+  });
+
+  it('records classified GET traffic while skipping speculative and unsuccessful requests', async () => {
+    const db = platform.env.DB;
+    const hostname = 'go.example.com';
+    const slug = 'analytics-click';
+    const input = new Request(
+      `https://${hostname}/${slug}?qr=1&cl_ref=private`,
+    );
+    const created = await createLink(db, null, { ...draft, slug });
+    if (!created.ok) throw new Error(created.code);
+    const kinds: Array<string | ArrayBuffer | null> = [];
+    const clicks: AnalyticsEngineDataset = {
+      writeDataPoint(point) {
+        const blobs = point?.blobs;
+        if (blobs) kinds.push(blobs[8], blobs[9], blobs[10]);
+      },
+    };
+    const resolve = (request: Request, path = slug) =>
+      resolveShortLink(
+        db,
+        hostname,
+        path,
+        request,
+        undefined,
+        undefined,
+        clicks,
+      );
+
+    await resolve(new Request(input, { method: 'HEAD' }));
+    await resolve(
+      new Request(input, { headers: { 'sec-purpose': 'prerender' } }),
+    );
+    await resolve(input, 'missing-analytics-link');
+    await resolve(
+      new Request(input, { headers: { 'user-agent': 'Googlebot' } }),
+    );
+    await resolve(
+      new Request(input, { headers: { 'user-agent': 'Twitterbot/1.0' } }),
+    );
+    expect(kinds).toEqual(['link', 'bot', 'none', 'link', 'preview', 'none']);
+  });
+
+  it('adds an opaque reference only to eligible temporary redirects after opt-in', async () => {
+    const db = platform.env.DB;
+    const hostname = 'go.example.com';
+    const destinationUrl = 'https://example.com/a?q=a%20b&cl_ref=previous#keep';
+    const created = await createLink(db, null, {
+      ...draft,
+      slug: 'conversion-click',
+      destinationUrl,
+    });
+    if (!created.ok) throw new Error(created.code);
+    const request = new Request(`https://${hostname}/conversion-click`);
+    const resolve = (input: Request) =>
+      resolveShortLink(db, hostname, 'conversion-click', input);
+    expect(await resolve(request)).toMatchObject({ location: destinationUrl });
+
+    await db
+      .prepare('UPDATE links SET conversion_tracking = 1 WHERE id = ?')
+      .bind(created.id)
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO conversion_goals (id, name, event_name, link_id) VALUES ('signup-goal', 'Signup', 'signup', ?)",
+      )
+      .bind(created.id)
+      .run();
+    expect(
+      await resolve(new Request(request, { method: 'HEAD' })),
+    ).toMatchObject({ location: destinationUrl });
+    expect(
+      await resolve(
+        new Request(request, { headers: { 'user-agent': 'Googlebot' } }),
+      ),
+    ).toMatchObject({ location: destinationUrl });
+    expect(
+      await resolve(
+        new Request(request, { headers: { 'sec-purpose': 'prerender' } }),
+      ),
+    ).toMatchObject({ location: destinationUrl });
+    const result = await resolve(request);
+    if (!('location' in result)) throw new Error('Missing redirect');
+    const location = new URL(result.location);
+    const references = location.searchParams.getAll('cl_ref');
+    expect(references).toHaveLength(1);
+    expect(references[0]).toMatch(/^[a-f0-9]{48}\.[a-f0-9]{64}$/);
+    expect(location.searchParams.get('q')).toBe('a b');
+    expect(location.hash).toBe('#keep');
+
+    await db
+      .prepare(
+        `CREATE TRIGGER reject_test_click BEFORE INSERT ON click_attributions
+         BEGIN SELECT RAISE(ABORT, 'Attribution unavailable'); END`,
+      )
+      .run();
+    try {
+      expect(await resolve(request)).toMatchObject({
+        status: 302,
+        location: destinationUrl,
+      });
+    } finally {
+      await db.prepare('DROP TRIGGER reject_test_click').run();
+    }
+
+    await db
+      .prepare('UPDATE links SET redirect_type = 301 WHERE id = ?')
+      .bind(created.id)
+      .run();
+    expect(await resolve(request)).toMatchObject({
+      status: 301,
+      location: destinationUrl,
+    });
   });
 });

@@ -8,12 +8,14 @@ const beforeMidnight: ClickSample = {
   domainId: 'seed-domain-com',
   linkId: 'seed-link-001',
   country: 'JP',
+  region: 'Tokyo',
   referrer: 'direct',
   device: 'mobile',
   os: 'ios',
   browser: 'safari',
   ruleId: 'seed-rule-ios',
   source: 'qr',
+  traffic: 'human',
   clicks: 3,
 };
 

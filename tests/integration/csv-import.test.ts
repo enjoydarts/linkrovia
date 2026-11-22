@@ -16,6 +16,7 @@ beforeEach(() => {
     '0002_domain_connections.sql',
     '0004_link_protection.sql',
     '0006_backup.sql',
+    '0007_conversions.sql',
   ]) {
     sqlite.exec(
       readFileSync(

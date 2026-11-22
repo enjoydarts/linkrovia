@@ -2,6 +2,9 @@
   import { page } from '$app/state';
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import Link2 from '@lucide/svelte/icons/link-2';
+  import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined';
+  import Target from '@lucide/svelte/icons/target';
+  import { analyticsMessages } from '$lib/components/analytics/messages';
   import Upload from '@lucide/svelte/icons/upload';
   import Archive from '@lucide/svelte/icons/archive';
   import { backupMessages } from './backup/messages';
@@ -30,6 +33,16 @@
       icon: LayoutDashboard,
     },
     { href: '/admin/links', label: links.links, icon: Link2 },
+    {
+      href: '/admin/analytics',
+      label: analyticsMessages(data.locale).title,
+      icon: ChartNoAxesCombined,
+    },
+    {
+      href: '/admin/conversions',
+      label: analyticsMessages(data.locale).conversions,
+      icon: Target,
+    },
     {
       href: '/admin/import',
       label: csvMessages(data.locale).title,

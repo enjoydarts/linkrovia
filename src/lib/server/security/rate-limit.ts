@@ -3,9 +3,13 @@ import type { RequestEvent } from '@sveltejs/kit';
 export async function allowAuthAttempt(
   event: RequestEvent,
   action: string,
+  { byAddress = true } = {},
 ): Promise<boolean> {
   const limiter = event.locals.env.AUTH_LIMIT;
   if (!limiter) throw new Error('Authentication rate limiter unavailable');
+  const key = `linkrovia:${event.url.hostname}:${action}`;
+  if (!byAddress)
+    return (await limiter.limit({ key: `linkrovia:${action}` })).success;
 
   let address = 'unknown';
   try {
@@ -19,7 +23,7 @@ export async function allowAuthAttempt(
   );
   const subject = Buffer.from(digest).toString('hex');
   const { success } = await limiter.limit({
-    key: `linkrovia:${event.url.hostname}:${action}:${subject}`,
+    key: `${key}:${subject}`,
   });
   return success;
 }

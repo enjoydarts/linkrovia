@@ -13,6 +13,12 @@ export const deviceTypes = ['mobile', 'tablet', 'desktop', 'other'] as const;
 type OperatingSystem = (typeof operatingSystems)[number];
 type Device = (typeof deviceTypes)[number];
 type TrafficKind = 'human' | 'preview' | 'bot' | 'unknown';
+const browserIds = new Map(
+  Object.entries(Bowser.BROWSER_MAP).map(([id, name]) => [
+    name.toLowerCase(),
+    id,
+  ]),
+);
 
 export interface VisitorCloudflareMetadata {
   country?: string | null;
@@ -127,10 +133,11 @@ function readRegion(
 
 function classifyUserAgent(
   userAgent: string | null,
-): Pick<VisitorContext, 'os' | 'device' | 'trafficKind'> {
+): Pick<VisitorContext, 'os' | 'device' | 'trafficKind'> & { browser: string } {
   const unknown = {
     os: 'other',
     device: 'other',
+    browser: 'unknown',
     trafficKind: 'unknown',
   } as const;
   if (!userAgent || userAgent.length > 512 || /[\x00-\x1f\x7f]/.test(userAgent))
@@ -167,13 +174,19 @@ function classifyUserAgent(
   const device = deviceTypes.find((entry) => entry === platform) ?? 'other';
   const trafficKind =
     os !== 'other' && device !== 'other' ? 'human' : 'unknown';
-  return { os, device, trafficKind };
+  const name = parser.getBrowserName(true);
+  return {
+    os,
+    device,
+    trafficKind,
+    browser: browserIds.get(name) ?? 'unknown',
+  };
 }
 
 export function getVisitorContext(
   request: Request,
   metadata?: VisitorCloudflareMetadata,
-): VisitorContext {
+) {
   const rawCountry = metadata?.country;
   const country =
     (typeof rawCountry === 'string' ? normalizeCountry(rawCountry) : null) ??
