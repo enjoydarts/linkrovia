@@ -1,5 +1,21 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { fixtureSetupToken } from '../fixtures/setup.mjs';
+
+async function signOut(page: Page) {
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/logout' &&
+        response.request().method() === 'POST',
+    ),
+    page.locator('form[action="/logout"] button').click(),
+  ]);
+  expect(
+    response.status(),
+    'logout must complete before opening an invitation',
+  ).toBe(303);
+  await expect(page).toHaveURL('/login');
+}
 
 test('registers and signs in with a discoverable passkey', async ({
   page,
@@ -44,8 +60,7 @@ test('registers and signs in with a discoverable passkey', async ({
     });
     expect(credentials).toHaveLength(1);
     expect(credentials[0].isResidentCredential).toBe(true);
-    await page.locator('form[action="/logout"] button').click();
-    await expect(page).toHaveURL('/login');
+    await signOut(page);
     await expect(
       page.locator('form[action="/login/passkey"] button'),
     ).toBeVisible();
@@ -62,10 +77,14 @@ test('registers and signs in with a discoverable passkey', async ({
     await expect(inviteUrl).toHaveValue(/\/invite\/admin#[0-9a-f]{64}$/);
     const invite = await inviteUrl.inputValue();
 
-    await page.locator('form[action="/logout"] button').click();
+    await signOut(page);
     await page.goto(invite);
     await expect(page).toHaveURL('/invite/admin');
-    await page.locator('form[action="/invite/admin/passkey"] button').click();
+    const acceptInvite = page.locator(
+      'form[action="/invite/admin/passkey"] button',
+    );
+    await expect(acceptInvite).toBeEnabled();
+    await acceptInvite.click();
     await expect(page).toHaveURL('/admin');
     await expect(page.locator('.account-email')).toHaveText(
       'second-admin@example.com',
@@ -74,10 +93,11 @@ test('registers and signs in with a discoverable passkey', async ({
     const denied = await page.goto('/admin/settings/admins');
     expect(denied?.status()).toBe(403);
     await page.goto('/admin');
-    await page.locator('form[action="/logout"] button').click();
+    await signOut(page);
     await page.goto(invite);
     await expect(page).toHaveURL('/invite/admin');
-    await page.locator('form[action="/invite/admin/passkey"] button').click();
+    await expect(acceptInvite).toBeEnabled();
+    await acceptInvite.click();
     await expect(page.getByRole('alert')).toBeVisible();
     const registered = await cdp.send('WebAuthn.getCredentials', {
       authenticatorId,

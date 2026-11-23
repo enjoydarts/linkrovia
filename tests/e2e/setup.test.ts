@@ -443,8 +443,25 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         })
       ).status(),
     ).toBe(403);
+    const withoutJs = await browser.newContext({
+      baseURL,
+      storageState: await context.storageState(),
+      javaScriptEnabled: false,
+    });
+    try {
+      const serverPage = await withoutJs.newPage();
+      await serverPage.goto('/admin/import');
+      await expect(serverPage.getByLabel('CSV file')).toBeDisabled();
+      await expect(
+        serverPage.getByRole('button', { name: 'Preview links' }),
+      ).toBeDisabled();
+    } finally {
+      await withoutJs.close();
+    }
     await page.getByRole('link', { name: 'CSV import' }).click();
-    await page.getByLabel('CSV file').setInputFiles({
+    const csvFile = page.getByLabel('CSV file');
+    await expect(csvFile).toBeEnabled();
+    await csvFile.setInputFiles({
       name: 'links.csv',
       mimeType: 'text/csv',
       buffer: Buffer.from(

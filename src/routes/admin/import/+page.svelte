@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { brand } from '$lib/brand';
   import { resolve } from '$app/paths';
   import {
@@ -22,9 +23,14 @@
   let rows = $state.raw<Row[]>([]);
   let duplicate = $state<'skip' | 'error'>('error');
   let previewPolicy = $state<'skip' | 'error'>('error');
+  let interactive = $state(false);
   let busy = $state(false);
   let started = $state(false);
   let issue = $state<string | null>(null);
+
+  onMount(() => {
+    interactive = true;
+  });
 
   let remaining = $derived(
     rows.filter((row) => row.status === 'ready' || row.code === 'write_failed'),
@@ -242,7 +248,7 @@
             accept=".csv,text/csv"
             aria-describedby="csv-limits"
             onchange={resetPreview}
-            disabled={busy}
+            disabled={!interactive || busy}
             required
           />
           <p id="csv-limits" class="text-sm text-muted">
@@ -257,7 +263,7 @@
             id="csv-duplicate"
             bind:value={duplicate}
             onchange={resetPreview}
-            disabled={busy}
+            disabled={!interactive || busy}
             class={inputClass}
           >
             <option value="error">{messages.error}</option>
@@ -269,18 +275,24 @@
         </div>
       </div>
       <div class="flex flex-wrap gap-3">
-        <button type="submit" class={buttonClass} disabled={busy}>
+        <button
+          type="submit"
+          class={buttonClass}
+          disabled={!interactive || busy}
+        >
           {messages.preview}
         </button>
         <button
           type="button"
           class={secondaryClass}
+          disabled={!interactive}
           onclick={() => download('links-example.csv', example)}
         >
           {messages.example}
         </button>
       </div>
     </form>
+    <noscript><p class="text-sm">{messages.javascript}</p></noscript>
 
     <details class="space-y-2 text-sm">
       <summary class="cursor-pointer font-semibold">{messages.format}</summary>

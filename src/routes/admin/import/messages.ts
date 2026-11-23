@@ -3,6 +3,7 @@ import type { Locale } from '$lib/i18n/locale';
 const en = {
   title: 'CSV import',
   description: 'Preview links from a UTF-8 CSV file before importing them.',
+  javascript: 'Enable JavaScript to preview and import a CSV file.',
   file: 'CSV file',
   limits: 'Up to 1 MiB and 500 data rows.',
   example: 'Download example CSV',
@@ -59,6 +60,8 @@ const en = {
 const ja = {
   title: 'CSVインポート',
   description: 'UTF-8 の CSV ファイルからリンクを確認してから登録します。',
+  javascript:
+    'CSV をプレビューして取り込むには JavaScript を有効にしてください。',
   file: 'CSVファイル',
   limits: '最大 1 MiB、データは 500 行まで。',
   example: 'CSVサンプルをダウンロード',
@@ -115,6 +118,7 @@ const ja = {
 const zhCN = {
   title: '导入 CSV',
   description: '先预览 UTF-8 CSV 文件中的链接，再导入。',
+  javascript: '请启用 JavaScript 以预览和导入 CSV 文件。',
   file: 'CSV 文件',
   limits: '最多 1 MiB 和 500 条数据记录。',
   example: '下载示例 CSV',
@@ -166,6 +170,7 @@ const zhCN = {
 const zhTW = {
   title: '匯入 CSV',
   description: '先預覽 UTF-8 CSV 檔案中的連結，再匯入。',
+  javascript: '請啟用 JavaScript 以預覽及匯入 CSV 檔案。',
   file: 'CSV 檔案',
   limits: '最多 1 MiB 和 500 筆資料。',
   example: '下載範例 CSV',
@@ -218,6 +223,7 @@ const es = {
   title: 'Importar CSV',
   description:
     'Revisa los enlaces de un archivo CSV UTF-8 antes de importarlos.',
+  javascript: 'Activa JavaScript para previsualizar e importar un archivo CSV.',
   file: 'Archivo CSV',
   limits: 'Hasta 1 MiB y 500 filas de datos.',
   example: 'Descargar CSV de ejemplo',
@@ -272,6 +278,8 @@ const es = {
 const it = {
   title: 'Importa CSV',
   description: 'Controlla i link di un file CSV UTF-8 prima di importarli.',
+  javascript:
+    'Abilita JavaScript per visualizzare in anteprima e importare un file CSV.',
   file: 'File CSV',
   limits: 'Fino a 1 MiB e 500 righe di dati.',
   example: 'Scarica CSV di esempio',
@@ -328,6 +336,8 @@ const fr = {
   title: 'Import CSV',
   description:
     'Prévisualisez les liens d’un fichier CSV encodé en UTF-8 avant de les importer.',
+  javascript:
+    'Activez JavaScript pour prévisualiser et importer un fichier CSV.',
   file: 'Fichier CSV',
   limits: 'Jusqu’à 1 Mio et 500 lignes de données.',
   example: 'Télécharger un exemple de CSV',
