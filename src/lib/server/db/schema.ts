@@ -98,8 +98,10 @@ export const domains = sqliteTable(
     connectionErrorCode: text('connection_error_code'),
     connectionVersion: integer('connection_version').notNull().default(0),
     backupArchivedAt: integer('backup_archived_at'),
+    managementEnabled: integer('management_enabled').notNull().default(0),
   },
   (table) => [
+    check('domains_management_enabled_check', sql`management_enabled IN (0,1)`),
     check(
       'domains_provider_mode_check',
       sql`provider_mode IN ('unconfigured','cloudflare_custom_domain','external_dns_guided')`,
@@ -111,6 +113,9 @@ export const domains = sqliteTable(
     uniqueIndex('domains_single_primary')
       .on(table.isPrimary)
       .where(sql`is_primary = 1`),
+    uniqueIndex('domains_one_management')
+      .on(table.managementEnabled)
+      .where(sql`management_enabled = 1`),
     index('domains_connection_status').on(
       table.connectionStatus,
       table.lastCheckedAt,
@@ -299,6 +304,10 @@ export const setupState = sqliteTable(
     completedAt: integer('completed_at'),
     ownerUserId: text('owner_user_id'),
     tokenConsumedAt: integer('token_consumed_at'),
+    deploymentHostname: text('deployment_hostname'),
+    managementHostname: text('management_hostname'),
+    managementOperationId: text('management_operation_id'),
+    managementOperationExpiresAt: integer('management_operation_expires_at'),
   },
   (table) => [check('setup_state_singleton_check', sql`singleton=1`)],
 );
@@ -623,6 +632,25 @@ export const domainConnectionOperations = sqliteTable(
       table.domainId,
       sql`${table.startedAt} DESC`,
     ),
+  ],
+);
+
+export const managementSignins = sqliteTable(
+  'management_signins',
+  {
+    stateHash: text('state_hash').primaryKey(),
+    verifierHash: text('verifier_hash').notNull(),
+    targetOrigin: text('target_origin').notNull(),
+    codeHash: text('code_hash').unique(),
+    userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    expiresAt: integer('expires_at').notNull(),
+  },
+  (table) => [
+    check(
+      'management_signins_user_check',
+      sql`code_hash IS NULL OR user_id IS NOT NULL`,
+    ),
+    index('management_signins_expiry_idx').on(table.expiresAt),
   ],
 );
 

@@ -1,8 +1,10 @@
+import { dev } from '$app/env';
 import { error, fail, type RequestEvent } from '@sveltejs/kit';
 import { requireForm, requireSession } from '$lib/server/links/form';
 import { updateDomainAssignment } from '$lib/server/domains/assignment';
 import { parseCloudflareInput } from '$lib/server/domains/cloudflare';
 import {
+  deploymentHostname,
   managementHostname,
   readDomainConnection,
 } from '$lib/server/domains/connection';
@@ -23,6 +25,10 @@ export const load = (async (event) => {
     domain: view,
     managementHostname: primary ?? null,
     isOwner: session.user.role === 'owner',
+    managementAvailable:
+      !!primary &&
+      (primary.endsWith('.workers.dev') ||
+        (dev && ['localhost', '127.0.0.1', '::1'].includes(primary))),
   };
 }) satisfies PageServerLoad;
 
@@ -46,14 +52,14 @@ async function assign(event: RequestEvent, operation: 'attach' | 'detach') {
   )
     return fail(429, { operation, code: 'busy' });
 
-  const [domain, primary] = await Promise.all([
+  const [domain, deployment] = await Promise.all([
     readDomainConnection(db, event.params.id ?? ''),
-    managementHostname(db),
+    deploymentHostname(db),
   ]);
   if (!domain || domain.isPrimary) error(404, 'Domain not found');
   if (domain.version !== Number(version))
     return fail(409, { operation, code: 'domain_changed' });
-  if (!primary) return fail(422, { operation, code: 'unsupported' });
+  if (!deployment) return fail(422, { operation, code: 'unsupported' });
   try {
     const { code } = await updateDomainAssignment(
       db,
@@ -61,7 +67,7 @@ async function assign(event: RequestEvent, operation: 'attach' | 'detach') {
       session.user.id,
       operation,
       credentials,
-      primary,
+      deployment,
     );
     switch (code) {
       case 'attached':
@@ -86,4 +92,32 @@ async function assign(event: RequestEvent, operation: 'attach' | 'detach') {
 export const actions = {
   attach: (event) => assign(event, 'attach'),
   detach: (event) => assign(event, 'detach'),
+  management: async (event) => {
+    const { db, session, form } = await requireForm(event);
+    if (session.user.role !== 'owner') error(403, 'Forbidden');
+    const enabled = form.get('enabled');
+    if (enabled !== '0' && enabled !== '1')
+      return fail(400, { operation: 'management', code: 'invalid' });
+    const primaryAllowed = `EXISTS (SELECT 1 FROM domains AS primary_domain WHERE primary_domain.is_primary = 1 AND (primary_domain.hostname GLOB '*.workers.dev' ${dev ? "OR primary_domain.hostname IN ('localhost', '127.0.0.1', '::1')" : ''}))`;
+    const eligible = `(${primaryAllowed}) AND id = ? AND is_primary = 0 AND is_active = 1 AND connection_status = 'active'
+      AND verified_at IS NOT NULL AND backup_archived_at IS NULL
+      AND provider_mode = 'cloudflare_custom_domain'`;
+    const [, result] = await db.batch<{ id: string }>([
+      db
+        .prepare(
+          `UPDATE domains SET management_enabled = 0, updated_at = unixepoch()
+        WHERE management_enabled = 1 AND ? = 1 AND EXISTS (SELECT 1 FROM domains WHERE ${eligible})`,
+        )
+        .bind(Number(enabled), event.params.id),
+      db
+        .prepare(
+          `UPDATE domains SET management_enabled = ?, updated_at = unixepoch()
+        WHERE ${eligible} RETURNING id`,
+        )
+        .bind(Number(enabled), event.params.id),
+    ]);
+    if (!result.results.length)
+      return fail(409, { operation: 'management', code: 'changed' });
+    return { operation: 'management', code: 'saved' };
+  },
 } satisfies Actions;

@@ -1,4 +1,5 @@
 import { dev } from '$app/env';
+import { managementOrigin } from '$lib/server/auth/management-signin';
 import { checkCsrfToken } from '$lib/server/auth/session';
 import { readSmallForm, requireSameOrigin } from '$lib/server/security/request';
 import {
@@ -20,6 +21,10 @@ function requireOwner({ locals }: RequestEvent) {
 
 async function requireOwnerForm(event: RequestEvent) {
   const { session, env } = requireOwner(event);
+  const origin = await managementOrigin(env.DB, event.url, {
+    development: dev,
+  });
+  if (origin && origin !== event.url.origin) error(403, 'Forbidden');
   if (!requireSameOrigin(event.request, event.url)) error(403, 'Forbidden');
   const form = await readSmallForm(event.request);
   if (!form) error(400, 'Invalid form');
@@ -43,6 +48,11 @@ function getKeyStatus(
 
 export const load = (async (event) => {
   const { session, env } = requireOwner(event);
+  const origin = await managementOrigin(env.DB, event.url, {
+    development: dev,
+  });
+  if (origin && origin !== event.url.origin)
+    redirect(303, new URL('/admin/settings/security', origin).href);
   const { enabled, siteKey } = await getTurnstileConfig(env.DB);
   const status = getKeyStatus(
     siteKey,

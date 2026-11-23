@@ -4,10 +4,14 @@
   import AuthFrame from '$lib/components/auth/AuthFrame.svelte';
   import PasskeyForm from '$lib/components/auth/PasskeyForm.svelte';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
+  import { domainOperationMessages } from '../admin/domains/messages';
+  import { setupDomainMessages } from './messages';
   import type { PageProps } from './$types';
 
   let { data, form }: PageProps = $props();
   let messages = $derived(messagesFor(data.locale));
+  let domainMessages = $derived(setupDomainMessages[data.locale]);
+  let cloudflareMessages = $derived(domainOperationMessages(data.locale));
   let errorMessage = $derived.by(() => {
     switch (form?.code) {
       case 'invalid_token':
@@ -23,7 +27,9 @@
       case 'csrf':
         return messages['error.csrf'];
       default:
-        return form?.code ? messages['error.generic'] : '';
+        return form?.code
+          ? (cloudflareMessages[form.code] ?? messages['error.generic'])
+          : '';
     }
   });
 </script>
@@ -74,6 +80,86 @@
             type="submit"
           >
             {messages['setup.verify']}
+          </button>
+        </form>
+      </section>
+    {:else if data.step === 'management'}
+      <section class="space-y-5">
+        <h2 class="text-xl font-semibold">{domainMessages.heading}</h2>
+        <p>{domainMessages.purpose}</p>
+        {#if errorMessage}<p role="alert" class="text-negative">
+            {errorMessage}
+          </p>{/if}
+        {#if data.customSetupUrl}
+          <p>{domainMessages.waiting}</p>
+          <a
+            href={data.customSetupUrl}
+            class="block break-all text-link underline underline-offset-4"
+          >
+            {domainMessages.continue}
+            <span class="block text-sm">{data.customSetupUrl}</span>
+          </a>
+        {:else if data.customAvailable}
+          <p>{domainMessages.custom}</p>
+          <p>
+            <a
+              href="https://dash.cloudflare.com/profile/api-tokens"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-link underline underline-offset-4"
+            >
+              {cloudflareMessages.tokenLink} ↗
+            </a>
+          </p>
+          <p>{cloudflareMessages.scopes}</p>
+          <form method="POST" action="?/connectDomain" class="space-y-4">
+            <div class="space-y-2">
+              <label for="managementHostname" class="block font-medium">
+                {domainMessages.hostname}
+              </label>
+              <input
+                id="managementHostname"
+                name="hostname"
+                required
+                spellcheck="false"
+                autocapitalize="none"
+                placeholder="admin.example.com"
+                class="w-full rounded-md border border-control bg-surface px-3 py-2"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="cloudflareToken" class="block font-medium">
+                {domainMessages.token}
+              </label>
+              <input
+                id="cloudflareToken"
+                name="token"
+                type="password"
+                required
+                autocomplete="off"
+                class="w-full rounded-md border border-control bg-surface px-3 py-2"
+              />
+            </div>
+            <label class="flex items-start gap-2">
+              <input type="checkbox" name="confirmed" required class="mt-1" />
+              <span>{domainMessages.confirm}</span>
+            </label>
+            <button
+              type="submit"
+              class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
+            >
+              {domainMessages.connect}
+            </button>
+          </form>
+        {/if}
+        <form method="POST" action="?/useDeployment" class="space-y-3">
+          <p>{domainMessages.fallback}</p>
+          <p class="break-all font-medium">{data.hostname}</p>
+          <button
+            type="submit"
+            class="rounded-md border border-control bg-surface px-4 py-2 font-medium"
+          >
+            {domainMessages.useCurrent}
           </button>
         </form>
       </section>

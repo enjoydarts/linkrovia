@@ -7,11 +7,13 @@
     automaticDomainMessages,
     domainMessages,
     domainOperationMessages,
+    managementDomainMessages,
   } from '../../messages';
   import type { PageProps } from './$types';
   let { data, form }: PageProps = $props();
   let automatic = $derived(automaticDomainMessages(data.locale));
   let m = $derived(domainMessages(data.locale));
+  let managementMessages = $derived(managementDomainMessages(data.locale));
   let operationMessages = $derived(domainOperationMessages(data.locale));
 
   onMount(() => {
@@ -291,6 +293,42 @@
           {message}
         </p>{/if}
     </section>
+    {#if data.managementAvailable && data.domain.status === 'active' && data.domain.verifiedAt && data.domain.providerMode === 'cloudflare_custom_domain'}
+      <section
+        class="context-panel space-y-4 rounded-lg border border-line p-5"
+      >
+        <h2 class="text-xl font-semibold">{managementMessages.title}</h2>
+        <p>{managementMessages.description}</p>
+        <form method="POST" action="?/management" class="space-y-3">
+          <input type="hidden" name="csrfToken" value={data.csrfToken} />
+          <input
+            type="hidden"
+            name="enabled"
+            value={data.domain.managementEnabled ? '0' : '1'}
+          />
+          <p>
+            {data.domain.managementEnabled
+              ? managementMessages.enabled
+              : managementMessages.disabled}
+          </p>
+          <button
+            type="submit"
+            class="rounded-md border border-control px-4 py-2 font-medium"
+          >
+            {data.domain.managementEnabled
+              ? managementMessages.disable
+              : managementMessages.enable}
+          </button>
+        </form>
+        {#if form?.operation === 'management'}
+          <p role={form.code === 'saved' ? 'status' : 'alert'}>
+            {form.code === 'saved'
+              ? managementMessages.saved
+              : managementMessages.error}
+          </p>
+        {/if}
+      </section>
+    {/if}
     {#if data.domain.managed}
       <details
         class="context-panel space-y-4 rounded-lg border border-line p-5"

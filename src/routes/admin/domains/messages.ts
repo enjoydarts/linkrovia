@@ -772,3 +772,91 @@ export function domainOperationMessages(
 ): Record<string, string> {
   return operationMessages[locale] ?? operationMessages.en;
 }
+
+const managementMessages = {
+  en: [
+    'Management access',
+    'Allow administrators to use this verified domain to access the management screen.',
+    'Enabled',
+    'Disabled',
+    'Enable management access',
+    'Disable management access',
+    'Management access updated.',
+    'The domain changed. Reload and try again.',
+  ],
+  ja: [
+    '管理画面へのアクセス',
+    'この確認済みドメインから管理画面を利用できるようにします。',
+    '有効',
+    '無効',
+    '管理画面へのアクセスを有効にする',
+    '管理画面へのアクセスを無効にする',
+    '管理画面へのアクセスを更新しました。',
+    'ドメインが変更されました。再読み込みして再試行してください。',
+  ],
+  'zh-CN': [
+    '管理访问',
+    '允许管理员通过此已验证域名访问管理界面。',
+    '已启用',
+    '已禁用',
+    '启用管理访问',
+    '禁用管理访问',
+    '管理访问已更新。',
+    '域名已更改，请刷新后重试。',
+  ],
+  'zh-TW': [
+    '管理存取',
+    '允許管理員透過此已驗證網域存取管理畫面。',
+    '已啟用',
+    '已停用',
+    '啟用管理存取',
+    '停用管理存取',
+    '管理存取已更新。',
+    '網域已變更，請重新載入後再試。',
+  ],
+  es: [
+    'Acceso de administración',
+    'Permite acceder a la administración desde este dominio verificado.',
+    'Activado',
+    'Desactivado',
+    'Activar acceso',
+    'Desactivar acceso',
+    'Acceso actualizado.',
+    'El dominio cambió. Recarga y vuelve a intentarlo.',
+  ],
+  it: [
+    'Accesso amministrativo',
+    'Consenti agli amministratori di accedere da questo dominio verificato.',
+    'Attivo',
+    'Disattivato',
+    'Attiva accesso',
+    'Disattiva accesso',
+    'Accesso aggiornato.',
+    'Il dominio è cambiato. Ricarica e riprova.',
+  ],
+  fr: [
+    'Accès à l’administration',
+    'Autoriser les administrateurs à accéder à l’administration depuis ce domaine vérifié.',
+    'Activé',
+    'Désactivé',
+    'Activer l’accès',
+    'Désactiver l’accès',
+    'Accès mis à jour.',
+    'Le domaine a changé. Rechargez et réessayez.',
+  ],
+} as const;
+
+export function managementDomainMessages(locale: Locale) {
+  const [title, description, enabled, disabled, enable, disable, saved, error] =
+    managementMessages[locale];
+  return {
+    title,
+    description,
+    enabled,
+    disabled,
+    enable,
+    disable,
+    saved,
+    error,
+  };
+}

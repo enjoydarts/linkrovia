@@ -1,5 +1,6 @@
 import { dev } from '$app/env';
 import { json } from '@sveltejs/kit';
+import { postSignInPath } from '$lib/server/auth/management-signin';
 import {
   beginPasskeySignIn,
   finishPasskeySignIn,
@@ -77,5 +78,5 @@ export const POST: RequestHandler = async (event) => {
     sameSite: 'lax',
     maxAge: sessionMaxAge,
   });
-  return json({ redirect: '/admin' });
+  return json({ redirect: postSignInPath(cookies) });
 };

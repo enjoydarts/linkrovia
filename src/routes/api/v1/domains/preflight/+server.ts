@@ -4,7 +4,7 @@ import {
 } from '$lib/server/domains/cloudflare';
 import {
   domainHostname,
-  managementHostname,
+  deploymentHostname,
 } from '$lib/server/domains/connection';
 import { isObject } from '$lib/server/links/api-input';
 import { payload, problem } from '../../http';
@@ -31,9 +31,9 @@ export const POST: RequestHandler = (event) =>
         'invalid_input',
         'Check the hostname, account, zone and API token.',
       );
-    const primary = await managementHostname(db);
-    const result = primary
-      ? await diagnoseCustomDomain(credentials, hostname, primary)
+    const deployment = await deploymentHostname(db);
+    const result = deployment
+      ? await diagnoseCustomDomain(credentials, hostname, deployment)
       : { code: 'unsupported' };
     return payload(result);
   });

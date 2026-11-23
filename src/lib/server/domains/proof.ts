@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { randomHex } from '../auth/crypto';
 import {
   domainHostname,
+  managementDomainEnabled,
   managementHostname,
   type DomainConnection,
 } from './connection';
@@ -59,10 +60,12 @@ export async function issueDomainTicket(
 ) {
   const primary = await managementHostname(db);
   if (
-    !primary ||
-    thisUrl.origin !== `https://${primary}` ||
+    thisUrl.protocol !== 'https:' ||
+    thisUrl.port ||
     domain.isPrimary ||
-    domainHostname(domain.hostname) !== domain.hostname
+    domainHostname(domain.hostname) !== domain.hostname ||
+    (thisUrl.hostname !== primary &&
+      !(await managementDomainEnabled(db, thisUrl.hostname)))
   )
     return null;
   const key = await getKey(db);

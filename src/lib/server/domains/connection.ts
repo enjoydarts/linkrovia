@@ -3,7 +3,7 @@ import { normalizeHostname } from '../security/url-policy';
 
 const fields = `id, hostname, is_primary AS isPrimary, connection_status AS status,
   connection_version AS version, provider_mode AS providerMode, verified_at AS verifiedAt,
-  cloudflare_domain_id AS mappingId`;
+  cloudflare_domain_id AS mappingId, management_enabled AS managementEnabled`;
 
 const noProviderOperation = `NOT EXISTS (
   SELECT 1 FROM domain_connection_operations WHERE domain_id = domains.id
@@ -20,6 +20,7 @@ export type DomainConnection = {
   verifiedAt: number | null;
   mappingId: string | null;
   managed: boolean;
+  managementEnabled: number;
 };
 
 export function domainHostname(value: unknown) {
@@ -50,6 +51,32 @@ export function managementHostname(db: D1Database) {
     .first<string>('hostname');
 }
 
+export async function deploymentHostname(db: D1Database) {
+  const hostname = await db
+    .prepare('SELECT deployment_hostname FROM setup_state WHERE singleton = 1')
+    .first<string>('deployment_hostname');
+  return hostname ?? managementHostname(db);
+}
+
+export const secondaryManagementDomain = `is_primary = 0 AND is_active = 1
+  AND connection_status = 'active' AND verified_at IS NOT NULL
+  AND backup_archived_at IS NULL AND provider_mode = 'cloudflare_custom_domain'
+  AND management_enabled = 1`;
+
+export async function managementDomainEnabled(
+  db: D1Database,
+  hostname: string,
+): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `SELECT 1 AS enabled FROM domains
+    WHERE hostname = ? AND ${secondaryManagementDomain}`,
+    )
+    .bind(hostname)
+    .first<number>('enabled');
+  return row === 1;
+}
+
 export async function setDomainConnection(
   db: D1Database,
   domain: DomainConnection,
@@ -65,13 +92,15 @@ export async function setDomainConnection(
       connection_status = ?, is_active = ?, last_checked_at = unixepoch(), updated_at = unixepoch(),
       verified_at = CASE WHEN ? THEN unixepoch() ELSE NULL END,
       provider_mode = CASE WHEN ? THEN 'cloudflare_custom_domain' ELSE provider_mode END,
-      connection_error_code = NULL
+      connection_error_code = NULL,
+      management_enabled = CASE WHEN ? THEN management_enabled ELSE 0 END
       WHERE id = ? AND hostname = ? AND connection_version = ? AND is_primary = 0
         AND backup_archived_at IS NULL AND ${noProviderOperation}
       RETURNING id`,
       )
       .bind(
         publish ? 'active' : 'disconnected',
+        Number(publish),
         Number(publish),
         Number(publish),
         Number(publish),
@@ -164,6 +193,7 @@ export async function finishProviderOperation(
         `UPDATE domains SET connection_status = COALESCE(?, connection_status),
       is_active = CASE WHEN ? THEN 0 ELSE is_active END,
       verified_at = CASE WHEN ? THEN NULL ELSE verified_at END,
+      management_enabled = CASE WHEN ? THEN 0 ELSE management_enabled END,
       connection_version = connection_version + 1,
       connection_error_code = ?, updated_at = unixepoch(),
       provider_mode = CASE WHEN ? THEN 'cloudflare_custom_domain' ELSE provider_mode END,
@@ -175,6 +205,7 @@ export async function finishProviderOperation(
       )
       .bind(
         status,
+        Number(status !== null),
         Number(status !== null),
         Number(status !== null),
         error,

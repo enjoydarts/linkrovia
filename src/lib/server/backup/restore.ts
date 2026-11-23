@@ -132,7 +132,8 @@ export function planRestore(
       if (existing.archived) preview.added++;
       else preview.updated++;
       write(
-        'UPDATE domains SET is_active = ?, backup_archived_at = NULL, updated_at = unixepoch() WHERE id = ?',
+        `UPDATE domains SET is_active = ?1, backup_archived_at = NULL, updated_at = unixepoch(),
+          management_enabled = CASE WHEN ?1 = 0 THEN 0 ELSE management_enabled END WHERE id = ?2`,
         Number(desiredActive),
         id,
       );
@@ -480,7 +481,7 @@ export function planRestore(
       state.data.domains.filter((domain) => !domain.isPrimary),
       pending.domains,
       new Set(domainIds.values()),
-      'UPDATE domains SET is_active = 0, backup_archived_at = unixepoch(), updated_at = unixepoch() WHERE id IN (SELECT value FROM json_each(?))',
+      'UPDATE domains SET is_active = 0, management_enabled = 0, backup_archived_at = unixepoch(), updated_at = unixepoch() WHERE id IN (SELECT value FROM json_each(?))',
     );
     const removedLinks = removeAbsent(
       state.data.links,

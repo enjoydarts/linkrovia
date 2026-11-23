@@ -53,6 +53,10 @@ describe('D1 migrations', () => {
         completedAt: null,
         ownerUserId: null,
         tokenConsumedAt: null,
+        deploymentHostname: null,
+        managementHostname: null,
+        managementOperationId: null,
+        managementOperationExpiresAt: null,
       },
     ]);
   });

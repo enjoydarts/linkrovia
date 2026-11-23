@@ -38,10 +38,13 @@ export const POST: RequestHandler = async (event) => {
   if (!(await allowAuthAttempt(event, `setup-passkey-${payload.step}`))) {
     return json({ code: 'rate_limit' }, { status: 429 });
   }
+  if (!dev && url.port) return json({ code: 'unavailable' }, { status: 403 });
   const authorizedSetup = {
     rp,
     setupProof: cookies.get(setupProofCookie),
     setupSecret: locals.env.SETUP_TOKEN,
+    setupOrigin: url.origin,
+    requireSelectedHostname: true,
   };
 
   if (payload.step === 'begin') {

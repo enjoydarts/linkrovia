@@ -14,11 +14,12 @@ function requireOwner({ locals }: RequestEvent) {
 
 export const load = (async (event) => {
   const { session, db } = requireOwner(event);
+  const origin = await managementOrigin(db, event.url, { development: dev });
   return {
     enabled: await isMcpEnabled(db),
     locale: event.locals.locale,
     csrfToken: session.csrfToken,
-    endpoint: new URL('/mcp', event.url).href,
+    endpoint: new URL('/mcp', origin ?? event.url.origin).href,
     tools: Object.entries(mcpToolScopes),
   };
 }) satisfies PageServerLoad;
@@ -37,3 +38,5 @@ export const actions = {
     redirect(303, '/admin/integrations/mcp');
   },
 } satisfies Actions;
+import { dev } from '$app/env';
+import { managementOrigin } from '$lib/server/auth/management-signin';

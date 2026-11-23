@@ -35,68 +35,78 @@
 </svelte:head>
 <AuthFrame
   title={messages['login.title']}
-  description={messages['login.subtitle']}
+  description={data.transferAvailable
+    ? messages['login.transferHelp']
+    : messages['login.subtitle']}
 >
-  <div class="space-y-8">
-    {#if data.passkeyAvailable}<PasskeyForm
-        mode="login"
-        locale={data.locale}
-        turnstile={data.turnstile}
-      />{/if}
-    {#if data.passwordAvailable}
-      <details
-        open={!data.passkeyAvailable}
-        class="space-y-5"
-        class:sole-method={!data.passkeyAvailable}
-      >
-        <summary class="cursor-pointer font-medium">
-          {messages['passkey.password']}
-        </summary>
-        <form method="POST" class="space-y-5">
-          <div class="space-y-2">
-            <label for="email" class="block font-medium">
-              {messages['auth.email']}
-            </label><input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autocomplete="username"
-              class="w-full rounded-md border border-control bg-surface px-3 py-2"
-            />
-          </div>
-          <div class="space-y-2">
-            <label for="password" class="block font-medium">
-              {messages['auth.password']}
-            </label><input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autocomplete="current-password"
-              class="w-full rounded-md border border-control bg-surface px-3 py-2"
-            />
-          </div>
-          {#if data.turnstile}<TurnstileWidget
-              siteKey={data.turnstile.siteKey}
-              action="login"
-              locale={data.locale}
-            />{/if}
-          {#if errorMessage}<p role="alert" class="text-negative">
-              {errorMessage}
-            </p>{/if}
-          <button
-            class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
-            type="submit"
-          >
-            {messages['login.submit']}
-          </button>
-        </form>
-      </details>
-    {:else if !data.passkeyAvailable}<p role="alert">
-        {messages['passkey.noMethods']}
-      </p>{/if}
-  </div>
+  {#if data.transferAvailable}
+    <a
+      class="inline-block rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
+      href="/login/transfer/start"
+      data-sveltekit-reload
+    >
+      {messages['login.transferContinue']}
+    </a>
+  {:else}<div class="space-y-8">
+      {#if data.passkeyAvailable}<PasskeyForm
+          mode="login"
+          locale={data.locale}
+          turnstile={data.turnstile}
+        />{/if}
+      {#if data.passwordAvailable}
+        <details
+          open={!data.passkeyAvailable}
+          class="space-y-5"
+          class:sole-method={!data.passkeyAvailable}
+        >
+          <summary class="cursor-pointer font-medium">
+            {messages['passkey.password']}
+          </summary>
+          <form method="POST" class="space-y-5">
+            <div class="space-y-2">
+              <label for="email" class="block font-medium">
+                {messages['auth.email']}
+              </label><input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autocomplete="username"
+                class="w-full rounded-md border border-control bg-surface px-3 py-2"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="password" class="block font-medium">
+                {messages['auth.password']}
+              </label><input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autocomplete="current-password"
+                class="w-full rounded-md border border-control bg-surface px-3 py-2"
+              />
+            </div>
+            {#if data.turnstile}<TurnstileWidget
+                siteKey={data.turnstile.siteKey}
+                action="login"
+                locale={data.locale}
+              />{/if}
+            {#if errorMessage}<p role="alert" class="text-negative">
+                {errorMessage}
+              </p>{/if}
+            <button
+              class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
+              type="submit"
+            >
+              {messages['login.submit']}
+            </button>
+          </form>
+        </details>
+      {:else if !data.passkeyAvailable}<p role="alert">
+          {messages['passkey.noMethods']}
+        </p>{/if}
+    </div>{/if}
 </AuthFrame>
 
 <style>

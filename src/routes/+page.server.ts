@@ -1,7 +1,13 @@
+import { dev } from '$app/env';
 import { fail, redirect } from '@sveltejs/kit';
 import { localeCookie } from '$lib/i18n/cookie';
 import { isLocale } from '$lib/i18n/locale';
 import { setupComplete } from '$lib/server/auth/setup';
+import {
+  managementDomainEnabled,
+  managementHostname,
+} from '$lib/server/domains/connection';
+import { normalizeHostname } from '$lib/server/security/url-policy';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, setHeaders, url }) => {
@@ -10,10 +16,20 @@ export const load: PageServerLoad = async ({ locals, setHeaders, url }) => {
     vary: 'Cookie, Accept-Language',
   });
   const db = locals.env.DB;
+  const initialized = db ? await setupComplete(db) : false;
+  const primary = initialized && db ? await managementHostname(db) : null;
+  const hostname = normalizeHostname(url.hostname, { allowLoopback: dev });
+  const canSignIn =
+    !primary ||
+    hostname === primary ||
+    (db && hostname && (dev || url.protocol === 'https:')
+      ? await managementDomainEnabled(db, hostname)
+      : false);
   return {
     locale: locals.locale,
     origin: url.origin,
-    initialized: db ? await setupComplete(db) : false,
+    initialized,
+    canSignIn,
   };
 };
 

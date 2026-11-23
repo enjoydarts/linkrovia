@@ -57,10 +57,17 @@
       <div class="hero-copy">
         <h1>{copy.headline[0]} <span>{copy.headline[1]}</span></h1>
         <p class="description">{messages['home.description']}</p>
-        <a class="landing-action" href={data.initialized ? '/login' : '/setup'}>
-          {data.initialized ? messages['login.title'] : messages['setup.title']}
-          <ArrowRight size={18} aria-hidden="true" />
-        </a>
+        {#if data.canSignIn}
+          <a
+            class="landing-action"
+            href={data.initialized ? '/login' : '/setup'}
+          >
+            {data.initialized
+              ? messages['login.title']
+              : messages['setup.title']}
+            <ArrowRight size={18} aria-hidden="true" />
+          </a>
+        {/if}
       </div>
       <figure class="route-preview">
         <div class="route-map" aria-hidden="true">

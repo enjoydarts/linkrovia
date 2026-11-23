@@ -117,9 +117,15 @@
                 begin.options as PublicKeyCredentialRequestOptionsJSON,
             });
       const finish = await post({ step: 'finish', response });
-      if (finish.redirect !== '/admin') throw new Error('unavailable');
-      if (mode === 'invite') window.location.replace('/admin');
-      else window.location.assign('/admin');
+      const destination = finish.redirect;
+      if (
+        destination !== '/admin' &&
+        !(mode === 'login' && destination === '/login/transfer/finish')
+      ) {
+        throw new Error('unavailable');
+      }
+      if (mode === 'invite') window.location.replace(destination);
+      else window.location.assign(destination);
     } catch (error) {
       const code = error instanceof Error ? error.message : 'error';
       needsSignIn = code === 'registered_without_session';

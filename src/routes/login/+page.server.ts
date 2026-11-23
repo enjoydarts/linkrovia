@@ -1,5 +1,6 @@
 import { dev } from '$app/env';
 import { error, fail, redirect } from '@sveltejs/kit';
+import { postSignInPath } from '$lib/server/auth/management-signin';
 import { setupComplete } from '$lib/server/auth/setup';
 import { getSignInMethods, passkeyRp } from '$lib/server/auth/passkeys';
 import {
@@ -8,6 +9,7 @@ import {
   sessionCookie,
   sessionMaxAge,
 } from '$lib/server/auth/session';
+import { managementDomainEnabled } from '$lib/server/domains/connection';
 import { allowAuthAttempt } from '$lib/server/security/rate-limit';
 import { readSmallForm, requireSameOrigin } from '$lib/server/security/request';
 import {
@@ -18,11 +20,23 @@ import {
 import { messagesFor } from '$lib/i18n/locale';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load = (async ({ locals, url }) => {
-  if (locals.session) redirect(303, '/admin');
+export const load = (async ({ cookies, locals, url }) => {
   const db = locals.env.DB;
   if (!db) error(503, messagesFor(locals.locale)['error.unavailable']);
   if (!(await setupComplete(db))) redirect(303, '/setup');
+  const transferAvailable = await managementDomainEnabled(db, url.hostname);
+  if (locals.session) {
+    redirect(303, transferAvailable ? '/admin' : postSignInPath(cookies));
+  }
+  if (transferAvailable) {
+    return {
+      locale: locals.locale,
+      transferAvailable,
+      passkeyAvailable: false,
+      passwordAvailable: false,
+      turnstile: null,
+    };
+  }
   const config = await getTurnstileConfig(db);
   const status = turnstileConfigurationStatus({
     siteKey: config.siteKey,
@@ -34,6 +48,7 @@ export const load = (async ({ locals, url }) => {
     config.enabled && (status === 'ready' || status === 'test');
   return {
     locale: locals.locale,
+    transferAvailable,
     ...(await getSignInMethods(db, passkeyRp(url, { development: dev }))),
     turnstile: canRenderWidget ? { siteKey: config.siteKey } : null,
   };
@@ -81,6 +96,6 @@ export const actions = {
       sameSite: 'lax',
       maxAge: sessionMaxAge,
     });
-    redirect(303, '/admin');
+    redirect(303, postSignInPath(cookies));
   },
 } satisfies Actions;

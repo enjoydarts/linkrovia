@@ -30,6 +30,8 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
 
   await page.locator('[name=setupToken]').fill(fixtureSetupToken);
   await page.locator('form button[type=submit]').click();
+  await expect(page.locator('[name=email]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Use this hostname' }).click();
   await expect(page.locator('[name=email]')).toBeVisible();
   await page.locator('[name=email]').fill(email);
   await page.locator('[name=password]').fill(password);

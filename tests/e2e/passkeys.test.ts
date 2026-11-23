@@ -20,7 +20,9 @@ async function signOut(page: Page) {
 test('registers and signs in with a discoverable passkey', async ({
   page,
   context,
+  baseURL,
 }) => {
+  const customOrigin = 'http://127.0.0.1:4174';
   const cdp = await context.newCDPSession(page);
   await cdp.send('WebAuthn.enable');
   const { authenticatorId } = await cdp.send(
@@ -40,6 +42,8 @@ test('registers and signs in with a discoverable passkey', async ({
     await page.goto('/setup');
     await page.locator('[name="setupToken"]').fill(fixtureSetupToken);
     await page.locator('form[action="?/verify"] button[type="submit"]').click();
+    await expect(page.locator('#passkey-email')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Use this hostname' }).click();
     await expect(page.locator('#passkey-email')).toBeVisible();
     await page.locator('#passkey-email').fill('passkey-owner@example.com');
     await page
@@ -70,13 +74,40 @@ test('registers and signs in with a discoverable passkey', async ({
       .click();
     await expect(page).toHaveURL('/admin');
     await expect(page.locator('form[action="/logout"]')).toBeVisible();
-    await page.goto('/admin/settings/admins');
+
+    await test.step('continues with the existing passkey onto a custom admin host', async () => {
+      const before = await page.goto(`${customOrigin}/login`);
+      expect(before?.status()).toBe(404);
+      await page.goto('/admin/domains/passkey-custom-host/connect');
+      await page
+        .getByRole('button', { name: 'Enable management access' })
+        .click();
+      await expect(
+        page.getByRole('button', { name: 'Disable management access' }),
+      ).toBeVisible();
+      await signOut(page);
+      await page.goto(`${customOrigin}/`);
+      await page.getByRole('link', { name: 'Sign in', exact: true }).click();
+      await page.getByRole('link', { name: 'Continue securely' }).click();
+      await expect(page).toHaveURL(`${baseURL}/login`);
+      await page
+        .locator('form[action="/login/passkey"] button[type="submit"]')
+        .click();
+      await expect(page).toHaveURL(`${customOrigin}/admin`);
+      await expect(page.locator('.account-email')).toHaveText(
+        'passkey-owner@example.com',
+      );
+    });
+
+    await page.goto(`${customOrigin}/admin/settings/admins`);
     await page.locator('input[name="email"]').fill('second-admin@example.com');
     await page.locator('form[action="?/invite"] button').click();
     const inviteUrl = page.locator('#invite-url');
     await expect(inviteUrl).toHaveValue(/\/invite\/admin#[0-9a-f]{64}$/);
     const invite = await inviteUrl.inputValue();
+    expect(new URL(invite).origin).toBe(baseURL);
 
+    await page.goto('/admin');
     await signOut(page);
     await page.goto(invite);
     await expect(page).toHaveURL('/invite/admin');

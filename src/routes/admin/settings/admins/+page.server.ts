@@ -6,6 +6,7 @@ import {
   revokeAdminInvite,
 } from '$lib/server/auth/admin-invites';
 import { normalizeEmail } from '$lib/server/auth/credential';
+import { managementOrigin } from '$lib/server/auth/management-signin';
 import { passkeyRp } from '$lib/server/auth/passkeys';
 import { checkCsrfToken } from '$lib/server/auth/session';
 import { readSmallForm, requireSameOrigin } from '$lib/server/security/request';
@@ -32,22 +33,26 @@ async function ownerForm(event: RequestEvent) {
 
 export const load = (async (event) => {
   const { db } = requireOwner(event);
+  const origin = await managementOrigin(db, event.url, { development: dev });
   return {
     ...(await listAdminAccess(db)),
-    available: passkeyRp(event.url, { development: dev }) !== null,
+    available:
+      passkeyRp(new URL(origin ?? event.url), { development: dev }) !== null,
   };
 }) satisfies PageServerLoad;
 
 export const actions = {
   invite: async (event) => {
     const { form, db, session } = await ownerForm(event);
-    if (!passkeyRp(event.url, { development: dev }))
+    const origin = await managementOrigin(db, event.url, { development: dev });
+    const primary = new URL(origin ?? event.url);
+    if (!passkeyRp(primary, { development: dev }))
       return fail(503, { code: 'unavailable' as const });
     const email = normalizeEmail(form.get('email'));
     if (!email) return fail(400, { code: 'invalid_email' as const });
     const code = await createAdminInvite(db, session.user.id, email);
     if (!code) return fail(409, { code: 'duplicate' as const });
-    return { inviteUrl: new URL(`/invite/admin#${code}`, event.url).href };
+    return { inviteUrl: new URL(`/invite/admin#${code}`, primary).href };
   },
   revoke: async (event) => {
     const { form, db, session } = await ownerForm(event);

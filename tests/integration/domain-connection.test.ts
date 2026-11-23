@@ -5,6 +5,7 @@ import {
   beginProviderOperation,
   domainHostname,
   finishProviderOperation,
+  managementDomainEnabled,
   readDomainConnection,
   setDomainConnection,
 } from '../../src/lib/server/domains/connection';
@@ -267,4 +268,33 @@ it('requires HTTPS and a proof from the registered hostname before enabling publ
       .prepare("SELECT COUNT(*) AS total FROM links WHERE domain_id = 'draft'")
       .first('total'),
   ).toBe(1);
+});
+
+it('authorizes management only for an enabled, active, verified custom domain', async () => {
+  await db
+    .prepare(
+      `INSERT INTO domains (id, hostname, is_primary, is_active, connection_status, provider_mode, verified_at, management_enabled)
+    VALUES ('management-test', 'manage.example.org', 0, 1, 'active', 'cloudflare_custom_domain', unixepoch(), 1)`,
+    )
+    .run();
+  expect(await managementDomainEnabled(db, 'manage.example.org')).toBe(true);
+  expect(await managementDomainEnabled(db, 'other.example.org')).toBe(false);
+  for (const change of [
+    'management_enabled = 0',
+    'is_active = 0',
+    "connection_status = 'warning'",
+    'verified_at = NULL',
+    "provider_mode = 'unconfigured'",
+    'backup_archived_at = unixepoch()',
+  ]) {
+    await db
+      .prepare(`UPDATE domains SET ${change} WHERE id = 'management-test'`)
+      .run();
+    expect(await managementDomainEnabled(db, 'manage.example.org')).toBe(false);
+    await db
+      .prepare(
+        `UPDATE domains SET management_enabled = 1, is_active = 1, connection_status = 'active', verified_at = unixepoch(), provider_mode = 'cloudflare_custom_domain', backup_archived_at = NULL, is_primary = 0 WHERE id = 'management-test'`,
+      )
+      .run();
+  }
 });

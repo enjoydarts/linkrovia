@@ -30,6 +30,11 @@ import {
   getSession,
 } from '../../src/lib/server/auth/session';
 import { createSetupProof } from '../../src/lib/server/auth/setup';
+import {
+  attachSetupCustomDomain,
+  rememberSetupDeployment,
+  selectDeploymentHostname,
+} from '../../src/lib/server/domains/setup-management';
 
 let platform: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
 let db: D1Database;
@@ -49,6 +54,7 @@ beforeAll(async () => {
     '0003_passkeys.sql',
     '0005_user_theme.sql',
     '0011_admin_invites.sql',
+    '0014_setup_management_domain.sql',
   ]) {
     const sql = await readFile(
       new URL('../../migrations/' + migration, import.meta.url),
@@ -189,6 +195,61 @@ it('accepts bounded JSON ceremony requests', async () => {
   ).resolves.toBeNull();
 });
 
+it('serializes provider mutations and prevents fallback until the operation returns', async () => {
+  const deployment = 'worker.account.workers.dev';
+  const input = { token: 'test-cloudflare-token-for-integration-test' };
+  expect(await rememberSetupDeployment(db, deployment)).toBe(true);
+  const started = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  let requests = 0;
+  const send = async () => {
+    requests++;
+    if (requests === 1) {
+      started.resolve();
+      await release.promise;
+    }
+    return new Response(null, { status: 403 });
+  };
+  const first = attachSetupCustomDomain(
+    db,
+    input,
+    'first.example.com',
+    deployment,
+    send,
+  );
+  await started.promise;
+  try {
+    await expect(
+      attachSetupCustomDomain(
+        db,
+        input,
+        'second.example.com',
+        deployment,
+        send,
+      ),
+    ).resolves.toMatchObject({ code: 'busy' });
+    await expect(selectDeploymentHostname(db, deployment)).resolves.toBe(
+      'busy',
+    );
+    expect(requests).toBe(1);
+  } finally {
+    release.resolve();
+    await expect(first).resolves.toMatchObject({ code: 'permissions' });
+  }
+  // A worker terminated before releasing the lease must not disable fallback.
+  await db
+    .prepare(
+      `UPDATE setup_state SET management_operation_id = 'interrupted',
+      management_operation_expires_at = unixepoch() - 1
+      WHERE management_operation_id IS NULL`,
+    )
+    .run();
+  await expect(selectDeploymentHostname(db, deployment)).resolves.toBe(
+    'selected',
+  );
+  await db.prepare('UPDATE setup_state SET management_hostname = NULL').run();
+});
+
 it('checks setup proof binding, commits one owner, and enforces one-use signed authentication', async () => {
   const setupProof = await createSetupProof(setupSecret);
   const ownerInput = {
@@ -197,10 +258,19 @@ it('checks setup proof binding, commits one owner, and enforces one-use signed a
     locale: 'ja',
     setupProof,
     setupSecret,
+    requireSelectedHostname: true,
   };
   await expect(
     beginOwnerPasskey(db, { ...ownerInput, setupProof: 'invalid' }),
   ).resolves.toBeNull();
+
+  await expect(beginOwnerPasskey(db, ownerInput)).resolves.toBeNull();
+  await db
+    .prepare(
+      "UPDATE setup_state SET deployment_hostname = 'worker.account.workers.dev', management_hostname = ?",
+    )
+    .bind(rp.id)
+    .run();
 
   const attempts = await Promise.all(
     Array.from({ length: 4 }, async (_, index) => {
@@ -214,6 +284,7 @@ it('checks setup proof binding, commits one owner, and enforces one-use signed a
         rp,
         setupProof,
         setupSecret,
+        requireSelectedHostname: true,
         ceremonyToken: start.ceremonyToken,
         response: authenticator.register(start.options.challenge),
       };
@@ -228,9 +299,18 @@ it('checks setup proof binding, commits one owner, and enforces one-use signed a
     }),
   ).resolves.toBeNull();
 
+  const deployment = 'worker.account.workers.dev';
+  expect(await selectDeploymentHostname(db, deployment)).toBe('selected');
+  await expect(finishOwnerPasskey(db, attempts[0].input)).resolves.toBeNull();
+  await db
+    .prepare('UPDATE setup_state SET management_hostname = ?')
+    .bind(rp.id)
+    .run();
+
   const registered = await Promise.all(
     attempts.map(({ input }) => finishOwnerPasskey(db, input)),
   );
+  expect(await selectDeploymentHostname(db, deployment)).toBe('domain_changed');
   expect(registered.filter(Boolean)).toHaveLength(1);
   const index = registered.findIndex(Boolean);
   const owner = registered[index]!;

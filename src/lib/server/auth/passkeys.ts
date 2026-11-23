@@ -17,7 +17,13 @@ import { getInviteEmail, inviteCodeHash } from './admin-invites';
 import { isLocale } from '../../i18n/locale';
 import { normalizeEmail } from './credential';
 import { hex, randomHex, sha256, uuidV7 } from './crypto';
-import { setupComplete, verifySetupProof } from './setup';
+import {
+  activateManagementDomain,
+  canEnrollOwner,
+  setupComplete,
+  setupOpen,
+  verifySetupProof,
+} from './setup';
 
 export const passkeyCookie = '__Host-linkrovia_passkey';
 export const passkeyMaxAge = 300;
@@ -220,6 +226,8 @@ function parseAuthentication(
 type SetupAuthorization = {
   setupProof: unknown;
   setupSecret: string | undefined;
+  setupOrigin?: string;
+  requireSelectedHostname?: boolean;
 };
 
 export async function beginOwnerPasskey(
@@ -230,6 +238,8 @@ export async function beginOwnerPasskey(
     locale,
     setupProof,
     setupSecret,
+    setupOrigin,
+    requireSelectedHostname,
   }: SetupAuthorization & {
     rp: PasskeyRp;
     email: unknown;
@@ -240,8 +250,9 @@ export async function beginOwnerPasskey(
   if (
     !email ||
     typeof setupProof !== 'string' ||
-    !(await verifySetupProof(setupProof, setupSecret)) ||
-    (await setupComplete(db))
+    !(await verifySetupProof(setupProof, setupSecret, setupOrigin)) ||
+    (await setupComplete(db)) ||
+    (requireSelectedHostname && !(await canEnrollOwner(db, rp.id)))
   ) {
     return null;
   }
@@ -285,6 +296,8 @@ export async function finishOwnerPasskey(
     ceremonyToken,
     setupProof,
     setupSecret,
+    setupOrigin,
+    requireSelectedHostname,
     response,
   }: SetupAuthorization & {
     rp: PasskeyRp;
@@ -294,7 +307,7 @@ export async function finishOwnerPasskey(
 ): Promise<{ userId: string } | null> {
   if (
     typeof setupProof !== 'string' ||
-    !(await verifySetupProof(setupProof, setupSecret))
+    !(await verifySetupProof(setupProof, setupSecret, setupOrigin))
   ) {
     return null;
   }
@@ -326,14 +339,15 @@ export async function finishOwnerPasskey(
       .prepare(
         `INSERT INTO users (id, email, password_hash, role, locale)
          SELECT ?, ?, ?, 'owner', ? FROM setup_state
-         WHERE singleton = 1 AND completed_at IS NULL
-           AND owner_user_id IS NULL AND token_consumed_at IS NULL`,
+         WHERE ${setupOpen}
+           ${requireSelectedHostname ? 'AND management_hostname = ?' : ''}`,
       )
       .bind(
         stored.owner_id,
         stored.owner_email,
         passwordDisabled,
         stored.owner_locale,
+        ...(requireSelectedHostname ? [rp.id] : []),
       ),
     db
       .prepare(
@@ -359,17 +373,7 @@ export async function finishOwnerPasskey(
         credential.counter,
         stored.owner_id,
       ),
-    db
-      .prepare(
-        `INSERT INTO domains
-           (id, hostname, is_primary, provider_mode, connection_status, verified_at)
-         SELECT ?, ?, 1, 'unconfigured', 'active', unixepoch()
-         FROM setup_state
-         WHERE singleton = 1 AND owner_user_id = ?
-           AND NOT EXISTS (SELECT 1 FROM domains WHERE is_primary = 1)
-         ON CONFLICT(hostname) DO UPDATE SET is_primary = 1, updated_at = unixepoch()`,
-      )
-      .bind(uuidV7(), rp.id, stored.owner_id),
+    activateManagementDomain(db, rp.id, stored.owner_id),
   ]);
   return completion.meta.changes === 1 ? { userId: stored.owner_id } : null;
 }
