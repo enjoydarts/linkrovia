@@ -5,7 +5,7 @@ Your GitHub deployment copy has its own history. Follow the [upstream repository
 1. Read the release notes and review the changes under `migrations/`. Preserve the Worker name, `DB` database ID, and any installation-specific settings in your configuration.
 2. Download a Linkrovia configuration backup and record a D1 recovery point before updating. The configuration backup covers selected settings and records. D1 recovery can restore database state across a failed upgrade. [Backup and restore](backup.md)
 3. Merge the update into the deployment branch. Cloudflare Workers Builds runs the configured build and deploy commands for that branch. The deploy script applies pending D1 migrations before uploading the application and halts if a migration fails.
-4. After a successful build, check `/health`, sign in with an existing owner passkey, and follow an existing short link. Check analytics if you use it.
+4. After a successful build, check `/health`, sign in with an existing owner passkey, and follow an existing short link. If the dashboard uses a custom hostname, verify sign-in from that address. For a custom dashboard enabled after setup on `workers.dev`, verify the return to the custom dashboard after using the passkey on the original sign-in host. Check Analytics if you use it. [Management hostnames](domains.md#enable-admin-access-on-an-existing-custom-hostname)
 
 ## Move scheduled jobs to the application Worker
 

@@ -1,21 +1,37 @@
-# Connect a short-link domain
+# Connect a domain
 
-Choose your management hostname during initial setup, before creating the owner passkey. The hostname you choose is the address of your admin dashboard. You can connect a custom domain or continue on the original `workers.dev` address. To connect a custom domain, use an active Cloudflare-managed DNS zone in the same account as the Worker.
+During initial setup, choose the address of your admin dashboard before you register the owner passkey. Select **Use this hostname** to keep the original `workers.dev` address, or choose a custom hostname in an active Cloudflare DNS zone in the same account as the Worker.
 
-After setup, use **Domains → Add a domain** to add hostnames for short URLs, such as `go.example.org`.
+## Create a scoped Cloudflare API token
 
-1. Create a Cloudflare API token with **Account → Workers Scripts → Edit**, **Zone → Zone → Read**, **Zone → DNS → Read**, and **Zone → Workers Routes → Edit**. Limit the policy to the matching account and zone. Open the connection screen in Linkrovia and paste the token. Linkrovia uses the token for the request and discards it afterward. [Create an API token](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/) · [Worker role permissions](https://developers.cloudflare.com/workers/authorization/workers/)
-2. Review the hostname and confirm **Assign domain**. You can run the read-only check first. Linkrovia finds the account and zone, checks for conflicting records or routes, then asks Cloudflare to assign the domain and provision DNS and HTTPS. [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
-3. Wait for the hostname to become active. Linkrovia checks public DNS and verifies that HTTPS reaches this installation. If the certificate is still being prepared, use **Check connection** again after a short wait. An active hostname can serve short links.
+In Cloudflare, create a custom API token with **Account → Workers Scripts → Edit**, **Zone → Zone → Read**, **Zone → DNS → Read**, and **Zone → Workers Routes → Edit**. Limit the account and zone resources to the Worker account and the target DNS zone. Paste the token in Linkrovia's connection screen. Linkrovia uses it for the submitted operation and discards it afterward. [Create an API token](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/) · [Worker role permissions](https://developers.cloudflare.com/workers/authorization/workers/)
 
-Keep existing MX and TXT records for the hostname. An A, AAAA, or CNAME record on the exact hostname can block assignment. Address records on other hostnames in the zone can stay in place.
+Choose a hostname that is available. Linkrovia checks for conflicts and blocks changes that would overwrite an existing origin or conflicting DNS record. A route, a DNS delegation, or an exact-host record such as A, AAAA, or CNAME can block assignment. MX and TXT records can coexist with the Worker Custom Domain. Cloudflare provisions the Custom Domain's DNS and TLS. Leave its address records for Cloudflare to create. [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 
-If another provider manages your DNS, you can keep using your `workers.dev` hostname or move DNS management for the zone to Cloudflare. Cloudflare provisions the records for Custom Domains, so keep the hostname clear of a CNAME to `workers.dev`. Confirm the implications for any existing services before moving DNS. [Move an existing domain to Cloudflare](https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/)
+If another provider manages DNS, you can use `workers.dev` or move the zone to Cloudflare. Review the effect on existing services before moving DNS. [Move an existing domain to Cloudflare](https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/)
 
-The connection screen also provides manual instructions. Use them for a domain you already assigned in Cloudflare. Linkrovia can verify an existing assignment to its Worker.
+## Connect your management hostname during setup
 
-If you originally set up your account on `workers.dev`, the owner can open the connection screen for a verified custom domain and choose **Enable management access**. Only one custom domain can have management access at a time. Sign in from that domain to use your existing passkey on the original sign-in host, then return to the custom domain dashboard. Keep the original sign-in host reachable for this flow.
+1. Enter the custom hostname and scoped API token. Confirm the hostname and choose **Connect hostname**.
+2. Choose **Open setup on your custom hostname**, then enter the setup token again on that hostname. Wait and try again if Cloudflare is still preparing HTTPS. If the connection result could not be confirmed, wait a moment and retry the same hostname in setup so Linkrovia can check the existing mapping. You can also continue setup on `workers.dev`.
+3. Register your owner passkey on the address you selected. Use that address to sign in.
 
-When restoring a portable configuration to another installation, choose that installation's management hostname during setup and review management access separately. A configuration backup restores short-link settings, while the installation controls its own sign-in hosts and passkeys.
+## Add a short-link hostname after setup
 
-To pause a connected domain, choose **Disconnect** in Linkrovia. To remove an assignment created by Linkrovia, choose **Remove DNS assignment** and enter a scoped token again. Linkrovia preserves the saved links and settings. For an assignment created in the Cloudflare dashboard, release the hostname from your Worker's **Domains & Routes** settings.
+1. As the owner, open **Domains → Add a domain**, enter the hostname, and open its connection screen.
+2. In **Connect automatically**, paste the scoped token and choose **Check access**. Review the hostname, confirm the change, and choose **Connect hostname**. If the screen reports a conflict, review the hostname in Cloudflare. Use a free hostname or resolve the conflict and retry. If Cloudflare cannot confirm an assignment, review the mapping before retrying. If the hostname already reaches this Worker, use **Check connection** to resume.
+3. Choose **Check connection**. Linkrovia checks public DNS and verifies over HTTPS that the hostname reaches this installation. Wait and retry if DNS or the certificate is still being prepared. An **Active** hostname can serve short links.
+
+Choose **Connect manually** to use the Cloudflare dashboard instead. For a hostname you already assigned to the Worker, open its Linkrovia connection screen and choose **Check connection**. [Add a Custom Domain in Cloudflare](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#set-up-a-custom-domain-in-the-dashboard)
+
+## Enable admin access on an existing custom hostname
+
+If the original sign-in host is `workers.dev`, the owner can open a verified custom hostname's connection screen and choose **Enable management access**. One custom hostname can have this access at a time. Sign-in from that hostname takes you to the original host to use your existing passkey, then returns you to the custom dashboard. Keep the original sign-in host reachable.
+
+When restoring configuration to a new installation, choose its management hostname during setup. Review management access after the restore. The new installation manages its own sign-in hosts and passkeys. [Backup and restore](backup.md)
+
+## Pause or remove a hostname
+
+Choose **Disconnect** to pause short links while keeping the Cloudflare assignment. To resume, use **Check connection**. Linkrovia preserves your saved links and settings.
+
+To release an eligible assignment created by Linkrovia, select **Remove from Cloudflare**, enter a scoped token, confirm the hostname, and choose **Remove hostname**. For an assignment created in Cloudflare, remove it from the Worker's **Settings → Domains & Routes**. [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)

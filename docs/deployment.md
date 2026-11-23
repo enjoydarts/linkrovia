@@ -1,6 +1,6 @@
 # Deploying Linkrovia
 
-Linkrovia runs on one Cloudflare Worker with a D1 database. The same Worker serves the app and runs the scheduled analytics jobs. A complete installation through the Deploy to Cloudflare button on a new Workers Free account is pending verification.
+Linkrovia runs on one Cloudflare Worker with a D1 database. The Worker serves the app and runs the scheduled analytics jobs. Linkrovia is in development. Workers Builds deployment and custom-domain setup through owner passkey registration have been verified on a deployed Worker. End-to-end installation with the Deploy to Cloudflare button on a new Workers Free account is pending verification.
 
 If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine), enable it for the account, and retry the build. The retry skips D1 migrations that already ran. Linkrovia records clicks as soon as the Worker serves short links, and [Cloudflare creates the dataset on its first write](https://developers.cloudflare.com/analytics/analytics-engine/get-started/).
 
@@ -8,7 +8,7 @@ If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine]
 
 1. Open [Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia), sign in to Cloudflare, and connect GitHub when prompted.
 2. Choose the names for your repository, Worker, and new D1 database. When prompted for `SETUP_TOKEN`, generate and save a private random value of at least 32 characters. Keep `npm run build` and `npm run deploy` as the build and deploy commands.
-3. After the deployment succeeds, open the Worker URL and go to `/setup`. Enter your setup token, choose the address of your admin dashboard, and register your owner passkey there. To use your own hostname, follow the on-screen connection steps. The deployed Worker serves the app and runs the scheduled jobs.
+3. After deployment succeeds, follow the [browser setup steps](#set-up-the-owner-account).
 
 [How Cloudflare provisions resources for the deploy button](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
 
@@ -19,9 +19,13 @@ If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine]
 3. In Cloudflare, open **Workers & Pages → Create application → Import a repository** and connect your GitHub copy. Choose the same Worker name as `name` in `wrangler.jsonc` and select the deployment branch. Set **Build command** to `npm run build` and **Deploy command** to `npm run deploy`, with the repository root as the root directory. Configure the account's build API token with access to deploy the Worker and edit its D1 database. Leave automatic builds for non-production branches disabled unless you create a separate Worker and D1 database for testing. [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
 4. Deploy and wait for a successful build. Workers Builds reads the Node.js version from `.node-version` and the npm version from `package.json`. If the build log shows the wrong version, check that the build is running from the repository root and that its Node.js override, if any, agrees with `.node-version`. If the log says the database ID is missing, check the saved `DB` entry. If it reports a D1 permission error, check the build API token's account and D1 permissions before retrying. The deploy command checks the built package, applies pending migrations to `DB`, then uploads the Worker. [Workers Builds image](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/)
 5. In your Worker's **Settings → Variables and Secrets**, add a **Secret** named `SETUP_TOKEN`. Use your password manager to generate and save a fresh private random value of at least 32 characters. Deploy the secret and keep it available for setup. The Worker requires this secret to start owner registration. [Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
-6. Open your Worker's `workers.dev` address from **Workers & Pages**. Check that `/health` returns `{"status":"ok"}`, then open `/setup` and enter your setup token. Choose your admin dashboard address before creating the owner passkey. After you confirm that you can sign in, remove `SETUP_TOKEN` from **Variables and Secrets**. If setup asks you to configure the Worker, check the health result and confirm the secret is present on the deployed Worker. If you lost the token before completing setup, replace it with a newly generated one and deploy the change.
+6. Follow the [browser setup steps](#set-up-the-owner-account).
 
-The [Deploy to Cloudflare flow](https://developers.cloudflare.com/workers/platform/deploy-buttons/) can create the D1 database and request the setup secret for public templates. Linkrovia's deploy command applies the migrations before deploying the Worker. Complete the on-screen setup, then verify that clicks appear in Analytics.
+## Set up the owner account
+
+1. Open your Worker's `workers.dev` address from **Workers & Pages**. Check that `/health` returns `{"status":"ok"}`, then open `/setup` and enter your setup token. If setup asks you to configure the Worker, check that the deployed Worker has the secret. If you lost the token before completing setup, replace it and deploy the change.
+2. Choose where to open your admin dashboard before registering your passkey. Select **Use this hostname** to stay on `workers.dev`. To use a custom hostname, follow the [domain connection guide](domains.md), open setup on the custom hostname, and enter the setup token again there. If the page is still waiting for HTTPS, retry from the same setup screen when Cloudflare is ready.
+3. Create the owner account and register a passkey on the chosen hostname. Open a fresh browser session and confirm you can sign in there. Remove `SETUP_TOKEN` from **Variables and Secrets** after setup is complete.
 
 ## Keep analytics history
 
@@ -33,12 +37,12 @@ If Cloudflare reports `10072`, the account has reached its Cron Trigger limit. L
 
 - **Short links.** From the admin interface, create a link on a connected hostname and open it in a separate tab. To add another hostname for short links, follow the [domain connection guide](domains.md).
 - **Analytics.** The Worker writes click events through `CLICKS` and reads reports through `ANALYTICS_SQL`. After following a test link, check its report in Linkrovia. Review the build logs and Worker bindings if reports are unavailable. Cloudflare publishes separate Free usage allowances for writes and queries. [Analytics Engine pricing](https://developers.cloudflare.com/analytics/analytics-engine/pricing/) · [Analytics SQL binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/analytics-sql/)
-- **Turnstile.** To enable it, create a Turnstile widget for your hostnames, add its private `TURNSTILE_SECRET_KEY` as a Worker secret, and enter the public site key under **Settings → Security** in Linkrovia. Enable protection after the screen confirms the configuration is ready. Keep the old configuration active until you have registered the new hostname or completed a key rotation. [Turnstile setup](https://developers.cloudflare.com/turnstile/get-started/)
+- **Turnstile.** To enable optional sign-in protection after owner setup, follow [Enable Turnstile](operations.md#enable-turnstile). The browser and Cloudflare Siteverify flow has been verified with official test keys on local Workerd. Activation with production keys on a deployed Worker is pending verification. [Cloudflare Turnstile testing](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)
 - **Workers Free.** Owner setup uses passkeys. Existing password accounts and password-protected links use scrypt, which can exceed the Free CPU limit. [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
 
 ## Command-line deployment
 
-For an existing Cloudflare Worker and D1 database, set the Worker name and database ID in `wrangler.jsonc` as above. From the repository root, install dependencies with the pinned versions in the [development guide](development.md), authenticate Wrangler to the installation's Cloudflare account, and run:
+For an existing Cloudflare Worker and D1 database, set the Worker name and database ID in `wrangler.jsonc` as above. From the repository root, install dependencies with the pinned versions in the [development guide](development.md), authenticate Wrangler to the installation's Cloudflare account, and run the following commands.
 
 ```sh
 npm run build

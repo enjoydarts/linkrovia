@@ -6,45 +6,50 @@
 
 # Linkrovia
 
-Linkrovia is an open-source, self-hosted URL shortener and analytics project for Cloudflare Workers. The project website is [linkrovia.com](https://linkrovia.com).
+**Branded short links, smart redirects, and click analytics on your own Cloudflare account.**
 
-Short links use a hostname configured by the operator, such as a Workers hostname or a custom domain.
-
-The local development build includes guided owner setup with passkeys, a seven-language admin interface, link and domain management, QR code downloads, protected and one-time links, CSV import, scoped API keys, host-based redirects, and UTM templates. Linkrovia is in development. The development guide lists the current Cloudflare verification status.
-
-The interface supports English, Japanese, Simplified Chinese, Traditional Chinese, Spanish, Italian, and French. Choose a language in **Preferences** or use your browser’s language when you visit.
-
-Edit a link's **Redirect rules** to direct visitors by device, operating system, location, or language. Use **Campaign parameters** to set UTM values for the default destination or a specific rule. Test the saved behavior in **Rule simulator**.
-
-Owners can download, validate, and restore a configuration backup from **Backup** in the admin interface. The backup guide covers supported records, restore options, and Cloudflare D1 recovery. [Backup and restore](docs/backup.md)
-
-Use **Analytics** for click totals, daily trends, and breakdowns, or open a link for its own report and CSV. Use **Conversions** to manage goals and connect a server-side event sender. The analytics guide explains the local sample data and Cloudflare setup. [Analytics and conversions](docs/analytics.md)
-
-For deployment operations and recovery, see [Operations](docs/operations.md). Contributors maintaining the seven UI languages can use the [translation guide](docs/translation.md).
-
-Owners can enable a scoped Model Context Protocol endpoint for clients that support bearer credentials. [Connect an MCP client](docs/mcp.md)
-
-The [OpenAPI 3.1 contract](static/openapi.yaml) describes the REST API, including required scopes and error responses. Deployed instances serve it at `/openapi.yaml`.
-
-## Deploy to Cloudflare
+Linkrovia is an open-source URL shortener for Cloudflare Workers. Use your own domain for short links, send visitors to the right destination, and see how each link performs. A single Worker serves the dashboard, handles redirects, and runs scheduled analytics jobs.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia)
+[![CI](https://github.com/enjoydarts/linkrovia/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/enjoydarts/linkrovia/actions/workflows/ci.yml)
 
-Deploy to Cloudflare is available for preview installations. Follow the [deployment guide](docs/deployment.md) to register your first owner passkey and verify the deployment.
+## See it in action
 
-Owners can assign a hostname from an active Cloudflare-managed zone in **Domains**. Linkrovia checks for conflicts and verifies the resulting HTTPS connection. [Connect a short-link domain](docs/domains.md)
+**Find and manage your links.** Search by title or short path, filter by domain, status, or tag, and open a link's analytics or copy its URL from the same list.
 
-If you already run Linkrovia, see the [upgrade guide](docs/upgrading.md) before updating your installation.
+![Linkrovia link list showing branded short URLs, destination URLs, tags, and link status](docs/screenshots/links.png)
 
-## Brand assets
+**See which links are working.** Use the analytics dashboard for trends and traffic breakdowns. Open any link for its own charts, conversion results, and CSV exports. The screenshot uses sample analytics.
 
-The distributable logo, mark, favicon, app icons, and OGP image are in [`static/brand/`](static/brand/). Usage guidance and the palette are documented in [`docs/BRAND.md`](docs/BRAND.md).
+![Linkrovia analytics dashboard showing a click trend chart and traffic breakdowns with sample data](docs/screenshots/analytics.png)
 
-Self-hosted installations may personalize the app name, logo, favicon, and primary color from same-origin source configuration. Keep those values local to the installation and do not make a deployment depend on the Linkrovia website.
+## What you can do
 
-## Development
+- **Route and schedule.** Send visitors to different destinations by device, operating system, location, or language. Test rules in the simulator. Set start and expiration times, and apply reusable UTM templates to each destination.
+- **Control access.** Create password-protected or one-time links, download QR codes, and sign in to the admin dashboard with passkeys. Owners can invite administrators and enable Cloudflare Turnstile for sign-in.
+- **Measure results.** Click collection starts with your first redirect. Explore reports by link, domain, and traffic source. Define conversion goals and send events from your server.
+- **Automate and migrate.** Import links from CSV, export portable configuration backups, and use scoped API keys for REST or MCP. The admin dashboard includes examples for Codex, Claude Code, GitHub Copilot, VS Code, Cursor, and Gemini CLI.
 
-See [the development guide](docs/development.md) for prerequisites, local setup, and tests.
+The dashboard supports English, Japanese, Simplified Chinese, Traditional Chinese, Spanish, Italian, and French, with light and dark themes and user-selectable time zones.
+
+## Get started
+
+1. Deploy on your Cloudflare account using the [deployment guide](docs/deployment.md).
+2. Open `/setup` on your Worker's `workers.dev` address and enter the setup token. Choose the management hostname before registering your owner passkey. You can connect a custom hostname from a Cloudflare zone in the same account or use the Worker address. [Connect domains](docs/domains.md)
+3. Create a short link, open it in another tab, and check its report under **Link analytics**.
+
+Linkrovia is in active development. Workers Builds deployment, guided custom-domain setup, and direct passkey registration on the chosen hostname have been verified. Fresh-account provisioning through the Deploy to Cloudflare button is still being verified. [Deployment status](docs/deployment.md)
+
+## Documentation
+
+- [Deployment](docs/deployment.md), [domains](docs/domains.md), and [upgrades](docs/upgrading.md)
+- [Analytics and conversions](docs/analytics.md), [backup and restore](docs/backup.md), and [operations](docs/operations.md)
+- [MCP client setup](docs/mcp.md) and the [OpenAPI 3.1 contract](static/openapi.yaml), also available at `/openapi.yaml` on deployed instances
+- [Local development and tests](docs/development.md), [translation](docs/translation.md), and [changelog](CHANGELOG.md)
+
+## Project and branding
+
+The project website is [linkrovia.com](https://linkrovia.com). Self-hosted instances use the operator's configured hostnames and can customize the app name, logos, favicon, and primary color. See the [brand guide](docs/BRAND.md) for assets and usage.
 
 ## License
 

@@ -1,6 +1,6 @@
 # Changelog
 
-Notable changes to Linkrovia are recorded here. The project is in development; entries describe repository features and preview paths, not a completed production release.
+This changelog tracks changes during active development. See the [deployment guide](docs/deployment.md) for verified deployment paths.
 
 ## Unreleased
 
@@ -21,5 +21,5 @@ Notable changes to Linkrovia are recorded here. The project is in development; e
 - Added owner-managed administrator invitations with one-time passkey registration, invitation revocation, and administrator deactivation.
 - Added owner-requested recovery for missing daily click history while source events remain available, alongside scheduled rollups and reconciliation.
 - Added operational and translation-maintenance guides.
-- Documented the Cloudflare Deploy to Cloudflare preview path. Account provisioning and production provider checks remain subject to the verification status in the [deployment guide](docs/deployment.md).
+- Documented the Deploy to Cloudflare and Workers Builds installation paths.
 - Documented the scoped, stateless Streamable HTTP MCP endpoint and its bearer-key requirements.

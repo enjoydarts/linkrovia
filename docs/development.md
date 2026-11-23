@@ -18,7 +18,7 @@ npm run db:migrate:local
 npm run db:seed:local
 ```
 
-Before starting the server, set a private setup token of at least 32 characters as `SETUP_TOKEN` in `.dev.vars`. The example file shows a command for generating one. Run `npm run dev`, open <http://localhost:5173/setup>, and follow the prompts to create the owner account. Use that same hostname for subsequent administration. Local passkey registration uses `localhost`; older password accounts can continue signing in with their passwords.
+Before starting the server, set a private setup token of at least 32 characters as `SETUP_TOKEN` in `.dev.vars`. The example file shows a command for generating one. Run `npm run dev` and open <http://localhost:5173/setup>. Enter the token, select **Use this hostname**, then register the owner passkey. Use `localhost` for local passkey registration and subsequent sign-in.
 
 The development server is available at <http://localhost:5173>. Its health endpoint is <http://localhost:5173/health> and returns `{"status":"ok"}` when the local D1 database is ready.
 
@@ -59,9 +59,11 @@ The committed timezone data currently records IANA tzdata version `2026f`.
 
 ## Continuous integration
 
-GitHub Actions runs on pushes to `main` and pull requests. It uses read-only repository permissions and no project credentials. The workflow installs dependencies with `npm ci`, then runs `check`, `lint`, unit and local workerd/D1 integration tests, and `build`. It installs Chromium with its system dependencies and runs the end-to-end browser tests. These checks use local resources and do not deploy the application.
+GitHub Actions runs on pushes to `main` and pull requests with read-only repository permissions. The workflow checks types and formatting, runs unit and workerd/D1 integration tests, and builds the app. It packages the Worker with a deploy dry run, smoke-tests that package on a local Worker, then runs the Chromium tests against isolated local databases. Cloudflare deployment is a separate workflow. [CI workflow](../.github/workflows/ci.yml)
 
 ## Link options and CSV import
+
+Search and filter links by hostname, status, and tag in **Links**. Sort by newest, oldest, or recently updated. On narrow screens, open the filter button to reveal the additional controls.
 
 Open a link in the admin interface to generate its QR code or set its protection mode. A QR code encodes a separate URL on the link's configured hostname. The QR and short URLs share the same redirect rules, active window, and redemption state.
 
@@ -69,7 +71,7 @@ Use the **Redirect rules** tab to add conditions for device, operating system, c
 
 The **Campaign parameters** tab lets you save UTM values separately for the default destination and each rule. Picking a template copies its values when you save, and field values take precedence. Preview the resulting URL before saving. Clear the fields and select **No template** to remove a destination's UTM settings.
 
-The link form shows the UTC equivalent of a valid start or expiration time. During a daylight saving overlap, choose the earlier or later occurrence before checking the preview. Use a temporary redirect (302 or 307) when you expect to change the destination. Browsers may keep using a cached 301 or 308.
+The link form previews each valid start or expiration time in 24-hour UTC. If the local clock repeats the entered time, the form shows both occurrences with their UTC times. Choose the intended occurrence. Use a temporary redirect (302 or 307) when you expect to change the destination. Browsers may keep using a cached 301 or 308.
 
 Protected links use temporary redirects (302 or 307). Visitors confirm at the gate before a one-time link can be redeemed. A successful redemption grants one redirect. The destination can fail to load after the redirect. HEAD requests and admin previews leave the link available. For password modes, a password must contain 12 to 128 characters. Changes to the link invalidate previous unlocks.
 
@@ -81,4 +83,6 @@ The `links:write` API endpoints `POST /api/v1/links/import/validate` and `POST /
 
 ## Cloudflare runtime verification
 
-Local tests cover owner setup, passkey registration and sign-in, session revocation, D1 persistence, CSV import, QR generation, and concurrent one-time link redemption. New production setups use passkeys. Existing password accounts and password-protected links use scrypt. Password setup or verification can exceed the [Workers Free CPU limit](https://developers.cloudflare.com/workers/platform/limits/) and may require Workers Paid. The browser-led deployment path, production Turnstile validation, and execution time still require verification on Cloudflare Workers Free.
+Local browser and workerd tests cover owner setup, passkey sign-in, D1 persistence, link management, analytics screens, CSV import, QR codes, and one-time link redemption. Workers Builds and custom-domain setup through owner passkey registration have been verified on Cloudflare. See the [deployment guide](deployment.md) for provider verification status.
+
+Turnstile activation, protected sign-in, and disabling were exercised in a browser with a local Worker and the live Siteverify endpoint using Cloudflare's test keys. To reproduce that check, configure a matching test site key and `TURNSTILE_SECRET_KEY` on a local loopback installation, then use **Settings → Security**. [Cloudflare test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)

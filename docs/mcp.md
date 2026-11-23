@@ -34,7 +34,9 @@ Claude Desktop can also launch a local stdio bridge. This path works from the de
 
 ## Other MCP clients
 
-The endpoint accepts stateless Streamable HTTP and requires the `Authorization: Bearer` header on every request. ChatGPT's custom app setup uses OAuth for authenticated servers and has no input for fixed request credentials. [OpenAI plugin setup](https://developers.openai.com/plugins/deploy/submission) and [MCP transport specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
+The endpoint accepts stateless Streamable HTTP and requires the `Authorization: Bearer` header on every request. [MCP transport specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
+
+ChatGPT custom plugins require OAuth for authenticated MCP connections. Linkrovia's endpoint uses a scoped API key, so direct connection through ChatGPT's custom plugin setup is unavailable. [ChatGPT MCP authentication](https://developers.openai.com/plugins/build/auth)
 
 | Scope            | Tools                                                                               |
 | ---------------- | ----------------------------------------------------------------------------------- |

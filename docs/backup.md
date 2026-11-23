@@ -11,7 +11,7 @@ The JSON excludes users, sessions, passkeys, API keys, link password hashes, gat
 3. For replace, download the current configuration and confirm that you saved it. Replacement archives links, goals, and non-primary domains that are absent from the file. It applies the backed-up app defaults. The management hostname and its owner account stay available for sign-in.
 4. Confirm the restore. If someone edits the configuration or redeems a one-time link after the preview, validate again. The confirmation expires after 10 minutes.
 
-An imported hostname requires a connection on the destination instance. Use **Domains** to inspect the imported hostname, then connect it to the Worker under **Settings → Domains & Routes** in the Cloudflare dashboard. Existing hostnames keep their destination instance connection. [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+Use **Domains** on the destination instance to connect and verify imported hostnames. An existing hostname can use its current connection in that instance. Review management access separately after a restore. [Connect domains](domains.md)
 
 Password-protected links whose local password cannot be retained are restored disabled. Set a new password before enabling them. Existing protection requirements and consumed one-time links are preserved when a link is overwritten. If the preview shows regenerated QR codes, download and distribute new images after connecting the domain.
 
