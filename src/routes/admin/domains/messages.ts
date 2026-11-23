@@ -434,6 +434,91 @@ export function domainMessages(locale: Locale): DomainMessages {
   };
 }
 
+const verificationMessages = {
+  en: {
+    dns_pending:
+      'Public DNS has no address for this hostname yet. Wait for DNS to update and retry.',
+    dns_unsafe:
+      'DNS returned a non-public address. Check this hostname’s DNS records.',
+    dns_unavailable:
+      'Linkrovia could not query the public DNS resolver. Try again shortly.',
+    proof_unavailable:
+      'The browser could not read the verification response over HTTPS. Check that this hostname reaches your Worker and retry.',
+    service_unavailable:
+      'Linkrovia could not complete the server-side connection check. Try again shortly.',
+  },
+  ja: {
+    dns_pending:
+      '公開 DNS にこのホスト名のアドレスがまだありません。DNS の反映を待って再試行してください。',
+    dns_unsafe:
+      'DNS が公開用ではないアドレスを返しました。このホスト名の DNS レコードを確認してください。',
+    dns_unavailable:
+      'Linkrovia から公開 DNS リゾルバーに問い合わせられませんでした。少し待って再試行してください。',
+    proof_unavailable:
+      'ブラウザーで HTTPS の検証用応答を読み取れませんでした。このホスト名が Worker に割り当てられているか確認し、再試行してください。',
+    service_unavailable:
+      'Linkrovia のサーバー側で接続確認を完了できませんでした。少し待って再試行してください。',
+  },
+  'zh-CN': {
+    dns_pending: '公共 DNS 尚未返回此主机名的地址。等待 DNS 更新后重试。',
+    dns_unsafe: 'DNS 返回了非公网地址。请检查此主机名的 DNS 记录。',
+    dns_unavailable: 'Linkrovia 无法查询公共 DNS 解析器。请稍后重试。',
+    proof_unavailable:
+      '浏览器无法通过 HTTPS 读取验证响应。请确认此主机名指向您的 Worker 后重试。',
+    service_unavailable: 'Linkrovia 无法完成服务器端连接检查。请稍后重试。',
+  },
+  'zh-TW': {
+    dns_pending: '公開 DNS 尚未傳回此主機名稱的位址。請等候 DNS 更新後重試。',
+    dns_unsafe: 'DNS 傳回了非公開位址。請檢查此主機名稱的 DNS 記錄。',
+    dns_unavailable: 'Linkrovia 無法查詢公開 DNS 解析器。請稍後再試。',
+    proof_unavailable:
+      '瀏覽器無法透過 HTTPS 讀取驗證回應。請確認此主機名稱已指向您的 Worker，然後重試。',
+    service_unavailable: 'Linkrovia 無法完成伺服器端的連線檢查。請稍後再試。',
+  },
+  es: {
+    dns_pending:
+      'El DNS público aún no tiene una dirección para este host. Espera a que se actualice y vuelve a intentarlo.',
+    dns_unsafe:
+      'El DNS devolvió una dirección no pública. Revisa los registros DNS de este host.',
+    dns_unavailable:
+      'Linkrovia no pudo consultar el resolutor DNS público. Vuelve a intentarlo en breve.',
+    proof_unavailable:
+      'El navegador no pudo leer la respuesta de verificación por HTTPS. Comprueba que este host apunta a tu Worker y vuelve a intentarlo.',
+    service_unavailable:
+      'Linkrovia no pudo completar la comprobación en el servidor. Vuelve a intentarlo en breve.',
+  },
+  it: {
+    dns_pending:
+      'Il DNS pubblico non ha ancora un indirizzo per questo host. Attendi l’aggiornamento e riprova.',
+    dns_unsafe:
+      'Il DNS ha restituito un indirizzo non pubblico. Verifica i record DNS di questo host.',
+    dns_unavailable:
+      'Linkrovia non ha potuto interrogare il resolver DNS pubblico. Riprova tra poco.',
+    proof_unavailable:
+      'Il browser non ha potuto leggere la risposta HTTPS di verifica. Controlla che questo host punti al tuo Worker e riprova.',
+    service_unavailable:
+      'Linkrovia non ha potuto completare la verifica sul server. Riprova tra poco.',
+  },
+  fr: {
+    dns_pending:
+      'Le DNS public ne renvoie pas encore d’adresse pour cet hôte. Attendez sa mise à jour et réessayez.',
+    dns_unsafe:
+      'Le DNS a renvoyé une adresse non publique. Vérifiez les enregistrements DNS de cet hôte.',
+    dns_unavailable:
+      'Linkrovia n’a pas pu interroger le résolveur DNS public. Réessayez dans un instant.',
+    proof_unavailable:
+      'Le navigateur n’a pas pu lire la réponse de vérification HTTPS. Vérifiez que cet hôte pointe vers votre Worker, puis réessayez.',
+    service_unavailable:
+      'Linkrovia n’a pas pu terminer la vérification côté serveur. Réessayez dans un instant.',
+  },
+} satisfies Record<Locale, Record<string, string>>;
+
+export function domainVerificationMessages(
+  locale: Locale,
+): Record<string, string> {
+  return verificationMessages[locale];
+}
+
 export type AutomaticDomainMessages = {
   title: string;
   intro: string;

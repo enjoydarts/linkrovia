@@ -4,6 +4,7 @@ Notable changes to Linkrovia are recorded here. The project is in development; e
 
 ## Unreleased
 
+- Fixed domain verification on Cloudflare Workers and added separate messages for DNS, HTTPS, and server errors.
 - Added owner-controlled administration on verified custom domains, with sign-in using existing passkeys.
 - Fixed Cloudflare Custom Domain assignment for hostnames with existing MX or TXT records.
 - Added link-list sorting by creation date in either direction and by most recently updated, with stable pagination that preserves filters.

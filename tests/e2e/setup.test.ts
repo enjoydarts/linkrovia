@@ -931,6 +931,27 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     expect(await response.json()).toMatchObject({ code: 'https_required' });
     await expect(page.getByRole('alert')).toBeVisible();
 
+    await page.route(`${apiPath}/connect`, (route) =>
+      route.fulfill({ status: 409, json: { code: 'dns_pending' } }),
+    );
+    await page.getByRole('button', { name: 'Check connection' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Public DNS has no address for this hostname yet. Wait for DNS to update and retry.',
+    );
+    await page.unroute(`${apiPath}/connect`);
+
+    const probeUrl = 'https://go.example.com/domain-verification/fixture';
+    await page.route(`${apiPath}/connect`, (route) =>
+      route.fulfill({ json: { url: probeUrl, ticket: 'fixture' } }),
+    );
+    await page.route(probeUrl, (route) => route.abort());
+    await page.getByRole('button', { name: 'Check connection' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'The browser could not read the verification response over HTTPS. Check that this hostname reaches your Worker and retry.',
+    );
+    await page.unroute(probeUrl);
+    await page.unroute(`${apiPath}/connect`);
+
     const assignment = page.locator('form[action="?/attach"]');
     const fixtureToken = 'fixture-cloudflare-token-not-a-real-credential';
     await assignment.locator('[name=token]').fill(fixtureToken);

@@ -65,7 +65,7 @@ it('checks public DNS via the fixed resolver and rejects nonpublic answers', asy
         'https://cloudflare-dns.com/dns-query',
       );
       expect(url.searchParams.get('name')).toBe(hostname);
-      expect(init?.redirect).toBe('error');
+      expect(init?.redirect).toBe('manual');
       const Answer =
         url.searchParams.get('type') === 'A'
           ? a.map((data) => ({ type: 1, data }))
@@ -83,6 +83,11 @@ it('checks public DNS via the fixed resolver and rejects nonpublic answers', asy
   );
   await expect(
     checkPublicDns(hostname, async () => new Response(null, { status: 503 })),
+  ).resolves.toBe('dns_unavailable');
+  await expect(
+    checkPublicDns(hostname, async () =>
+      Response.redirect('https://other.example.org/dns-query'),
+    ),
   ).resolves.toBe('dns_unavailable');
 });
 

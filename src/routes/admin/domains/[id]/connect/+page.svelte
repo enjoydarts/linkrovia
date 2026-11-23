@@ -7,6 +7,7 @@
     automaticDomainMessages,
     domainMessages,
     domainOperationMessages,
+    domainVerificationMessages,
     managementDomainMessages,
   } from '../../messages';
   import type { PageProps } from './$types';
@@ -15,6 +16,7 @@
   let m = $derived(domainMessages(data.locale));
   let managementMessages = $derived(managementDomainMessages(data.locale));
   let operationMessages = $derived(domainOperationMessages(data.locale));
+  let verificationMessages = $derived(domainVerificationMessages(data.locale));
 
   onMount(() => {
     if (form?.operation === 'attach' && form.code === 'attached')
@@ -42,7 +44,7 @@
       },
       body: JSON.stringify(body),
     });
-    const result: unknown = await response.json();
+    const result: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       const problem = result as { code?: string } | null;
       throw new Error(problem?.code ?? 'request_failed');
@@ -66,6 +68,8 @@
       return typeof result?.proof === 'string' && result.proof.length > 0
         ? result.proof
         : null;
+    } catch {
+      return null;
     } finally {
       window.clearTimeout(timer);
     }
@@ -89,10 +93,11 @@
       failed = result.status !== 'active';
       await invalidateAll();
     } catch (error) {
+      const code = error instanceof Error ? error.message : '';
       message =
-        error instanceof Error && error.message === 'https_required'
+        code === 'https_required'
           ? m.httpsOnly
-          : m.failed;
+          : (verificationMessages[code] ?? m.failed);
       failed = true;
     } finally {
       busy = false;

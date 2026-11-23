@@ -38,7 +38,7 @@ async function queryAddresses(
   endpoint.search = new URLSearchParams({ name: hostname, type }).toString();
   const response = await send(endpoint, {
     headers: { accept: 'application/dns-json' },
-    redirect: 'error',
+    redirect: 'manual',
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) throw new Error('DNS response failed');
