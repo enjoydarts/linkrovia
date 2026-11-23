@@ -6,6 +6,8 @@ After setting up your owner account, open **Domains → Add a domain** and enter
 2. Review the hostname and confirm **Assign domain**. You can run the read-only check first. Linkrovia finds the account and zone, checks for conflicting records or routes, then asks Cloudflare to assign the domain and provision DNS and HTTPS. [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 3. Wait for the hostname to become active. Linkrovia checks public DNS and verifies that HTTPS reaches this installation. If the certificate is still being prepared, use **Check connection** again after a short wait. An active hostname can serve short links.
 
+Keep existing MX and TXT records for the hostname. An A, AAAA, or CNAME record on the exact hostname can block assignment. Address records on other hostnames in the zone can stay in place.
+
 If another provider manages your DNS, you can keep using your `workers.dev` hostname or move DNS management for the zone to Cloudflare. Cloudflare provisions the records for Custom Domains, so keep the hostname clear of a CNAME to `workers.dev`. Confirm the implications for any existing services before moving DNS. [Move an existing domain to Cloudflare](https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/)
 
 The connection screen also provides manual instructions. Use them for a domain you already assigned in Cloudflare. Linkrovia can verify an existing assignment to its Worker.

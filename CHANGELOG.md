@@ -4,6 +4,7 @@ Notable changes to Linkrovia are recorded here. The project is in development; e
 
 ## Unreleased
 
+- Fixed Cloudflare Custom Domain assignment for hostnames with existing MX or TXT records.
 - Added link-list sorting by creation date in either direction and by most recently updated, with stable pagination that preserves filters.
 - Added a per-link redirect-rule simulator for sample visitor context. Simulation does not redirect a visitor or record a click.
 - Added per-link redirect-rule editing and reordering by drag or keyboard, with stable rule IDs for saved campaign parameters.

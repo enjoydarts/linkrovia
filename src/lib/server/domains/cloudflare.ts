@@ -314,7 +314,7 @@ async function preflight(
   const details = { service, zoneName };
   const dnsQuery = new URLSearchParams({
     'name.exact': hostname,
-    per_page: '1',
+    per_page: '100',
   });
   // DNS delegation can shadow records at a non-apex hostname or an ancestor.
   const delegationQuery = new URLSearchParams({
@@ -324,7 +324,7 @@ async function preflight(
   const [domains, routes, dns, delegation] = await Promise.all([
     list(api, domainsPath(settings, hostname)),
     list(api, `${zones}/workers/routes`),
-    list(api, `${zones}/dns_records?${dnsQuery}`, true),
+    list(api, `${zones}/dns_records?${dnsQuery}`),
     hostname === zoneName
       ? []
       : list(api, `${zones}/dns_records?${delegationQuery}`, true),
@@ -341,7 +341,12 @@ async function preflight(
       ? { code: 'attached', mappingId: domain.id, ...details }
       : { code: 'conflict', ...details };
   }
-  return { code: dns.length ? 'conflict' : 'ready', ...details };
+  // Mail routing and TXT records can coexist with a Worker Custom Domain.
+  const hasConflictingDns = dns.some((record) => {
+    const type = object(record)?.type;
+    return type !== 'MX' && type !== 'TXT';
+  });
+  return { code: hasConflictingDns ? 'conflict' : 'ready', ...details };
 }
 
 export async function diagnoseCustomDomain(

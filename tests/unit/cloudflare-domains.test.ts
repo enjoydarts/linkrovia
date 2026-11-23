@@ -164,14 +164,13 @@ describe('Cloudflare Custom Domain provider', () => {
     ).toEqual({ code: 'unsupported' });
   });
 
-  it('recognizes any matching route, exact DNS records, and disabled or foreign mappings as conflicts', async () => {
+  it('recognizes matching routes, conflicting DNS records, and disabled or foreign mappings', async () => {
     for (const overrides of [
       {
         [`${zones}/workers/routes`]: [
           { pattern: 'HTTPS://*.EXAMPLE.COM/any/path*' },
         ],
       },
-      { [`${zones}/dns_records`]: [{ name: hostname, type: 'TXT' }] },
       {
         [`${zones}/dns_records?shadowing_name=${hostname}&per_page=1`]:
           Response.json({
@@ -294,6 +293,22 @@ describe('Cloudflare Custom Domain mutations', () => {
     });
   });
 
+  it('attaches a zone apex with MX and TXT records and A records on other hosts', async () => {
+    const send = provider({
+      [`${zones}/dns_records`]: [{ name: `www.${zone.name}`, type: 'A' }],
+      [`${zones}/dns_records?name.exact=${zone.name}&per_page=100`]: [
+        { name: zone.name, type: 'MX' },
+        { name: zone.name, type: 'MX' },
+        { name: zone.name, type: 'TXT' },
+      ],
+      [`PUT ${records}`]: [{ ...domain, hostname: zone.name }],
+    });
+
+    expect(
+      await attachCustomDomain(input, zone.name, management, send),
+    ).toMatchObject({ code: 'attached', created: true });
+  });
+
   it('reuses an existing exact mapping without claiming ownership', async () => {
     const send = provider({ [domainList]: [domain] });
     expect(
@@ -308,13 +323,14 @@ describe('Cloudflare Custom Domain mutations', () => {
     );
   });
 
-  it('skips all writes when the fresh preflight finds an existing DNS record, matching route or foreign mapping', async () => {
+  it('skips all writes when the fresh preflight finds conflicting DNS, a matching route or a foreign mapping', async () => {
     for (const overrides of [
-      {
-        [`${zones}/dns_records?name.exact=${hostname}&per_page=1`]: [
-          { name: hostname, type: 'A' },
+      ...['A', 'AAAA', 'CNAME'].map((type) => ({
+        [`${zones}/dns_records`]: [
+          { name: hostname, type: 'MX' },
+          { name: hostname, type },
         ],
-      },
+      })),
       { [`${zones}/workers/routes`]: [{ pattern: `${hostname}/*` }] },
       { [domainList]: [{ ...domain, service: 'another-worker' }] },
     ]) {
@@ -326,6 +342,24 @@ describe('Cloudflare Custom Domain mutations', () => {
         true,
       );
     }
+  });
+
+  it('skips writes when the exact DNS listing is incomplete', async () => {
+    const send = provider({
+      [`${zones}/dns_records?name.exact=${hostname}&per_page=100`]:
+        Response.json({
+          success: true,
+          result: [{ name: hostname, type: 'MX' }],
+          result_info: { page: 1, total_pages: 2 },
+        }),
+    });
+
+    expect(await attachCustomDomain(input, hostname, management, send)).toEqual(
+      { code: 'provider_error' },
+    );
+    expect(send.mock.calls.every(([, init]) => init?.method === 'GET')).toBe(
+      true,
+    );
   });
 
   it('returns a conflict when the provider detects a concurrent incompatible change', async () => {
