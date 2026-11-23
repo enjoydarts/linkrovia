@@ -65,6 +65,12 @@ GitHub Actions runs on pushes to `main` and pull requests. It uses read-only rep
 
 Open a link in the admin interface to generate its QR code or set its protection mode. A QR code encodes a separate URL on the link's configured hostname. The QR and short URLs share the same redirect rules, active window, and redemption state.
 
+Use the **Redirect rules** tab to add conditions for device, operating system, country, region, or visitor language. All conditions in a rule must match. Reorder the rules by dragging or using **Move up** and **Move down**. The first enabled matching rule wins. Use **Rule simulator** to check the destination for a sample visitor.
+
+The **Campaign parameters** tab lets you save UTM values separately for the default destination and each rule. Picking a template copies its values when you save, and field values take precedence. Preview the resulting URL before saving. Clear the fields and select **No template** to remove a destination's UTM settings.
+
+The link form shows the UTC equivalent of a valid start or expiration time. During a daylight saving overlap, choose the earlier or later occurrence before checking the preview. Use a temporary redirect (302 or 307) when you expect to change the destination. Browsers may keep using a cached 301 or 308.
+
 Protected links use temporary redirects (302 or 307). Visitors confirm at the gate before a one-time link can be redeemed. A successful redemption grants one redirect. The destination can fail to load after the redirect. HEAD requests and admin previews leave the link available. For password modes, a password must contain 12 to 128 characters. Changes to the link invalidate previous unlocks.
 
 For automation, call `POST /api/v1/links/:id/qr` with the `links:write` scope and an empty JSON object sent as `application/json` to create a default QR code. Download it from `GET /api/v1/links/:id/qr.svg` or `GET /api/v1/links/:id/qr.png` with `links:read`. To change protection, call `PUT /api/v1/links/:id/protection` with `links:write` and a JSON body containing the current `updatedAt`, a `mode` of `none`, `password`, `one_time`, or `password_one_time`, and a password if setting or replacing one.

@@ -30,7 +30,7 @@
     <div class="grid gap-4 sm:grid-cols-3">
       {#each fields as { name, placeholder } (name)}
         {@const invalid = form?.invalidFields?.includes(name)}
-        <div class:sm:col-span-3={name === 'userAgent'} class="space-y-2">
+        <div class={['space-y-2', { 'sm:col-span-3': name === 'userAgent' }]}>
           <label for="simulate-{name}" class="block text-sm font-medium">
             {m[name]}
           </label>
@@ -38,7 +38,7 @@
             id="simulate-{name}"
             {name}
             {placeholder}
-            value={form?.values[name] ?? ''}
+            defaultValue={form?.values[name] ?? ''}
             maxlength={data.limits[name]}
             spellcheck="false"
             autocomplete="off"

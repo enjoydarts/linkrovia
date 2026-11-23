@@ -8,6 +8,7 @@ import {
   listLinks,
   listLinkRules,
   updateLink,
+  updateLinkRules,
 } from '../../src/lib/server/links/store';
 import {
   loadLinkGate,
@@ -667,4 +668,75 @@ describe('link management and delivery', () => {
       location: destinationUrl,
     });
   });
+});
+
+it('preserves retained rule IDs and tracking when replacing admin rules', async () => {
+  const db = platform.env.DB;
+  const rule = {
+    conditions: [{ type: 'os', operator: 'eq', value: 'ios' }] as const,
+    priority: 0,
+    destinationUrl: 'https://example.com/ios',
+    isActive: true,
+  };
+  const retainedRule = { ...rule, conditions: [...rule.conditions] };
+  const created = await createLink(db, null, {
+    ...draft,
+    slug: 'admin-rules',
+    rules: [retainedRule, { ...retainedRule, priority: 1 }],
+  });
+  if (!created.ok) throw new Error(created.code);
+  const id = created.id;
+  const [removed, retained] = await listLinkRules(db, id);
+  const utm = {
+    default: { utm_source: 'default' },
+    rules: {
+      [removed.id]: { utm_campaign: 'removed' },
+      [retained.id]: { utm_campaign: 'retained' },
+    },
+  };
+  await db
+    .prepare('UPDATE links SET utm_config_json = ? WHERE id = ?')
+    .bind(JSON.stringify(utm), id)
+    .run();
+  const before = await getLink(db, id);
+  if (!before) throw new Error('Missing link');
+  const input = [
+    {
+      ...retainedRule,
+      id: retained.id,
+      destinationUrl: 'https://example.com/new',
+    },
+    {
+      ...retainedRule,
+      id: null,
+      priority: 1,
+    },
+  ];
+  expect(await updateLinkRules(db, null, id, before.updatedAt, input)).toEqual({
+    ok: true,
+    id,
+  });
+  expect(await listLinkRules(db, id)).toMatchObject([
+    { id: retained.id, destinationUrl: 'https://example.com/new', priority: 0 },
+    { destinationUrl: 'https://example.com/ios', priority: 1 },
+  ]);
+  const after = await getLink(db, id);
+  expect(JSON.parse(after!.utmConfigJson!)).toEqual({
+    default: { utm_source: 'default' },
+    rules: { [retained.id]: { utm_campaign: 'retained' } },
+  });
+  expect(await updateLinkRules(db, null, id, before.updatedAt, [])).toEqual({
+    ok: false,
+    code: 'stale_link',
+  });
+  expect(await listLinkRules(db, id)).toHaveLength(2);
+  expect(
+    await updateLinkRules(db, null, id, after!.updatedAt, [input[0], input[0]]),
+  ).toEqual({ ok: false, code: 'invalid_input' });
+  expect(
+    await updateLinkRules(db, null, id, after!.updatedAt, [
+      { ...input[0], id: 'foreign-rule' },
+    ]),
+  ).toEqual({ ok: false, code: 'invalid_input' });
+  expect(await listLinkRules(db, id)).toHaveLength(2);
 });

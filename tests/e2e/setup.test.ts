@@ -67,6 +67,19 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
 
   await test.step('create a short link on the deployment hostname', async () => {
     await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
+    const redirectStatus = page.locator('select[name=status]');
+    const cacheWarning = page.getByText(/may cache this redirect/);
+    await expect(cacheWarning).toBeHidden();
+    await redirectStatus.selectOption('301');
+    await expect(cacheWarning).toBeVisible();
+    await redirectStatus.selectOption('302');
+    const startsAt = page.locator('input[name=startsAt]');
+    await startsAt.fill('2026-01-01T10:15:00');
+    await expect(page.locator('#startsAt-utc time')).toHaveAttribute(
+      'datetime',
+      '2026-01-01T10:15:00.000Z',
+    );
+    await startsAt.fill('');
     await page.locator('[name=slug]').fill('ci-link');
     await page
       .locator('[name=destinationUrl]')
@@ -1166,6 +1179,117 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     expect((await request.get('/csv-e2e', { maxRedirects: 0 })).status()).toBe(
       302,
     );
+  });
+
+  await test.step('configures redirect rules and destination-specific campaign parameters', async () => {
+    await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
+    const edit = page
+      .locator('form')
+      .filter({ has: page.locator('[name=slug]') });
+    await edit.locator('[name=slug]').fill('rule-utm-check');
+    await edit
+      .locator('[name=destinationUrl]')
+      .fill('https://example.org/default?fixed=1#section');
+    await edit.locator('button[type=submit]').click();
+    await expect(page).toHaveURL(/\/admin\/links\/[a-f0-9-]{36}$/);
+    const linkPage = page.url();
+    const tabs = page.getByRole('navigation', { name: 'Links', exact: true });
+    await tabs.getByRole('link', { name: 'Redirect rules' }).click();
+    await expect(page).toHaveURL(`${linkPage}/rules`);
+    await page.waitForLoadState('networkidle');
+
+    const first = page.getByRole('group', { name: 'Rule 1', exact: true });
+    const second = page.getByRole('group', { name: 'Rule 2', exact: true });
+    for (const [group, destination] of [
+      [first, 'https://example.net/japan'],
+      [second, 'https://example.net/featured?fixed=1#section'],
+    ] as const) {
+      await page.getByRole('button', { name: 'Add rule' }).click();
+      await group.getByLabel('Destination URL').fill(destination);
+      await group.getByLabel('Condition type').first().selectOption('country');
+      await group.getByLabel('Condition value').first().fill('JP');
+      await group.getByRole('button', { name: 'Add condition' }).click();
+      await group.getByLabel('Condition type').nth(1).selectOption('language');
+      await group.getByLabel('Condition value').nth(1).fill('ja');
+    }
+    await second
+      .getByRole('button', { name: 'Move up', exact: true })
+      .press('Enter');
+    await expect(first.getByLabel('Destination URL')).toHaveValue(
+      'https://example.net/featured?fixed=1#section',
+    );
+    await page.getByRole('button', { name: 'Save rules' }).click();
+    await expect(
+      page.getByText('Redirect rules saved.', { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(first.getByLabel('Destination URL')).toHaveValue(
+      'https://example.net/featured?fixed=1#section',
+    );
+
+    await tabs.getByRole('link', { name: 'Campaign parameters' }).click();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Campaign parameters' }),
+    ).toBeVisible();
+    const featured = page
+      .getByRole('form')
+      .filter({ hasText: 'https://example.net/featured?fixed=1#section' });
+    await featured.getByLabel('utm_source', { exact: true }).fill('newsletter');
+    await featured.getByRole('button', { name: 'Preview URL' }).click();
+    await expect(
+      featured.getByText(
+        'https://example.net/featured?fixed=1&utm_source=newsletter#section',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await featured.getByRole('button', { name: 'Save settings' }).click();
+    await expect(featured.getByRole('status')).toHaveText('Settings saved.');
+
+    const fallback = page.getByRole('form', { name: 'Default destination' });
+    const fallbackSource = fallback.getByLabel('utm_source', { exact: true });
+    await fallbackSource.fill('general');
+    const [saveDefault] = await Promise.all([
+      page.waitForRequest(
+        (save) => save.method() === 'POST' && save.url().endsWith('?/save'),
+      ),
+      fallback.getByRole('button', { name: 'Save settings' }).click(),
+    ]);
+    expect(
+      new URLSearchParams(saveDefault.postData() ?? '').get('utm_source'),
+    ).toBe('general');
+    await expect(fallback.getByRole('status')).toHaveText('Settings saved.');
+    await expect(fallbackSource).toHaveValue('general');
+    const visit = await request.get('/rule-utm-check', {
+      headers: { 'accept-language': 'fr' },
+      maxRedirects: 0,
+    });
+    expect(visit.status()).toBe(302);
+    expect(visit.headers()['location']).toBe(
+      'https://example.org/default?fixed=1&utm_source=general#section',
+    );
+
+    await tabs.getByRole('link', { name: 'Rule simulator' }).click();
+    await page.getByLabel('Country code').fill('JP');
+    await page.getByLabel('Language tag').fill('ja');
+    const [simulationRequest] = await Promise.all([
+      page.waitForRequest(
+        (submission) =>
+          submission.method() === 'POST' &&
+          submission.url().endsWith('/simulate'),
+      ),
+      page.getByRole('button', { name: 'Run simulation' }).click(),
+    ]);
+    const visitor = new URLSearchParams(simulationRequest.postData() ?? '');
+    expect(visitor.get('country')).toBe('JP');
+    expect(visitor.get('language')).toBe('ja');
+    await expect(
+      page
+        .getByRole('region', { name: 'Simulation result' })
+        .getByText(
+          'https://example.net/featured?fixed=1&utm_source=newsletter#section',
+          { exact: true },
+        ),
+    ).toBeVisible();
   });
 
   const invalidLogout = await context.request.post('/logout', {

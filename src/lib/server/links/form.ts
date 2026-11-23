@@ -19,10 +19,10 @@ export function requireSession(event: RequestEvent) {
   if (!event.locals.env.DB) error(503, 'Database unavailable');
   return { session, db: event.locals.env.DB };
 }
-export async function requireForm(event: RequestEvent) {
+export async function requireForm(event: RequestEvent, maxBytes?: number) {
   const auth = requireSession(event);
   if (!requireSameOrigin(event.request, event.url)) error(403, 'Forbidden');
-  const form = await readSmallForm(event.request);
+  const form = await readSmallForm(event.request, maxBytes);
   if (!form) error(400, 'Invalid form');
   if (!checkCsrfToken(form.get('csrfToken'), auth.session.csrfToken))
     error(403, 'Forbidden');

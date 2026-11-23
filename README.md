@@ -14,6 +14,8 @@ The local development build includes guided owner setup with passkeys, a seven-l
 
 The interface supports English, Japanese, Simplified Chinese, Traditional Chinese, Spanish, Italian, and French. Choose a language in **Preferences** or use your browser’s language when you visit.
 
+Edit a link's **Redirect rules** to direct visitors by device, operating system, location, or language. Use **Campaign parameters** to set UTM values for the default destination or a specific rule. Test the saved behavior in **Rule simulator**.
+
 Owners can download, validate, and restore a configuration backup from **Backup** in the admin interface. The backup guide covers supported records, restore options, and Cloudflare D1 recovery. [Backup and restore](docs/backup.md)
 
 Use **Analytics** for click totals, daily trends, and breakdowns, or open a link for its own report and CSV. Use **Conversions** to manage goals and connect a server-side event sender. The analytics guide explains the local sample data and Cloudflare setup. [Analytics and conversions](docs/analytics.md)

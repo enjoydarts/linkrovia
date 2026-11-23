@@ -340,6 +340,9 @@ export function linkMessages(locale: Locale): LinkMessages {
 
 const extra = {
   en: {
+    utcPreview: 'UTC preview',
+    permanentCache:
+      'Browsers may cache this redirect after you change its destination. Use 302 or 307 for a temporary redirect.',
     gap: 'This local time does not exist because the clock moves forward. Choose another time.',
     overlap:
       'This local time occurs twice. Choose earlier or later for the affected time.',
@@ -353,6 +356,9 @@ const extra = {
     domainConflict: 'This domain has already been added.',
   },
   ja: {
+    utcPreview: 'UTC プレビュー',
+    permanentCache:
+      '転送先を変更しても、ブラウザーに以前の転送先が残ることがあります。一時的な転送には 302 または 307 を選んでください。',
     gap: '時計が進むため、この現地時刻は存在しません。別の時刻を選んでください。',
     overlap:
       'この現地時刻は 2 回あります。該当する日時の早い方または遅い方を選んでください。',
@@ -367,6 +373,9 @@ const extra = {
     domainConflict: 'このドメインは既に追加されています。',
   },
   'zh-CN': {
+    utcPreview: 'UTC 预览',
+    permanentCache:
+      '更改目标后，浏览器可能仍会使用已缓存的重定向。临时重定向请选择 302 或 307。',
     gap: '由于时钟拨快，此本地时间不存在。请选择其他时间。',
     overlap: '此本地时间出现两次，请为对应时间选择较早或较晚的一次。',
     fold: '此时间出现两次时',
@@ -379,6 +388,9 @@ const extra = {
     domainConflict: '此域名已添加。',
   },
   'zh-TW': {
+    utcPreview: 'UTC 預覽',
+    permanentCache:
+      '變更目的地後，瀏覽器可能仍會使用已快取的重新導向。暫時重新導向請選擇 302 或 307。',
     gap: '由於時鐘調快，此本地時間不存在。請選擇其他時間。',
     overlap: '此本地時間出現兩次，請為對應時間選擇較早或較晚的一次。',
     fold: '此時間出現兩次時',
@@ -391,6 +403,9 @@ const extra = {
     domainConflict: '此網域已新增。',
   },
   es: {
+    utcPreview: 'Vista previa en UTC',
+    permanentCache:
+      'Los navegadores pueden conservar esta redirección aunque cambies el destino. Usa 302 o 307 para una redirección temporal.',
     gap: 'Esta hora local no existe por el adelanto del reloj. Elige otra hora.',
     overlap:
       'Esta hora local ocurre dos veces. Elige la primera o la segunda para la hora correspondiente.',
@@ -404,6 +419,9 @@ const extra = {
     domainConflict: 'Este dominio ya se ha añadido.',
   },
   it: {
+    utcPreview: 'Anteprima in UTC',
+    permanentCache:
+      'I browser possono conservare questo reindirizzamento dopo una modifica della destinazione. Usa 302 o 307 per un reindirizzamento temporaneo.',
     gap: 'Questa ora locale non esiste per lo spostamento in avanti dell’orologio. Scegli un’altra ora.',
     overlap:
       'Questa ora locale si verifica due volte. Scegli la prima o la seconda per l’orario interessato.',
@@ -417,6 +435,9 @@ const extra = {
     domainConflict: 'Questo dominio è già stato aggiunto.',
   },
   fr: {
+    utcPreview: 'Aperçu en UTC',
+    permanentCache:
+      'Les navigateurs peuvent conserver cette redirection après un changement de destination. Utilisez 302 ou 307 pour une redirection temporaire.',
     gap: 'Cette heure locale n’existe pas, car l’horloge avance. Choisissez une autre heure.',
     overlap:
       'Cette heure locale se produit deux fois. Choisissez la première ou la deuxième occurrence pour l’heure concernée.',

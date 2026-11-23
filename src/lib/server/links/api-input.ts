@@ -88,7 +88,7 @@ function parseTags(value: unknown): string[] | null {
   return [...uniqueTags.values()];
 }
 
-function parseRule(value: unknown): LinkRuleInput | null {
+export function parseRule(value: unknown): LinkRuleInput | null {
   if (!isObject(value)) return null;
 
   const allowed = new Set([

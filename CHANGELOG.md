@@ -6,6 +6,9 @@ Notable changes to Linkrovia are recorded here. The project is in development; e
 
 - Added link-list sorting by creation date in either direction and by most recently updated, with stable pagination that preserves filters.
 - Added a per-link redirect-rule simulator for sample visitor context. Simulation does not redirect a visitor or record a click.
+- Added per-link redirect-rule editing and reordering by drag or keyboard, with stable rule IDs for saved campaign parameters.
+- Added per-destination UTM settings, template snapshots, and safe URL previews in the link detail view.
+- Added permanent-redirect cache guidance and live UTC previews for link schedules.
 - Added a comparison with the preceding 14 days and breakdowns by country or region, referrer, operating system, and applied rule to the dashboard.
 - Added per-link reporting for shared conversion goals and localized admin CSV column headers.
 - Added owner-managed administrator invitations with one-time passkey registration, invitation revocation, and administrator deactivation.

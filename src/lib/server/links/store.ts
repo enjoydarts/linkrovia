@@ -265,6 +265,45 @@ export async function listLinkRules(
   return listLinkRulesForLinks(db, [linkId]);
 }
 
+function writeRule(
+  db: D1Database,
+  auditId: string,
+  linkId: string,
+  id: string,
+  rule: LinkRuleInput,
+) {
+  const [first] = rule.conditions;
+  if (!first)
+    throw new TypeError('A redirect rule must have at least one condition');
+  return db
+    .prepare(
+      `INSERT INTO redirect_rules (id, link_id, rule_type, operator, rule_value, conditions_json, destination_url, priority, is_active)
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM audit_events WHERE id = ?)
+       ON CONFLICT (id) DO UPDATE SET
+         rule_type = excluded.rule_type,
+         operator = excluded.operator,
+         rule_value = excluded.rule_value,
+         conditions_json = excluded.conditions_json,
+         destination_url = excluded.destination_url,
+         priority = excluded.priority,
+         is_active = excluded.is_active,
+         updated_at = MAX(unixepoch(), redirect_rules.updated_at + 1)
+       WHERE redirect_rules.link_id = excluded.link_id`,
+    )
+    .bind(
+      id,
+      linkId,
+      first.type,
+      first.operator,
+      first.value,
+      JSON.stringify(rule.conditions),
+      rule.destinationUrl,
+      rule.priority,
+      Number(rule.isActive),
+      auditId,
+    );
+}
+
 function ruleStatements(
   db: D1Database,
   auditId: string,
@@ -278,29 +317,71 @@ function ruleStatements(
         'DELETE FROM redirect_rules WHERE link_id = ? AND EXISTS (SELECT 1 FROM audit_events WHERE id = ?)',
       )
       .bind(linkId, auditId),
-    ...rules.map((rule) => {
-      const [first] = rule.conditions;
-      if (!first)
-        throw new TypeError('A redirect rule must have at least one condition');
-      return db
-        .prepare(
-          `INSERT INTO redirect_rules (id, link_id, rule_type, operator, rule_value, conditions_json, destination_url, priority, is_active)
-         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM audit_events WHERE id = ?)`,
-        )
-        .bind(
-          uuidV7(),
-          linkId,
-          first.type,
-          first.operator,
-          first.value,
-          JSON.stringify(rule.conditions),
-          rule.destinationUrl,
-          rule.priority,
-          Number(rule.isActive),
-          auditId,
-        );
-    }),
+    ...rules.map((rule) => writeRule(db, auditId, linkId, uuidV7(), rule)),
   ];
+}
+
+export async function updateLinkRules(
+  db: D1Database,
+  actorId: string | null,
+  linkId: string,
+  expected: number,
+  rules: (LinkRuleInput & { id: string | null })[],
+): Promise<
+  { ok: true; id: string } | { ok: false; code: 'stale_link' | 'invalid_input' }
+> {
+  const ids = rules.flatMap(({ id }) => (id === null ? [] : [id]));
+  const retained = new Set(ids);
+  if (retained.size !== ids.length) return { ok: false, code: 'invalid_input' };
+
+  const audit = uuidV7();
+  const retainedJson = JSON.stringify(ids);
+  const [update] = await db.batch([
+    db
+      .prepare(
+        `UPDATE links SET
+          utm_config_json = CASE WHEN json_valid(utm_config_json) THEN
+            CASE WHEN json_type(utm_config_json, '$.rules') = 'object' THEN
+              json_set(utm_config_json, '$.rules', (
+                SELECT json_group_object(tracking.key, utm_config_json -> tracking.fullkey)
+                FROM json_each(utm_config_json, '$.rules') AS tracking
+                WHERE NOT EXISTS (
+                  SELECT 1 FROM redirect_rules
+                  WHERE link_id = links.id AND id = tracking.key AND id NOT IN (SELECT value FROM json_each(?))
+                )
+              ))
+            ELSE utm_config_json END
+          ELSE utm_config_json END,
+          conversion_tracking = 0,
+          updated_at = MAX(unixepoch(), updated_at + 1)
+        WHERE id = ? AND updated_at = ? AND deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM json_each(?) AS retained
+            WHERE NOT EXISTS (
+              SELECT 1 FROM redirect_rules WHERE link_id = links.id AND id = retained.value
+            )
+          )`,
+      )
+      .bind(retainedJson, linkId, expected, retainedJson),
+    writeAudit(db, audit, actorId, 'link.updated', linkId),
+    db
+      .prepare(
+        `DELETE FROM redirect_rules
+         WHERE link_id = ? AND id NOT IN (SELECT value FROM json_each(?))
+           AND EXISTS (SELECT 1 FROM audit_events WHERE id = ?)`,
+      )
+      .bind(linkId, retainedJson, audit),
+    ...rules.map((rule) =>
+      writeRule(db, audit, linkId, rule.id ?? uuidV7(), rule),
+    ),
+  ]);
+
+  if (update.meta.changes > 0) return { ok: true, id: linkId };
+  const current = await getLink(db, linkId);
+  return {
+    ok: false,
+    code: current?.updatedAt === expected ? 'invalid_input' : 'stale_link',
+  };
 }
 
 const availableDomain =

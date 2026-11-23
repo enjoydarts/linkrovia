@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Locale } from '$lib/i18n/locale';
   import { linkExtra, linkMessages } from '$lib/i18n/links';
+  import { interpretLocalDateTime } from '$lib/timezone/timezone';
 
   type Domain = {
     id: string;
@@ -54,6 +55,28 @@
   } = $props();
   let m = $derived(linkMessages(locale));
   let x = $derived(linkExtra(locale));
+  let redirectStatus = $derived(
+    Number(values?.status ?? link?.redirectType ?? 302),
+  );
+  let permanent = $derived(redirectStatus === 301 || redirectStatus === 308);
+  let startsAt = $derived(
+    values?.startsAt ?? localTime(link?.startsAt ?? null),
+  );
+  let expiresAt = $derived(
+    values?.expiresAt ?? localTime(link?.expiresAt ?? null),
+  );
+  let startFold = $derived(values?.startFold ?? savedFold(link?.startsAt));
+  let expiryFold = $derived(values?.expiryFold ?? savedFold(link?.expiresAt));
+  let startUtc = $derived(previewUtc(startsAt, startFold));
+  let expiryUtc = $derived(previewUtc(expiresAt, expiryFold));
+  let utcFormat = $derived(
+    new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeStyle: 'medium',
+      timeZone: 'UTC',
+    }),
+  );
+
   function localTime(value: number | null): string {
     if (value === null) return '';
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -70,7 +93,35 @@
       parts.find((p) => p.type === name)?.value ?? '';
     return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}:${part('second')}`;
   }
+
+  function savedFold(value: number | null | undefined): string {
+    if (value == null) return '';
+    const time = interpretLocalDateTime(localTime(value), timeZone);
+    if (time.kind !== 'overlap') return '';
+    return time.earlier === value ? 'earlier' : 'later';
+  }
+
+  function previewUtc(value: string, fold: string): number | null {
+    if (!value) return null;
+    const time = interpretLocalDateTime(value, timeZone);
+    if (time.kind === 'exact') return time.epochSeconds;
+    if (time.kind === 'overlap' && (fold === 'earlier' || fold === 'later')) {
+      return time[fold];
+    }
+    return null;
+  }
 </script>
+
+{#snippet utcPreview(id: string, value: number | null)}
+  <p {id} aria-live="polite" class="text-sm text-muted">
+    {#if value !== null}
+      {x.utcPreview} ·
+      <time datetime={new Date(value * 1000).toISOString()}>
+        {utcFormat.format(value * 1000)} UTC
+      </time>
+    {/if}
+  </p>
+{/snippet}
 
 <form
   method="POST"
@@ -150,16 +201,21 @@
     <label for="status" class="block font-medium">{m.redirect}</label><select
       id="status"
       name="status"
+      bind:value={redirectStatus}
+      aria-describedby={permanent ? 'redirect-cache-warning' : undefined}
       class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
     >
-      {#each [301, 302, 307, 308] as status (status)}<option
-          value={status}
-          selected={status ===
-            Number(values?.status ?? link?.redirectType ?? 302)}
-        >
+      {#each [301, 302, 307, 308] as status (status)}<option value={status}>
           {status}
         </option>{/each}
     </select>
+    {#if permanent}<p
+        id="redirect-cache-warning"
+        role="status"
+        class="text-sm text-muted"
+      >
+        {x.permanentCache}
+      </p>{/if}
   </div>
   <label class="flex items-center gap-2">
     <input
@@ -179,7 +235,8 @@
         name="startsAt"
         type="datetime-local"
         step="1"
-        value={values?.startsAt ?? localTime(link?.startsAt ?? null)}
+        bind:value={startsAt}
+        aria-describedby="startsAt-utc"
         class="w-full rounded-md border border-control bg-surface px-3 py-2"
       />
       <label for="startFold" class="block text-sm">
@@ -187,17 +244,14 @@
       </label><select
         id="startFold"
         name="startFold"
+        bind:value={startFold}
         class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
-        <option value="">{x.choose}</option><option
-          value="earlier"
-          selected={values?.startFold === 'earlier'}
-        >
+        <option value="">{x.choose}</option><option value="earlier">
           {x.earlier}
-        </option><option value="later" selected={values?.startFold === 'later'}>
-          {x.later}
-        </option>
+        </option><option value="later">{x.later}</option>
       </select>
+      {@render utcPreview('startsAt-utc', startUtc)}
     </div>
     <div class="space-y-2">
       <label for="expiresAt" class="block font-medium">
@@ -207,7 +261,8 @@
         name="expiresAt"
         type="datetime-local"
         step="1"
-        value={values?.expiresAt ?? localTime(link?.expiresAt ?? null)}
+        bind:value={expiresAt}
+        aria-describedby="expiresAt-utc"
         class="w-full rounded-md border border-control bg-surface px-3 py-2"
       />
       <label for="expiryFold" class="block text-sm">
@@ -215,20 +270,14 @@
       </label><select
         id="expiryFold"
         name="expiryFold"
+        bind:value={expiryFold}
         class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
-        <option value="">{x.choose}</option><option
-          value="earlier"
-          selected={values?.expiryFold === 'earlier'}
-        >
+        <option value="">{x.choose}</option><option value="earlier">
           {x.earlier}
-        </option><option
-          value="later"
-          selected={values?.expiryFold === 'later'}
-        >
-          {x.later}
-        </option>
+        </option><option value="later">{x.later}</option>
       </select>
+      {@render utcPreview('expiresAt-utc', expiryUtc)}
     </div>
   </fieldset>
   <div class="space-y-2">
