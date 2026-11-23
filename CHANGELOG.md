@@ -4,6 +4,9 @@ Notable changes to Linkrovia are recorded here. The project is in development; e
 
 ## Unreleased
 
+- Unified administration headings, forms, actions, and tabs and aligned link search controls in a single responsive toolbar.
+- Show schedule choices only when a local time occurs twice, with the UTC time for each occurrence.
+- Fixed Turnstile validation on Cloudflare Workers.
 - Improved custom-domain setup by giving Cloudflare assignment its own deadline and checking the live mapping when the response is inconclusive.
 - Fixed domain verification on Cloudflare Workers and added separate messages for DNS, HTTPS, and server errors.
 - Added owner-controlled administration on verified custom domains, with sign-in using existing passkeys.

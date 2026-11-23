@@ -21,6 +21,7 @@
   import { linkMessages } from '$lib/i18n/links';
   import { preferenceMessages } from '$lib/i18n/preferences';
   import type { LayoutProps } from './$types';
+  import './admin-context.css';
 
   let { data, children }: LayoutProps = $props();
   let messages = $derived(messagesFor(data.locale));

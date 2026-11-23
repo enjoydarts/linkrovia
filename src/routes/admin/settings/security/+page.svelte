@@ -70,10 +70,7 @@
         locale={data.locale}
       />
       <div class="flex flex-wrap items-center gap-4">
-        <button
-          type="submit"
-          class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary"
-        >
+        <button type="submit" class="admin-button admin-button-primary">
           {data.enabled ? messages.verifySave : messages.verifyEnable}
         </button>
         <a
@@ -123,14 +120,11 @@
           spellcheck="false"
           required
           aria-describedby="site-key-hint"
-          class="w-full rounded-md border px-3 py-2 font-mono sm:max-w-sm"
+          class="admin-control w-full font-mono sm:max-w-sm"
         />
         <p id="site-key-hint" class="text-sm">{messages.siteKeyHint}</p>
       </div>
-      <button
-        type="submit"
-        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary"
-      >
+      <button type="submit" class="admin-button admin-button-primary">
         {messages.prepare}
       </button>
     </form>
@@ -141,7 +135,7 @@
       <p class="text-sm">{messages.rotate}</p>
       <form method="POST" action="?/disable">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <button type="submit" class="rounded-md border px-4 py-2 font-medium">
+        <button type="submit" class="admin-button">
           {messages.disable}
         </button>
       </form>

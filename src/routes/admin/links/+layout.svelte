@@ -94,16 +94,13 @@
         {/if}
       </div>
       {#if isIndex}
-        <a
-          href="/admin/links/new"
-          class="inline-flex min-h-10 items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-on-primary hover:bg-primary-hover"
-        >
+        <a href="/admin/links/new" class="admin-button admin-button-primary">
           <Plus size={16} aria-hidden="true" />{m.create}
         </a>
       {/if}
     </div>
     {#if isDetail}
-      <nav aria-label={m.links} class="link-tabs">
+      <nav aria-label={m.links} class="context-nav link-tabs">
         {#each detailTabs as tab (tab.href)}
           <a
             href={tab.href}
@@ -124,26 +121,7 @@
 
 <style>
   .link-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.2rem 0.35rem;
-  }
-  .link-tabs a {
-    display: inline-flex;
-    min-height: 42px;
-    gap: 0.45rem;
-    align-items: center;
-    padding-inline: clamp(0.45rem, 1.1vw, 0.8rem);
-    border-bottom: 2px solid transparent;
-    color: var(--ui-text-muted);
-    font-size: 0.86rem;
-    font-weight: 580;
-  }
-  .link-tabs a:hover,
-  .link-tabs a[aria-current='page'] {
-    color: var(--ui-link);
-  }
-  .link-tabs a[aria-current='page'] {
-    border-bottom-color: var(--ui-link);
+    border-bottom: 0;
+    margin-bottom: 0;
   }
 </style>

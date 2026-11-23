@@ -167,13 +167,25 @@
     <input type="hidden" name="range" value={filters.range} />
   {:else}
     <label>
-      {m.from}<input type="date" name="from" value={filters.from} required />
+      {m.from}<input
+        class="admin-control"
+        type="date"
+        name="from"
+        value={filters.from}
+        required
+      />
     </label>
     <label>
-      {m.to}<input type="date" name="to" value={filters.to} required />
+      {m.to}<input
+        class="admin-control"
+        type="date"
+        name="to"
+        value={filters.to}
+        required
+      />
     </label>
     <label>
-      {periods.group}<select name="granularity">
+      {periods.group}<select class="admin-control" name="granularity">
         {#each Object.entries(periods.granularities) as [value, label] (value)}
           <option {value} selected={granularity === value}>{label}</option>
         {/each}
@@ -181,7 +193,7 @@
     </label>
   {/if}
   <label>
-    {m.dimension}<select name="dimension">
+    {m.dimension}<select class="admin-control" name="dimension">
       {#each dimensions as dim (dim)}<option
           value={dim}
           selected={filters.dimension === dim}
@@ -191,7 +203,7 @@
     </select>
   </label>
   <label>
-    {m.source}<select name="source">
+    {m.source}<select class="admin-control" name="source">
       <option value="">{m.all}</option><option
         value="link"
         selected={filters.source === 'link'}
@@ -204,7 +216,7 @@
   </label>
   {#if !linkScoped && domains.length}
     <label>
-      {m.domain}<select name="domainId">
+      {m.domain}<select class="admin-control" name="domainId">
         <option value="">{traffic[3]}</option>
         {#each domains as domain (domain.id)}
           <option value={domain.id} selected={filters.domainId === domain.id}>
@@ -226,7 +238,9 @@
     <input type="hidden" name="filter" value={filters.filter} />
     <input type="hidden" name="key" value={filters.key} />
   {/if}
-  <button type="submit">{m.apply}</button>
+  <button type="submit" class="admin-button admin-button-primary">
+    {m.apply}
+  </button>
 </form>
 {#if failed}
   <p class="notice" role="alert">
@@ -248,7 +262,9 @@
           {report.totalClicks?.toLocaleString(locale) ?? '—'}
         </strong>
       </div>
-      <a class="export" href={`${base}/export?${exportQuery}`}>{m.export}</a>
+      <a class="admin-button export" href={`${base}/export?${exportQuery}`}>
+        {m.export}
+      </a>
     </div>
     <p class="meta">
       {m.timezone}: {report.meta
@@ -423,30 +439,6 @@
     gap: 0.35rem;
     font-size: 0.875rem;
     font-weight: 600;
-  }
-  input,
-  select {
-    min-width: 0;
-    max-width: 100%;
-    padding: 0.45rem 0.55rem;
-    min-height: 2.375rem;
-    border: 1px solid var(--ui-control-border);
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-surface);
-    color: var(--ui-text);
-  }
-  button,
-  .export {
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-accent-surface);
-    color: var(--ui-link);
-    font-weight: 650;
-  }
-  button {
-    min-height: 2.375rem;
-    background: var(--ui-primary);
-    color: var(--ui-on-primary);
   }
   button:focus-visible,
   a:focus-visible,

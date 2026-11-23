@@ -67,13 +67,16 @@
   );
   let startFold = $derived(values?.startFold ?? savedFold(link?.startsAt));
   let expiryFold = $derived(values?.expiryFold ?? savedFold(link?.expiresAt));
-  let startUtc = $derived(previewUtc(startsAt, startFold));
-  let expiryUtc = $derived(previewUtc(expiresAt, expiryFold));
+  let startTime = $derived(interpretLocalDateTime(startsAt, timeZone));
+  let expiryTime = $derived(interpretLocalDateTime(expiresAt, timeZone));
+  let startUtc = $derived(previewUtc(startTime, startFold));
+  let expiryUtc = $derived(previewUtc(expiryTime, expiryFold));
   let utcFormat = $derived(
     new Intl.DateTimeFormat(locale, {
       dateStyle: 'medium',
       timeStyle: 'medium',
       timeZone: 'UTC',
+      hourCycle: 'h23',
     }),
   );
 
@@ -101,9 +104,10 @@
     return time.earlier === value ? 'earlier' : 'later';
   }
 
-  function previewUtc(value: string, fold: string): number | null {
-    if (!value) return null;
-    const time = interpretLocalDateTime(value, timeZone);
+  function previewUtc(
+    time: ReturnType<typeof interpretLocalDateTime>,
+    fold: string,
+  ): number | null {
     if (time.kind === 'exact') return time.epochSeconds;
     if (time.kind === 'overlap' && (fold === 'earlier' || fold === 'later')) {
       return time[fold];
@@ -126,7 +130,7 @@
 <form
   method="POST"
   action={formAction}
-  class="max-w-3xl space-y-6 rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-7"
+  class="context-panel max-w-3xl space-y-6"
 >
   <input type="hidden" name="csrfToken" value={csrfToken} />
   {#if link}<input
@@ -157,7 +161,7 @@
       type="url"
       required
       value={values?.destinationUrl ?? link?.destinationUrl ?? ''}
-      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      class="admin-control w-full"
     />
   </div>
   <div class="space-y-2">
@@ -165,7 +169,7 @@
       id="title"
       name="title"
       value={values?.title ?? link?.title ?? ''}
-      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      class="admin-control w-full"
     />
   </div>
   <div class="space-y-2">
@@ -173,7 +177,7 @@
       id="domainId"
       name="domainId"
       required
-      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      class="admin-control w-full"
     >
       {#each domains as domain (domain.id)}<option
           value={domain.id}
@@ -191,7 +195,7 @@
       name="slug"
       value={values?.slug ?? link?.slug ?? ''}
       aria-describedby="slug-help"
-      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      class="admin-control w-full"
     />
     <p id="slug-help" class="text-sm text-muted">
       {m.slugHelp}
@@ -203,7 +207,7 @@
       name="status"
       bind:value={redirectStatus}
       aria-describedby={permanent ? 'redirect-cache-warning' : undefined}
-      class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      class="admin-control"
     >
       {#each [301, 302, 307, 308] as status (status)}<option value={status}>
           {status}
@@ -236,21 +240,30 @@
         type="datetime-local"
         step="1"
         bind:value={startsAt}
+        oninput={() => (startFold = '')}
         aria-describedby="startsAt-utc"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
+        class="admin-control w-full"
       />
-      <label for="startFold" class="block text-sm">
-        {m.startsAt} — {x.fold}
-      </label><select
-        id="startFold"
-        name="startFold"
-        bind:value={startFold}
-        class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-      >
-        <option value="">{x.choose}</option><option value="earlier">
-          {x.earlier}
-        </option><option value="later">{x.later}</option>
-      </select>
+      {#if startTime.kind === 'overlap'}
+        <label for="startFold" class="block text-sm">
+          {m.startsAt} · {x.fold}
+        </label>
+        <select
+          id="startFold"
+          name="startFold"
+          bind:value={startFold}
+          required
+          class="admin-control w-full"
+        >
+          <option value="">{x.choose}</option>
+          <option value="earlier">
+            {x.earlier} ({utcFormat.format(startTime.earlier * 1000)} UTC)
+          </option>
+          <option value="later">
+            {x.later} ({utcFormat.format(startTime.later * 1000)} UTC)
+          </option>
+        </select>
+      {/if}
       {@render utcPreview('startsAt-utc', startUtc)}
     </div>
     <div class="space-y-2">
@@ -262,21 +275,30 @@
         type="datetime-local"
         step="1"
         bind:value={expiresAt}
+        oninput={() => (expiryFold = '')}
         aria-describedby="expiresAt-utc"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
+        class="admin-control w-full"
       />
-      <label for="expiryFold" class="block text-sm">
-        {m.expiresAt} — {x.fold}
-      </label><select
-        id="expiryFold"
-        name="expiryFold"
-        bind:value={expiryFold}
-        class="rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-      >
-        <option value="">{x.choose}</option><option value="earlier">
-          {x.earlier}
-        </option><option value="later">{x.later}</option>
-      </select>
+      {#if expiryTime.kind === 'overlap'}
+        <label for="expiryFold" class="block text-sm">
+          {m.expiresAt} · {x.fold}
+        </label>
+        <select
+          id="expiryFold"
+          name="expiryFold"
+          bind:value={expiryFold}
+          required
+          class="admin-control w-full"
+        >
+          <option value="">{x.choose}</option>
+          <option value="earlier">
+            {x.earlier} ({utcFormat.format(expiryTime.earlier * 1000)} UTC)
+          </option>
+          <option value="later">
+            {x.later} ({utcFormat.format(expiryTime.later * 1000)} UTC)
+          </option>
+        </select>
+      {/if}
       {@render utcPreview('expiresAt-utc', expiryUtc)}
     </div>
   </fieldset>
@@ -286,16 +308,13 @@
       name="tags"
       value={values?.tags ?? link?.tags.join(', ') ?? ''}
       aria-describedby="tags-help"
-      class="w-full rounded-md border border-control bg-surface px-3 py-2 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      class="admin-control w-full"
     />
     <p id="tags-help" class="text-sm text-muted">
       {m.tagsHelp}
     </p>
   </div>
-  <button
-    type="submit"
-    class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
-  >
+  <button type="submit" class="admin-button admin-button-primary">
     {m.save}
   </button>
 </form>

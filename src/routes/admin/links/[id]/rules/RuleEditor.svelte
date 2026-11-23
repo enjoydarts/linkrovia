@@ -73,10 +73,9 @@
     interactive = true;
   });
 
-  const fieldClass =
-    'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm';
+  const fieldClass = 'admin-control';
   const buttonClass =
-    'rounded-md border border-line px-3 py-2 text-sm font-medium hover:bg-background disabled:opacity-50 aria-disabled:opacity-50';
+    'admin-button disabled:opacity-50 aria-disabled:opacity-50';
   const platforms: Record<string, string> = {
     ios: 'iOS',
     ipados: 'iPadOS',
@@ -409,7 +408,7 @@
       <button
         type="submit"
         disabled={payload === initialPayload}
-        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50"
+        class="admin-button admin-button-primary disabled:opacity-50"
       >
         {pending ? m.saving : m.save}
       </button>

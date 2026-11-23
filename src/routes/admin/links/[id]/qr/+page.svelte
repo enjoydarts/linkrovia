@@ -37,15 +37,11 @@
             <a
               href={`${base}/image/svg`}
               download
-              class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary"
+              class="admin-button admin-button-primary"
             >
               {m.downloadSvg}
             </a>
-            <a
-              href={`${base}/image/png`}
-              download
-              class="rounded-md border border-line px-4 py-2 text-sm font-medium"
-            >
+            <a href={`${base}/image/png`} download class="admin-button">
               {m.downloadPng}
             </a>
           </div>
@@ -54,9 +50,7 @@
     {:else}
       <form method="POST" action="?/create">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <button
-          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary"
-        >
+        <button class="admin-button admin-button-primary">
           {m.create}
         </button>
       </form>

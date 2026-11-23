@@ -51,7 +51,7 @@
       <input
         id="invite-url"
         type="text"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
+        class="admin-control w-full"
         value={url}
         readonly
         aria-describedby="invite-help"
@@ -59,7 +59,7 @@
       />
       <button
         type="button"
-        class="rounded-md border border-control px-3 py-2"
+        class="admin-button"
         onclick={() => copyInvite(url)}
       >
         {m.copy}
@@ -85,7 +85,7 @@
         required
         autocomplete="off"
         maxlength="254"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
+        class="admin-control w-full"
       />
       {#if form?.code}
         <p role="alert" class="text-negative">
@@ -94,10 +94,7 @@
             : messages['error.invalid_input']}
         </p>
       {/if}
-      <button
-        type="submit"
-        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
-      >
+      <button type="submit" class="admin-button admin-button-primary">
         {m.invite}
       </button>
     </form>
@@ -129,7 +126,7 @@
               <input type="hidden" name="id" value={invitation.id} />
               <button
                 type="submit"
-                class="rounded-md border border-control px-3 py-2"
+                class="admin-button"
                 aria-label={m.revoke + ' · ' + invitation.email}
               >
                 {m.revoke}
@@ -165,7 +162,7 @@
                 <input type="hidden" name="id" value={admin.id} />
                 <button
                   type="submit"
-                  class="rounded-md border border-control px-3 py-2 text-negative"
+                  class="admin-button admin-button-danger"
                   aria-label={m.disable + ' · ' + admin.email}
                 >
                   {m.disable}

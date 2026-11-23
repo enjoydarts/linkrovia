@@ -24,10 +24,6 @@
   let busy = $state(false);
   let issue = $state('');
   let completed = $state(false);
-  const button =
-    'rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-50';
-  const secondary =
-    'rounded-md border border-line px-4 py-2 text-sm font-semibold disabled:opacity-50';
   const countKeys = [
     'added',
     'updated',
@@ -203,17 +199,15 @@
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 <div class="space-y-8 max-w-3xl">
-  <header class="workspace-intro">
-    <div>
-      <h1>{m.title}</h1>
-      <p>{m.intro}</p>
-    </div>
+  <header class="context-header space-y-2">
+    <h1>{m.title}</h1>
+    <p>{m.intro}</p>
   </header>
-  <section class="workspace-panel space-y-4" aria-labelledby="export-heading">
+  <section class="context-panel space-y-4" aria-labelledby="export-heading">
     <h2 id="export-heading" class="text-xl font-semibold">{m.export}</h2>
     <p>{m.exportHelp}</p>
     <button
-      class={secondary}
+      class="admin-button"
       type="button"
       disabled={busy}
       onclick={() => download()}
@@ -221,7 +215,7 @@
       {m.download}
     </button>
   </section>
-  <section class="workspace-panel space-y-5" aria-labelledby="restore-heading">
+  <section class="context-panel space-y-5" aria-labelledby="restore-heading">
     <h2 id="restore-heading" class="text-xl font-semibold">{m.restore}</h2>
     <p>{m.restoreHelp}</p>
     <p>{m.limits}</p>
@@ -230,7 +224,7 @@
         {m.file}
       </label><input
         id="backup-file"
-        class="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border file:border-line file:bg-surface file:px-3 file:py-2 file:font-medium"
+        class="admin-control mt-2 block w-full min-w-0"
         type="file"
         accept="application/json,.json"
         disabled={busy}
@@ -331,7 +325,7 @@
       </p>
     </details>
     <button
-      class={button}
+      class="admin-button admin-button-primary"
       type="button"
       disabled={busy || !file}
       onclick={validate}
@@ -349,7 +343,7 @@
         </dl>
         {#if mode === 'replace'}<p>{m.preBackupHelp}</p>
           <button
-            class={secondary}
+            class="admin-button"
             type="button"
             disabled={busy}
             onclick={() => download(true)}
@@ -365,7 +359,10 @@
             {m.confirm}
           </label>{/if}
         <button
-          class={button}
+          class={[
+            'admin-button',
+            mode === 'replace' ? 'admin-button-danger' : 'admin-button-primary',
+          ]}
           type="button"
           disabled={busy || (mode === 'replace' && (!receipt || !confirmed))}
           onclick={restore}

@@ -44,7 +44,7 @@
             autocomplete="off"
             aria-invalid={invalid || undefined}
             aria-describedby={invalid ? `simulate-${name}-error` : undefined}
-            class="w-full rounded-md border border-line px-3 py-2 text-sm placeholder:text-muted"
+            class="admin-control"
           />
           {#if invalid}
             <p id="simulate-{name}-error" class="text-sm text-negative">
@@ -54,10 +54,7 @@
         </div>
       {/each}
     </div>
-    <button
-      type="submit"
-      class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
-    >
+    <button type="submit" class="admin-button admin-button-primary">
       {m.run}
     </button>
   </form>

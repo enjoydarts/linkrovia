@@ -45,10 +45,7 @@
       <input type="hidden" name="target" value={target.id} />
       <label class="block space-y-2">
         <span class="block text-sm font-medium">{m.template}</span>
-        <select
-          name="templateId"
-          class="w-full rounded-md border border-line px-3 py-2"
-        >
+        <select name="templateId" class="admin-control">
           <option value="">{m.none}</option>
           {#each data.templates as template (template.id)}
             <option
@@ -68,7 +65,7 @@
               name={key}
               defaultValue={draft?.values[key] ?? target.values[key] ?? ''}
               maxlength="256"
-              class="w-full rounded-md border border-line px-3 py-2"
+              class="admin-control"
             />
           </label>
         {/each}
@@ -84,15 +81,11 @@
         <button
           formaction="?/save"
           type="submit"
-          class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
+          class="admin-button admin-button-primary"
         >
           {m.save}
         </button>
-        <button
-          formaction="?/preview"
-          type="submit"
-          class="rounded-md border border-line px-4 py-2 font-medium"
-        >
+        <button formaction="?/preview" type="submit" class="admin-button">
           {m.preview}
         </button>
       </div>

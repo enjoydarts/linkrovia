@@ -61,17 +61,15 @@
 <svelte:head><title>MCP · {brand.name}</title></svelte:head>
 
 <div class="max-w-3xl space-y-8">
-  <header class="workspace-intro">
-    <div>
-      <h1>MCP</h1>
-      <p>{copy.client}</p>
-    </div>
-    <a class="workspace-link" href="/admin/api-keys">
+  <header class="context-header space-y-2">
+    <h1>MCP</h1>
+    <p>{copy.client}</p>
+    <a class="admin-button" href="/admin/api-keys">
       {copy.keys} <span aria-hidden="true">→</span>
     </a>
   </header>
 
-  <section class="workspace-panel space-y-4">
+  <section class="context-panel space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h2 class="text-xl font-semibold">
         {data.enabled ? copy.enabled : copy.disabled}
@@ -81,7 +79,10 @@
         <input type="hidden" name="enabled" value={String(!data.enabled)} />
         <button
           type="submit"
-          class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary"
+          class={[
+            'admin-button',
+            data.enabled ? 'admin-button-danger' : 'admin-button-primary',
+          ]}
         >
           {data.enabled ? copy.disable : copy.enable}
         </button>
@@ -92,7 +93,7 @@
       <input
         readonly
         value={data.endpoint}
-        class="w-full rounded-md border border-control px-3 py-2 font-mono text-sm"
+        class="admin-control w-full min-w-0 font-mono"
       />
     </label>
     <p>{copy.connect}</p>
@@ -136,7 +137,7 @@
                 ></pre>
               {#if clipboardReady}<button
                   type="button"
-                  class="workspace-link text-left"
+                  class="admin-button"
                   onclick={() =>
                     copyConfiguration(client.id, client.configuration)}
                 >

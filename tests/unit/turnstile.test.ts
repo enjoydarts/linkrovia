@@ -52,7 +52,7 @@ describe('Turnstile Siteverify', () => {
           'https://challenges.cloudflare.com/turnstile/v0/siteverify',
         );
         expect(init?.method).toBe('POST');
-        expect(init?.redirect).toBe('error');
+        expect(init?.redirect).toBe('manual');
         expect(init?.credentials).toBe('omit');
         expect(init?.signal).toBeInstanceOf(AbortSignal);
         expect([...new URLSearchParams(String(init?.body)).entries()]).toEqual([
@@ -98,6 +98,13 @@ describe('Turnstile Siteverify', () => {
   it.each([
     () => Promise.reject(new TypeError('network failure')),
     () => Promise.resolve(new Response('not JSON')),
+    () =>
+      Promise.resolve(
+        Response.json(accepted, {
+          status: 307,
+          headers: { location: 'https://example.net/' },
+        }),
+      ),
     () => Promise.resolve(Response.json(accepted, { status: 503 })),
   ])('fails closed when Cloudflare cannot verify the token', async (fetch) => {
     await expect(verifyTurnstile({ ...options, fetch })).resolves.toBe(false);

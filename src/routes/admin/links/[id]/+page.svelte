@@ -49,10 +49,7 @@
         <label class="flex items-center gap-2">
           <input type="checkbox" required />{x.confirmDelete}
         </label>
-        <button
-          type="submit"
-          class="rounded-md bg-negative px-4 py-2 font-medium text-on-negative"
-        >
+        <button type="submit" class="admin-button admin-button-danger">
           {m.remove}
         </button>
       </form>

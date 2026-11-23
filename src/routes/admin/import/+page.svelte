@@ -40,13 +40,6 @@
     preview?.headers.indexOf('destination_url') ?? -1,
   );
 
-  const inputClass =
-    'w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm disabled:opacity-50';
-  const buttonClass =
-    'rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-50';
-  const secondaryClass =
-    'rounded-md border border-line px-4 py-2 text-sm font-semibold disabled:opacity-50';
-
   const example = [
     'destination_url,slug,domain,redirect_type,starts_at,expires_at,tags,ios_url,android_url,title,is_active,rules',
     'https://example.org/launch,launch-campaign,,302,,,"campaign,launch",,,Launch campaign,true,',
@@ -226,14 +219,12 @@
 </svelte:head>
 
 <div class="space-y-6">
-  <header class="workspace-intro">
-    <div>
-      <h1>{messages.title}</h1>
-      <p>{messages.description}</p>
-    </div>
+  <header class="context-header space-y-2">
+    <h1>{messages.title}</h1>
+    <p>{messages.description}</p>
   </header>
 
-  <section class="workspace-panel space-y-5">
+  <section class="context-panel space-y-5">
     <form class="space-y-5" onsubmit={previewFile}>
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
@@ -242,7 +233,7 @@
           </label>
           <input
             id="csv-file"
-            class={inputClass}
+            class="admin-control w-full min-w-0"
             name="csv"
             type="file"
             accept=".csv,text/csv"
@@ -264,7 +255,7 @@
             bind:value={duplicate}
             onchange={resetPreview}
             disabled={!interactive || busy}
-            class={inputClass}
+            class="admin-control w-full min-w-0"
           >
             <option value="error">{messages.error}</option>
             <option value="skip">{messages.skip}</option>
@@ -277,14 +268,14 @@
       <div class="flex flex-wrap gap-3">
         <button
           type="submit"
-          class={buttonClass}
+          class="admin-button admin-button-primary"
           disabled={!interactive || busy}
         >
           {messages.preview}
         </button>
         <button
           type="button"
-          class={secondaryClass}
+          class="admin-button"
           disabled={!interactive}
           onclick={() => download('links-example.csv', example)}
         >
@@ -311,25 +302,21 @@
   {/if}
 
   {#if preview}
-    <section class="space-y-4" aria-labelledby="csv-results">
+    <section class="context-panel space-y-4" aria-labelledby="csv-results">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 id="csv-results" class="text-xl font-semibold">
           {started ? messages.results : messages.preview}
         </h2>
         <div class="flex flex-wrap gap-3">
           {#if errors.length}
-            <button
-              type="button"
-              class={secondaryClass}
-              onclick={downloadErrors}
-            >
+            <button type="button" class="admin-button" onclick={downloadErrors}>
               {messages.download}
             </button>
           {/if}
           {#if remaining.length}
             <button
               type="button"
-              class={buttonClass}
+              class="admin-button admin-button-primary"
               onclick={importRows}
               disabled={busy}
             >

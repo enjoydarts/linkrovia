@@ -1,43 +1,50 @@
 /* Shared structure for related administration screens. */
-.context-header {
-  padding-bottom: 1.5rem;
+:is(.context-header, .workspace-intro) {
+  padding-bottom: 1.15rem;
   border-bottom: 1px solid var(--ui-border);
 }
-.context-header h1 {
-  letter-spacing: -0.04em;
-  line-height: 1.1;
+:is(.context-header, .workspace-intro) h1 {
+  font-size: clamp(1.75rem, 3.4vw, 2.35rem);
+  font-weight: 690;
+  letter-spacing: -0.045em;
+  line-height: 1.18;
 }
-.context-header > p {
+:is(.context-header, .workspace-intro) p {
+  max-width: 58ch;
   color: var(--ui-text-muted);
   line-height: 1.6;
 }
 .context-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
+  gap: 0.25rem 0.45rem;
+  margin-bottom: 1.25rem;
   border-bottom: 1px solid var(--ui-border);
   font-size: 0.875rem;
   font-weight: 650;
 }
-.context-nav a,
-.context-nav span {
-  padding: 0 0 0.75rem;
+.context-nav > :is(a, span) {
+  display: inline-flex;
+  min-block-size: 44px;
+  align-items: center;
+  gap: 0.5rem;
+  padding-inline: clamp(0.45rem, 1.1vw, 0.75rem);
   color: var(--ui-text-muted);
   text-decoration: none;
 }
-.context-nav a:hover {
+.context-nav > a:hover {
   color: var(--ui-link);
 }
-.context-nav [aria-current='page'] {
+.context-nav > [aria-current='page'] {
   color: var(--ui-link);
   box-shadow: inset 0 -2px var(--ui-primary);
 }
 .context-panel {
+  min-width: 0;
   border: 1px solid var(--ui-border);
-  border-radius: 0.75rem;
+  border-radius: var(--ui-radius-lg);
   background: var(--ui-surface);
-  padding: 1.5rem;
+  padding: clamp(1rem, 3vw, 1.55rem);
 }
 .context-list {
   padding: 0;
@@ -45,4 +52,69 @@
 }
 .context-panel h2 {
   letter-spacing: -0.025em;
+}
+
+.admin-control {
+  min-width: 0;
+  max-width: 100%;
+  min-block-size: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+.admin-control:focus-visible {
+  border-color: var(--ui-focus);
+}
+.admin-control::file-selector-button {
+  margin-inline-end: 0.7rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-background);
+  color: var(--ui-text);
+  cursor: pointer;
+}
+
+.admin-button {
+  display: inline-flex;
+  min-block-size: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+}
+.admin-button:hover:not(:disabled) {
+  background: var(--ui-background);
+  text-decoration: none;
+}
+.admin-button-primary {
+  border-color: transparent;
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+}
+.admin-button-primary:hover:not(:disabled) {
+  background: var(--ui-primary-hover);
+}
+.admin-button-danger {
+  border-color: var(--ui-negative);
+  background: var(--ui-negative);
+  color: var(--ui-on-negative);
+}
+.admin-button-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-negative) 88%, var(--ui-text));
+}
+.admin-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }

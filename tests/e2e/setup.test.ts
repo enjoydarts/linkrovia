@@ -9,7 +9,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   request,
   browser,
   baseURL,
-}) => {
+}, testInfo) => {
   test.setTimeout(90_000);
   const email = 'owner@example.com';
   const password = 'a long development passphrase';
@@ -81,6 +81,8 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       'datetime',
       '2026-01-01T10:15:00.000Z',
     );
+    await expect(page.locator('#startFold')).toBeHidden();
+    await expect(page.locator('#expiryFold')).toBeHidden();
     await startsAt.fill('');
     await page.locator('[name=slug]').fill('ci-link');
     await page
@@ -377,12 +379,28 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   await test.step('searches the link list and uses its row actions', async () => {
     await page.goto('/admin/links', { waitUntil: 'networkidle' });
     const toolbar = page.getByRole('search', { name: 'Search links' });
+    const expectSingleRow = async () => {
+      const centers = await toolbar
+        .locator(
+          '#link-search, select, input[name=tag], .apply, .clear-filters',
+        )
+        .evaluateAll((controls) =>
+          controls.map((control) => {
+            const rect = control.getBoundingClientRect();
+            return rect.top + rect.height / 2;
+          }),
+        );
+      expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(4);
+    };
+    await expectSingleRow();
     await toolbar.getByRole('searchbox').fill('fixture link');
     await toolbar.getByLabel('Sort by').selectOption('created_asc');
     await toolbar.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page).toHaveURL(/\/admin\/links\?q=fixture\+link/);
     expect(new URL(page.url()).searchParams.get('sort')).toBe('created_asc');
     await expect(toolbar.getByLabel('Sort by')).toHaveValue('created_asc');
+    await expectSingleRow();
+    await page.screenshot({ path: testInfo.outputPath('links-desktop.png') });
     const row = page.getByRole('listitem').filter({
       has: page.getByRole('link', { name: 'A fixture link', exact: true }),
     });
@@ -1027,7 +1045,21 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         drawer.getByRole('link', { name: 'Links', exact: true }),
       ).toHaveAttribute('aria-current', 'page');
       await page.keyboard.press('Escape');
-      await page.locator('label[for="list-filters-toggle"]').click();
+      const compactSearch = page.getByRole('search', { name: 'Search links' });
+      const filterToggle = compactSearch.locator(
+        'label[for="list-filters-toggle"]',
+      );
+      await expect(compactSearch.locator('select[name=status]')).toBeHidden();
+      const compactInputs = await compactSearch
+        .locator('#link-search, .apply, .filter-toggle')
+        .evaluateAll((controls) =>
+          controls.map((control) => control.getBoundingClientRect().top),
+        );
+      expect(
+        Math.max(...compactInputs) - Math.min(...compactInputs),
+      ).toBeLessThan(4);
+      await page.screenshot({ path: testInfo.outputPath('links-mobile.png') });
+      await filterToggle.click();
       await expect(
         page.getByRole('combobox', { name: 'Status', exact: true }),
       ).toBeVisible();
@@ -1106,6 +1138,29 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(expiry.locator('..')).toContainText('(Europe/Paris)');
     await expect(expiry).toContainText('déc.');
     await expect(expiry).toContainText('01:15');
+
+    await page.goto('/admin/links/new');
+    const start = page.locator('#startsAt');
+    const startChoice = page.locator('#startFold');
+    await start.fill('2026-10-25T02:30:00');
+    await expect(startChoice).toBeVisible();
+    await expect(startChoice.locator('option[value=earlier]')).toContainText(
+      '00:30:00 UTC',
+    );
+    await expect(startChoice.locator('option[value=later]')).toContainText(
+      '01:30:00 UTC',
+    );
+    await expect(page.locator('#expiryFold')).toBeHidden();
+    await startChoice.selectOption('later');
+    await expect(page.locator('#startsAt-utc time')).toHaveAttribute(
+      'datetime',
+      '2026-10-25T01:30:00.000Z',
+    );
+    await start.fill('2026-10-25T03:30:00');
+    await expect(startChoice).toBeHidden();
+    await start.fill('2026-10-25T02:30:00');
+    await expect(startChoice).toHaveValue('');
+
     await page.goto('/admin/settings', { waitUntil: 'networkidle' });
     await personal.locator('[name=locale]').selectOption('en');
     await personal.locator('[name=timezone]').fill('');

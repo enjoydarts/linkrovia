@@ -82,17 +82,17 @@
   <title>{messages['admin.title']} · {brand.name}</title>
 </svelte:head>
 <div class="overview">
-  <header class="overview-header">
+  <header class="workspace-intro overview-header">
     <h1>{messages['admin.title']}</h1>
-    <a href="/admin/links/new" class="create-link">
+    <a href="/admin/links/new" class="admin-button admin-button-primary">
       <Plus size={17} aria-hidden="true" />{links.create}
     </a>
   </header>
   <nav class="overview-shortcuts" aria-label={messages['admin.overview']}>
-    <a href="/admin/domains" class="workspace-link">
+    <a href="/admin/domains" class="admin-button">
       <Globe size={16} aria-hidden="true" />{links.domains}
     </a>
-    <a href="/admin/settings" class="workspace-link">
+    <a href="/admin/settings" class="admin-button">
       <Settings size={16} aria-hidden="true" />{preferences.settings}
     </a>
   </nav>
@@ -267,53 +267,13 @@
     max-width: 1200px;
   }
   .overview-header {
-    display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: space-between;
     margin-bottom: 1rem;
-  }
-  h1 {
-    font-size: clamp(30px, 4vw, 40px);
-    font-weight: 650;
-    letter-spacing: -0.04em;
-    line-height: 1.1;
-  }
-  .create-link {
-    display: inline-flex;
-    gap: 0.55rem;
-    align-items: center;
-    min-height: 44px;
-    padding-inline: 1rem;
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-primary);
-    color: var(--ui-on-primary);
-    font-size: 0.875rem;
-    font-weight: 650;
-  }
-  .create-link:hover {
-    background: var(--ui-primary-hover);
   }
   .overview-shortcuts {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-  }
-  .workspace-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-sm);
-    color: var(--ui-text-muted);
-    font-size: 0.85rem;
-    font-weight: 600;
-  }
-  .workspace-link:hover {
-    color: var(--ui-primary);
-    background: var(--ui-surface);
   }
   .dashboard-content {
     display: grid;
@@ -325,7 +285,7 @@
   .card {
     min-width: 0;
     border: 1px solid var(--ui-border);
-    border-radius: 0.9rem;
+    border-radius: var(--ui-radius-lg);
     background: var(--ui-surface);
   }
   .analytics {

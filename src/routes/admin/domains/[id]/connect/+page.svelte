@@ -195,7 +195,7 @@
                 name="accountId"
                 bind:value={accountId}
                 autocomplete="off"
-                class="w-full rounded-md border border-control bg-surface px-3 py-2"
+                class="admin-control w-full"
               />
             </label>
             <label class="block">
@@ -204,7 +204,7 @@
                 name="zoneId"
                 bind:value={zoneId}
                 autocomplete="off"
-                class="w-full rounded-md border border-control bg-surface px-3 py-2"
+                class="admin-control w-full"
               />
             </label>
           </details>
@@ -216,7 +216,7 @@
               type="password"
               required
               autocomplete="new-password"
-              class="w-full rounded-md border border-control bg-surface px-3 py-2"
+              class="admin-control w-full"
             />
           </label>
           <p class="text-sm">{m.tokenWarning}</p>
@@ -224,7 +224,7 @@
             type="button"
             disabled={busy || !token || !!accountId !== !!zoneId}
             onclick={diagnose}
-            class="rounded-md border border-control px-4 py-2 font-medium disabled:opacity-60"
+            class="admin-button"
           >
             {busy ? m.checking : automatic.preflight}
           </button>
@@ -236,10 +236,7 @@
               <strong class="break-all">{data.domain.hostname}</strong>
             </span>
           </label>
-          <button
-            type="submit"
-            class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary"
-          >
+          <button type="submit" class="admin-button admin-button-primary">
             {automatic.attach}
           </button>
         </form>
@@ -287,7 +284,7 @@
         type="button"
         disabled={busy}
         onclick={connect}
-        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary disabled:opacity-60"
+        class="admin-button admin-button-primary"
       >
         {busy ? m.checking : m.checkConnection}
       </button>
@@ -316,10 +313,7 @@
               ? managementMessages.enabled
               : managementMessages.disabled}
           </p>
-          <button
-            type="submit"
-            class="rounded-md border border-control px-4 py-2 font-medium"
-          >
+          <button type="submit" class="admin-button">
             {data.domain.managementEnabled
               ? managementMessages.disable
               : managementMessages.enable}
@@ -365,14 +359,14 @@
               <span class="mb-1 block font-medium">{m.accountId}</span><input
                 name="accountId"
                 autocomplete="off"
-                class="w-full rounded-md border border-control bg-surface px-3 py-2"
+                class="admin-control w-full"
               />
             </label>
             <label class="block">
               <span class="mb-1 block font-medium">{m.zoneId}</span><input
                 name="zoneId"
                 autocomplete="off"
-                class="w-full rounded-md border border-control bg-surface px-3 py-2"
+                class="admin-control w-full"
               />
             </label>
           </details>
@@ -382,7 +376,7 @@
               type="password"
               required
               autocomplete="new-password"
-              class="w-full rounded-md border border-control bg-surface px-3 py-2"
+              class="admin-control w-full"
             />
           </label>
           <p class="text-sm">{m.tokenWarning}</p>
@@ -397,10 +391,7 @@
               <strong class="break-all">{data.domain.hostname}</strong>
             </span>
           </label>
-          <button
-            type="submit"
-            class="rounded-md border border-control px-4 py-2 font-medium"
-          >
+          <button type="submit" class="admin-button">
             {automatic.detachButton}
           </button>
         </form>
@@ -420,7 +411,7 @@
         type="button"
         disabled={busy}
         onclick={disconnect}
-        class="rounded-md border border-control px-4 py-2 font-medium"
+        class="admin-button"
       >
         {m.disconnect}
       </button>{/if}

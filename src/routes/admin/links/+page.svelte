@@ -62,26 +62,30 @@
       <Search size={18} aria-hidden="true" />
       <input
         id="link-search"
+        class="admin-control"
         name="q"
         type="search"
         value={data.filters.q}
         placeholder={m.searchLinks}
       />
     </div>
-    <button type="submit" class="apply">{m.search}</button>
+    <button type="submit" class="admin-button admin-button-primary apply">
+      {m.search}
+    </button>
     <input
       class="filter-control"
       id="list-filters-toggle"
       type="checkbox"
       aria-controls="list-filters"
     />
-    <label for="list-filters-toggle" class="filter-toggle">
-      <SlidersHorizontal size={16} aria-hidden="true" />{m.filter}
+    <label for="list-filters-toggle" class="admin-button filter-toggle">
+      <SlidersHorizontal size={16} aria-hidden="true" />
+      <span>{m.filter}</span>
     </label>
     <div id="list-filters" class="filters">
       <label>
         <span class="sr-only">{m.domain}</span>
-        <select name="domain">
+        <select class="admin-control" name="domain">
           <option value="">{m.allDomains}</option>
           {#each data.domains as domain (domain.id)}
             <option
@@ -95,7 +99,7 @@
       </label>
       <label>
         <span class="sr-only">{m.status}</span>
-        <select name="status">
+        <select class="admin-control" name="status">
           <option value="">{m.allStatuses}</option>
           <option value="active" selected={data.filters.status === 'active'}>
             {m.active}
@@ -110,11 +114,16 @@
       </label>
       <label>
         <span class="sr-only">{m.tag}</span>
-        <input name="tag" value={data.filters.tag} placeholder={m.tag} />
+        <input
+          class="admin-control"
+          name="tag"
+          value={data.filters.tag}
+          placeholder={m.tag}
+        />
       </label>
       <label>
         <span class="sr-only">{copy.sort}</span>
-        <select name="sort" aria-label={copy.sort}>
+        <select class="admin-control" name="sort" aria-label={copy.sort}>
           <option value="created_desc" selected={data.sort === 'created_desc'}>
             {copy.newest}
           </option>
@@ -126,7 +135,12 @@
           </option>
         </select>
       </label>
-      <button class="apply-compact" type="submit">{m.filter}</button>
+      <button
+        class="admin-button admin-button-primary apply-compact"
+        type="submit"
+      >
+        {m.filter}
+      </button>
     </div>
     {#if hasFilters}<a class="clear-filters" href="/admin/links">
         {copy.clear}
@@ -259,11 +273,14 @@
   }
   .toolbar {
     display: grid;
-    grid-template-columns: minmax(9rem, 1.4fr) minmax(12rem, 1.5fr) auto;
+    grid-template-columns: minmax(11rem, 1fr) minmax(0, 2.3fr) auto;
     align-items: center;
     gap: 0.7rem;
     padding: clamp(0.75rem, 2vw, 1.2rem);
     border-bottom: 1px solid var(--ui-border);
+  }
+  .toolbar:has(.clear-filters) {
+    grid-template-columns: minmax(11rem, 1fr) minmax(0, 2.3fr) auto auto;
   }
   .search-box {
     display: flex;
@@ -279,9 +296,6 @@
   .toolbar input:not([type='checkbox']),
   .toolbar select {
     width: 100%;
-    border: 1px solid var(--ui-control-border);
-    padding: 0.55rem 0.65rem;
-    color: var(--ui-text);
     font-size: 0.86rem;
   }
   .toolbar input[type='search'] {
@@ -289,23 +303,15 @@
   }
   .filters {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns:
+      minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.85fr)
+      minmax(0, 1.2fr);
     gap: 0.67rem;
     grid-column: 2;
     grid-row: 1;
   }
-  .apply,
-  .apply-compact,
-  .filter-toggle {
-    min-height: 44px;
-    padding: 0.5rem 0.85rem;
-    border: 1px solid transparent;
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-accent-surface);
-    color: var(--ui-link);
-    font-size: 0.86rem;
-    font-weight: 640;
-    white-space: nowrap;
+  .filters label {
+    min-width: 0;
   }
   .apply {
     grid-column: 3;
@@ -317,12 +323,14 @@
     display: none;
   }
   .clear-filters {
-    grid-column: 1 / -1;
+    grid-column: 4;
+    grid-row: 1;
     justify-self: start;
     color: var(--ui-link);
     font-size: 0.82rem;
     text-decoration: underline;
     text-underline-offset: 0.2em;
+    white-space: nowrap;
   }
   .column-labels,
   .link-row {
@@ -486,14 +494,44 @@
       --row-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) auto auto;
     }
   }
-  @media (max-width: 940px) {
-    .toolbar {
-      grid-template-columns: minmax(0, 1fr) auto;
+  @media (max-width: 1090px) {
+    .toolbar,
+    .toolbar:has(.clear-filters) {
+      grid-template-columns: minmax(0, 1fr) auto auto;
     }
     .apply {
       grid-column: 2;
     }
     .filters {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+    .filter-control {
+      position: absolute;
+      display: block;
+      width: 1px;
+      height: 1px;
+      clip-path: inset(50%);
+    }
+    .filter-toggle {
+      display: inline-flex;
+      grid-column: 3;
+      grid-row: 1;
+      cursor: pointer;
+    }
+    .filter-control:focus-visible + .filter-toggle {
+      outline: 2px solid var(--ui-focus);
+      outline-offset: 2px;
+    }
+    .filter-control:checked + .filter-toggle {
+      border-color: var(--ui-focus);
+      background: var(--ui-accent-surface);
+      color: var(--ui-link);
+    }
+    .filter-control:not(:checked) ~ .filters {
+      display: none;
+    }
+    .clear-filters {
       grid-column: 1 / -1;
       grid-row: auto;
     }
@@ -530,32 +568,25 @@
       flex-basis: 30px;
       min-height: 30px;
     }
-    .filter-control {
-      position: absolute;
-      display: block;
-      width: 1px;
-      height: 1px;
-      clip-path: inset(50%);
-    }
-    .filter-toggle {
-      display: inline-flex;
-      justify-self: start;
-      align-items: center;
-      gap: 0.45rem;
-      cursor: pointer;
-    }
-    .filter-control:focus-visible + .filter-toggle {
-      outline: 2px solid var(--ui-focus);
-      outline-offset: 2px;
-    }
-    .filter-control:not(:checked) ~ .filters {
-      display: none;
-    }
     .filters {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .apply-compact {
       display: block;
+    }
+  }
+  @media (max-width: 440px) {
+    .filter-toggle {
+      inline-size: 44px;
+      padding-inline: 0;
+    }
+    .filter-toggle span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
   }
 </style>

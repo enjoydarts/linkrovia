@@ -20,9 +20,9 @@
 </svelte:head>
 
 <div class="max-w-2xl space-y-8">
-  <header class="workspace-intro">
+  <header class="context-header space-y-3">
     <div>
-      <h1>{messages.title}</h1>
+      <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
       <p>{messages.intro}</p>
     </div>
     {#if data.user.role === 'owner'}
@@ -37,7 +37,7 @@
       <p id="new-api-key" class="font-medium">{messages.created}</p>
       <input
         aria-labelledby="new-api-key"
-        class="w-full rounded-md border px-3 py-2 font-mono text-sm"
+        class="admin-control w-full font-mono text-sm"
         readonly
         value={form.newToken}
       />
@@ -52,7 +52,7 @@
     method="POST"
     action="?/create"
     use:enhance
-    class="workspace-panel space-y-4"
+    class="context-panel space-y-4"
   >
     <input type="hidden" name="csrfToken" value={data.csrfToken} />
     <div class="space-y-1">
@@ -62,14 +62,14 @@
         name="name"
         maxlength="80"
         required
-        class="w-full rounded-md border px-3 py-2 sm:max-w-sm"
+        class="admin-control w-full sm:max-w-sm"
       />
     </div>
     <div class="space-y-1">
       <label for="key-expiry" class="block font-medium">
         {messages.expiry}
       </label>
-      <select id="key-expiry" name="expiry" class="rounded-md border px-3 py-2">
+      <select id="key-expiry" name="expiry" class="admin-control">
         {#each data.expiryOptions as expiry (expiry)}
           <option value={expiry}>{messages[expiry]}</option>
         {/each}
@@ -86,15 +86,12 @@
         {/each}
       </div>
     </fieldset>
-    <button
-      type="submit"
-      class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary"
-    >
+    <button type="submit" class="admin-button admin-button-primary">
       {messages.create}
     </button>
   </form>
 
-  <section class="workspace-panel space-y-4" aria-labelledby="your-api-keys">
+  <section class="context-panel space-y-4" aria-labelledby="your-api-keys">
     <h2 id="your-api-keys" class="text-xl font-semibold">
       {messages.existing}
     </h2>
@@ -137,10 +134,7 @@
               <form method="POST" action="?/revoke" use:enhance>
                 <input type="hidden" name="csrfToken" value={data.csrfToken} />
                 <input type="hidden" name="id" value={key.id} />
-                <button
-                  type="submit"
-                  class="rounded-md border px-3 py-2 text-sm"
-                >
+                <button type="submit" class="admin-button admin-button-danger">
                   {messages.revoke}
                 </button>
               </form>

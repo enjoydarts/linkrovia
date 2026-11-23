@@ -22,10 +22,6 @@
   });
 
   type Field = PageProps['data']['utmKeys'][number];
-  const inputClass =
-    'w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm';
-  const buttonClass =
-    'rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary disabled:opacity-50';
 </script>
 
 <svelte:head>
@@ -47,7 +43,7 @@
           name={key}
           defaultValue={values[key] ?? ''}
           maxlength="256"
-          class={inputClass}
+          class="admin-control w-full min-w-0"
         />
       </div>
     {/each}
@@ -67,7 +63,7 @@
             name={key}
             defaultValue={values[key] ?? ''}
             maxlength="256"
-            class={inputClass}
+            class="admin-control w-full min-w-0"
           />
         </div>
       {/each}
@@ -76,11 +72,9 @@
 {/snippet}
 
 <div class="space-y-6">
-  <header class="workspace-intro">
-    <div>
-      <h1>{messages.title}</h1>
-      <p>{messages.description}</p>
-    </div>
+  <header class="context-header space-y-2">
+    <h1>{messages.title}</h1>
+    <p>{messages.description}</p>
   </header>
 
   {#if form?.issue}
@@ -94,7 +88,7 @@
   <div class="grid items-start gap-6 lg:grid-cols-2">
     <section
       aria-labelledby="utm-templates-title"
-      class="workspace-panel space-y-5"
+      class="context-panel min-w-0 space-y-5"
     >
       <div class="space-y-3">
         <h2 id="utm-templates-title" class="text-xl font-semibold">
@@ -163,7 +157,7 @@
               defaultValue={draft?.name ?? ''}
               required
               maxlength="80"
-              class={inputClass}
+              class="admin-control w-full min-w-0"
             />
           </div>
           <div class="space-y-1">
@@ -175,11 +169,15 @@
               name="description"
               defaultValue={draft?.description ?? ''}
               maxlength="256"
-              class={inputClass}
+              class="admin-control w-full min-w-0"
             />
           </div>
           {@render utmFields('template', draft?.values)}
-          <button type="submit" class={buttonClass} disabled={staleTemplate}>
+          <button
+            type="submit"
+            class="admin-button admin-button-primary"
+            disabled={staleTemplate}
+          >
             {messages.save}
           </button>
         </form>
@@ -196,7 +194,7 @@
             <button
               type="submit"
               disabled={staleTemplate}
-              class="rounded-md border border-negative px-4 py-2 text-sm font-medium text-negative disabled:opacity-50"
+              class="admin-button admin-button-danger"
             >
               {messages.remove}
             </button>
@@ -207,7 +205,7 @@
 
     <section
       aria-labelledby="utm-preview-title"
-      class="min-w-0 space-y-4 rounded-xl border border-line bg-surface p-5"
+      class="context-panel min-w-0 space-y-4"
     >
       <h2 id="utm-preview-title" class="text-xl font-semibold">
         {messages.preview}
@@ -225,7 +223,7 @@
             defaultValue={previewInput?.destinationUrl ?? ''}
             maxlength="8192"
             required
-            class={inputClass}
+            class="admin-control w-full min-w-0"
           />
         </div>
         {#if data.templates.length}
@@ -236,7 +234,7 @@
             <select
               id="preview-template"
               name="templateId"
-              class={inputClass}
+              class="admin-control w-full min-w-0"
               aria-describedby="utm-override-hint"
             >
               <option value="">{messages.noTemplate}</option>
@@ -255,7 +253,7 @@
           </div>
         {/if}
         {@render utmFields('preview', previewInput?.values)}
-        <button type="submit" class={buttonClass}>
+        <button type="submit" class="admin-button admin-button-primary">
           {messages.previewAction}
         </button>
       </form>

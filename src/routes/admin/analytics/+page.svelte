@@ -42,6 +42,7 @@
             <label>
               {m.day}
               <input
+                class="admin-control"
                 type="date"
                 name="date"
                 min={data.repair.earliest}
@@ -50,7 +51,9 @@
                 required
               />
             </label>
-            <button type="submit">{m.submit}</button>
+            <button type="submit" class="admin-button admin-button-primary">
+              {m.submit}
+            </button>
           </form>
         </details>
         {#if form}

@@ -81,7 +81,7 @@
       <label for="locale" class="block font-medium">{m.language}</label><select
         id="locale"
         name="locale"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
+        class="admin-control w-full"
       >
         {#each locales as locale (locale)}<option
             value={locale}
@@ -101,7 +101,7 @@
         bind:value={userZone}
         aria-describedby="user-zone-help user-zone-example"
         autocomplete="off"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
+        class="admin-control w-full"
       />
       <p id="user-zone-help" class="text-sm text-muted">
         {m.userHelp}
@@ -116,11 +116,7 @@
     </div>
     <div class="space-y-2">
       <label for="theme" class="block font-medium">{m.appearance}</label>
-      <select
-        id="theme"
-        name="theme"
-        class="w-full rounded-md border border-control bg-surface px-3 py-2"
-      >
+      <select id="theme" name="theme" class="admin-control w-full">
         {#each themes as theme (theme)}
           <option value={theme} selected={theme === data.theme}>
             {m[`${theme}Theme`]}
@@ -131,10 +127,7 @@
     {#if form?.section === 'personal'}<p role="alert" class="text-negative">
         {m.invalid}
       </p>{/if}
-    <button
-      type="submit"
-      class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
-    >
+    <button type="submit" class="admin-button admin-button-primary">
       {m.save}
     </button>
   </form>
@@ -156,7 +149,7 @@
           bind:value={defaultZone}
           aria-describedby="default-zone-help default-zone-example"
           autocomplete="off"
-          class="w-full rounded-md border border-control bg-surface px-3 py-2"
+          class="admin-control w-full"
         />
         <p id="default-zone-help" class="text-sm text-muted">
           {m.defaultHelp}
@@ -177,7 +170,7 @@
           id="default-locale"
           name="defaultLocale"
           aria-describedby="default-locale-help"
-          class="w-full rounded-md border border-control bg-surface px-3 py-2"
+          class="admin-control w-full"
         >
           {#each locales as locale (locale)}<option
               value={locale}
@@ -194,10 +187,7 @@
       {#if form?.section === 'global'}<p role="alert" class="text-negative">
           {m.invalidZone}
         </p>{/if}
-      <button
-        type="submit"
-        class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
-      >
+      <button type="submit" class="admin-button admin-button-primary">
         {m.save}
       </button>
     </form>{/if}

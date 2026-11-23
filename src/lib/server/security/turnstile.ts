@@ -147,7 +147,7 @@ export async function verifyTurnstile({
       method: 'POST',
       body: new URLSearchParams({ secret: secretKey, response: token }),
       credentials: 'omit',
-      redirect: 'error',
+      redirect: 'manual',
       signal: AbortSignal.timeout(7000),
     });
     if (!response.ok) return false;

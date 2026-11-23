@@ -40,7 +40,7 @@
     <input type="hidden" name="updatedAt" value={data.link.updatedAt} />
     <label class="block space-y-2">
       <span class="block font-medium">{m.title}</span>
-      <select name="mode" class="w-full rounded-md border px-3 py-2">
+      <select name="mode" class="admin-control">
         <option value="none" selected={data.link.protectionMode === 'none'}>
           {m.none}
         </option>
@@ -73,7 +73,7 @@
         maxlength="128"
         minlength="12"
         aria-describedby="password-help"
-        class="w-full rounded-md border px-3 py-2"
+        class="admin-control"
       />
     </label>
     <p id="password-help" class="text-sm" style="color: var(--ui-text-muted)">
@@ -84,10 +84,7 @@
         {message}
       </p>{/if}
     {#if form?.saved}<p role="status">{m.saved}</p>{/if}
-    <button
-      type="submit"
-      class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
-    >
+    <button type="submit" class="admin-button admin-button-primary">
       {link.save}
     </button>
   </form>

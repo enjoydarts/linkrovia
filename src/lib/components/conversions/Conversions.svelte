@@ -31,6 +31,7 @@
   <form method="GET" class="inline">
     <label>
       {dateLabels.from}<input
+        class="admin-control"
         type="date"
         name="from"
         value={data.from}
@@ -38,9 +39,17 @@
       />
     </label>
     <label>
-      {dateLabels.to}<input type="date" name="to" value={data.to} required />
+      {dateLabels.to}<input
+        class="admin-control"
+        type="date"
+        name="to"
+        value={data.to}
+        required
+      />
     </label>
-    <button type="submit">{dateLabels.apply}</button>
+    <button type="submit" class="admin-button admin-button-primary">
+      {dateLabels.apply}
+    </button>
   </form>
   <p class="muted">{data.from} – {data.to} · {data.reportTimeZone}</p>
   {#if data.filterError}<p role="alert">{archivedDates[data.locale][0]}</p>{/if}
@@ -95,11 +104,21 @@
     <h2 id="create-goal">{m.create}</h2>
     <form method="POST" action="?/create" class="card fields">
       <input type="hidden" name="csrfToken" value={data.csrfToken} /><label>
-        {m.name}<input name="name" required maxlength="120" />
+        {m.name}<input
+          class="admin-control"
+          name="name"
+          required
+          maxlength="120"
+        />
       </label><label>
-        {m.event}<input name="eventName" required maxlength="120" />
+        {m.event}<input
+          class="admin-control"
+          name="eventName"
+          required
+          maxlength="120"
+        />
       </label>{#if !data.linkId}<label>
-          {m.link}<select name="linkId">
+          {m.link}<select class="admin-control" name="linkId">
             <option value="">
               {m.allLinks}
             </option>{#each data.links as link (link.id)}<option
@@ -110,6 +129,7 @@
           </select>
         </label>{/if}<label>
         {m.window} ({m.hours})<input
+          class="admin-control"
           type="number"
           name="window"
           min="1"
@@ -119,7 +139,9 @@
         />
       </label><label class="check">
         <input type="checkbox" name="active" value="1" checked />{m.active}
-      </label><button type="submit">{m.create}</button>
+      </label><button type="submit" class="admin-button admin-button-primary">
+        {m.create}
+      </button>
     </form>
   </section>{/if}
 {#if data.goals.length}<section aria-labelledby="goals">
@@ -139,6 +161,7 @@
                 value={data.csrfToken}
               /><input type="hidden" name="goalId" value={goal.id} /><label>
                 {m.name}<input
+                  class="admin-control"
                   name="name"
                   value={goal.name}
                   required
@@ -146,12 +169,14 @@
                 />
               </label><label>
                 {m.event}<input
+                  class="admin-control"
                   name="eventName"
                   value={goal.eventName}
                   readonly
                 />
               </label>{#if !data.linkId}<label>
                   {m.link}<input
+                    class="admin-control"
                     value={goal.linkId
                       ? data.links.find((link) => link.id === goal.linkId)
                           ?.title ||
@@ -168,6 +193,7 @@
                   />
                 </label>{/if}<label>
                 {m.window} ({m.hours})<input
+                  class="admin-control"
                   type="number"
                   name="window"
                   min="1"
@@ -182,7 +208,12 @@
                   value="1"
                   checked={goal.isActive}
                 />{m.active}
-              </label><button type="submit">{m.save}</button>
+              </label><button
+                type="submit"
+                class="admin-button admin-button-primary"
+              >
+                {m.save}
+              </button>
             </form>
             <form method="POST" action="?/archive">
               <input
@@ -191,7 +222,7 @@
                 value={data.csrfToken}
               /><input type="hidden" name="goalId" value={goal.id} /><button
                 type="submit"
-                class="secondary"
+                class="admin-button admin-button-danger secondary"
               >
                 {m.archive}
               </button>
@@ -212,14 +243,16 @@
   <p>{m.trackingHelp}</p>
   {#if !data.linkId && data.links.length}<form method="GET" class="inline">
       <label>
-        {m.link}<select name="linkId">
+        {m.link}<select class="admin-control" name="linkId">
           <option value="">
             {m.select}
           </option>{#each data.links as link (link.id)}<option value={link.id}>
               {link.title || `${link.hostname}/${link.slug}`}
             </option>{/each}
         </select>
-      </label><button type="submit">{m.select}</button>
+      </label><button type="submit" class="admin-button admin-button-primary">
+        {m.select}
+      </button>
     </form>{:else if !data.linkId}<p>{m.noLinks}</p>{/if}{#if data.tracking}<p
       class="muted"
     >
@@ -240,7 +273,9 @@
             value="1"
             checked={data.tracking.enabled}
           />{m.trackingConsent}
-        </label><button type="submit">{m.trackingSave}</button>
+        </label><button type="submit" class="admin-button admin-button-primary">
+          {m.trackingSave}
+        </button>
       </form>{/if}{/if}
 </section>
 <section aria-labelledby="integration">
@@ -295,27 +330,11 @@
     font-size: 0.9rem;
     font-weight: 600;
   }
-  input:not([type='checkbox']),
-  select {
-    padding: 0.55rem;
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-sm);
-    color: var(--ui-text);
-    background: var(--ui-surface);
-    max-width: 100%;
-  }
   .check {
     display: flex;
     align-items: start;
     gap: 0.5rem;
     margin: 0.5rem 0;
-  }
-  button {
-    padding: 0.6rem 1rem;
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-accent-surface);
-    color: var(--ui-link);
-    font-weight: 650;
   }
   .secondary {
     margin-top: 0.75rem;
