@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  attachCustomDomain,
+  detachCustomDomain,
   diagnoseCustomDomain,
   parseCloudflareInput,
 } from '../../src/lib/server/domains/cloudflare';
 
 const accountId = 'a'.repeat(32);
 const zoneId = 'b'.repeat(32);
-const domainId = 'c'.repeat(32);
+const domainId = 'c'.repeat(40);
 const token = 'scoped-token_'.repeat(4);
 const input = { accountId, zoneId, token };
 const hostname = 'go.example.com';
@@ -24,7 +26,7 @@ const domain = {
   zone_id: zoneId,
   zone_name: zone.name,
   service: 'linkrovia',
-  environment: 'production',
+  environment: '',
   enabled: true,
 };
 const workers = `/client/v4/accounts/${accountId}/workers`;
@@ -33,6 +35,7 @@ const zones = `/client/v4/zones/${zoneId}`;
 function provider(overrides: Record<string, unknown> = {}) {
   const results: Record<string, unknown> = {
     [`${workers}/subdomain`]: { subdomain: 'account' },
+    [`${workers}/scripts/linkrovia/subdomain`]: { enabled: true },
     [zones]: zone,
     [`${workers}/domains`]: [],
     [`${zones}/workers/routes`]: [],
@@ -47,6 +50,7 @@ function provider(overrides: Record<string, unknown> = {}) {
       `Bearer ${token}`,
     );
     const result =
+      results[`${init?.method} ${endpoint.pathname + endpoint.search}`] ??
       results[endpoint.pathname + endpoint.search] ??
       results[endpoint.pathname];
     if (result instanceof Response) return result;
@@ -65,6 +69,60 @@ describe('Cloudflare Custom Domain provider', () => {
     expect(
       parseCloudflareInput({ ...input, token: 'a'.repeat(37) }),
     ).toBeNull();
+  });
+
+  it('discovers the closest visible zone with a token and verifies its account', async () => {
+    expect(
+      parseCloudflareInput({ token, accountId: null, zoneId: '' }),
+    ).toEqual({ token });
+    expect(parseCloudflareInput({ token, accountId })).toBeNull();
+
+    const zoneQuery = (name: string) =>
+      `/client/v4/zones?name=${name}&per_page=5`;
+    const send = provider({
+      [zoneQuery(hostname)]: [],
+      [zoneQuery(zone.name)]: [zone],
+    });
+    const credentials = parseCloudflareInput({ token });
+    expect(credentials).not.toBeNull();
+    if (!credentials) throw new Error('Missing credentials');
+    expect(
+      await diagnoseCustomDomain(credentials, hostname, management, send),
+    ).toEqual({
+      code: 'ready',
+      zoneName: zone.name,
+      service: 'linkrovia',
+    });
+    expect(send.mock.calls[0][0]).toBe(
+      `https://api.cloudflare.com${zoneQuery(hostname)}`,
+    );
+    expect(send.mock.calls[1][0]).toBe(
+      `https://api.cloudflare.com${zoneQuery(zone.name)}`,
+    );
+
+    const wrongAccount = provider({
+      [zoneQuery(hostname)]: [
+        { ...zone, name: hostname, account: { id: 'd'.repeat(32) } },
+      ],
+      [zoneQuery(zone.name)]: [zone],
+      [`/client/v4/accounts/${'d'.repeat(32)}/workers/subdomain`]: {
+        subdomain: 'other-account',
+      },
+      [zones]: { ...zone, name: hostname, account: { id: 'd'.repeat(32) } },
+    });
+    expect(
+      await diagnoseCustomDomain(
+        credentials,
+        hostname,
+        management,
+        wrongAccount,
+      ),
+    ).toEqual({ code: 'unsupported' });
+    expect(
+      wrongAccount.mock.calls.some(([url]) =>
+        String(url).includes(zoneQuery(zone.name)),
+      ),
+    ).toBe(false);
   });
 
   it('runs read-only diagnostics', async () => {
@@ -123,6 +181,7 @@ describe('Cloudflare Custom Domain provider', () => {
           }),
       },
       { [`${workers}/domains`]: [{ ...domain, enabled: false }] },
+      { [`${workers}/domains`]: [{ ...domain, environment: 'staging' }] },
       { [`${workers}/domains`]: [{ ...domain, service: 'another-worker' }] },
     ]) {
       expect(
@@ -137,7 +196,11 @@ describe('Cloudflare Custom Domain provider', () => {
   });
 
   it('reports an existing enabled mapping on the expected zone and Worker', async () => {
-    const send = provider({ [`${workers}/domains`]: [domain] });
+    const send = provider({
+      [`${workers}/domains`]: [
+        { ...domain, id: 'c'.repeat(32), environment: 'production' },
+      ],
+    });
     expect(
       await diagnoseCustomDomain(input, hostname, management, send),
     ).toEqual({
@@ -185,6 +248,159 @@ describe('Cloudflare Custom Domain provider', () => {
       ).toEqual({
         code: 'provider_error',
       });
+      expect(send.mock.calls.every(([, init]) => init?.method === 'GET')).toBe(
+        true,
+      );
+    }
+  });
+});
+
+describe('Cloudflare Custom Domain mutations', () => {
+  const records = `${workers}/scripts/linkrovia/domains/records`;
+  const domainList = `${workers}/domains?hostname=${hostname}`;
+  const domainPath = `${workers}/domains/${domainId}`;
+
+  it('attaches only the confirmed hostname with override switches disabled', async () => {
+    const send = provider({
+      [`PUT ${records}`]: [domain],
+    });
+
+    expect(await attachCustomDomain(input, hostname, management, send)).toEqual(
+      {
+        code: 'attached',
+        service: 'linkrovia',
+        zoneName: 'example.com',
+        mappingId: domainId,
+        accountId,
+        zoneId,
+        created: true,
+      },
+    );
+    expect(
+      send.mock.calls.slice(0, -1).every(([, init]) => init?.method === 'GET'),
+    ).toBe(true);
+    const [url, init] = send.mock.calls.at(-1) ?? [];
+    expect(new URL(String(url)).pathname).toBe(records);
+    expect(new Headers(init?.headers).get('content-type')).toBe(
+      'application/json',
+    );
+    expect(JSON.parse(String(init?.body))).toEqual({
+      override_scope: false,
+      override_existing_origin: false,
+      override_existing_dns_record: false,
+      origins: [
+        { hostname, zone_id: zoneId, enabled: true, previews_enabled: false },
+      ],
+    });
+  });
+
+  it('reuses an existing exact mapping without claiming ownership', async () => {
+    const send = provider({ [domainList]: [domain] });
+    expect(
+      await attachCustomDomain(input, hostname, management, send),
+    ).toMatchObject({
+      code: 'attached',
+      mappingId: domainId,
+      created: false,
+    });
+    expect(send.mock.calls.every(([, init]) => init?.method === 'GET')).toBe(
+      true,
+    );
+  });
+
+  it('skips all writes when the fresh preflight finds an existing DNS record, matching route or foreign mapping', async () => {
+    for (const overrides of [
+      {
+        [`${zones}/dns_records?name.exact=${hostname}&per_page=1`]: [
+          { name: hostname, type: 'A' },
+        ],
+      },
+      { [`${zones}/workers/routes`]: [{ pattern: `${hostname}/*` }] },
+      { [domainList]: [{ ...domain, service: 'another-worker' }] },
+    ]) {
+      const send = provider(overrides);
+      expect(
+        await attachCustomDomain(input, hostname, management, send),
+      ).toMatchObject({ code: 'conflict' });
+      expect(send.mock.calls.every(([, init]) => init?.method === 'GET')).toBe(
+        true,
+      );
+    }
+  });
+
+  it('returns a conflict when the provider detects a concurrent incompatible change', async () => {
+    const send = provider({
+      [`PUT ${records}`]: Response.json({ success: false }, { status: 409 }),
+    });
+    expect(
+      await attachCustomDomain(input, hostname, management, send),
+    ).toMatchObject({ code: 'conflict' });
+    expect(
+      send.mock.calls.filter(([, init]) => init?.method === 'PUT'),
+    ).toHaveLength(1);
+  });
+
+  it('reports an uncertain write without sending another write or claiming a mapping', async () => {
+    const send = provider({
+      [`PUT ${records}`]: Response.json({ success: false }, { status: 503 }),
+    });
+    expect(
+      await attachCustomDomain(input, hostname, management, send),
+    ).toMatchObject({ code: 'operation_unknown' });
+    expect(
+      send.mock.calls.filter(([, init]) => init?.method === 'PUT'),
+    ).toHaveLength(1);
+  });
+
+  it('detaches only the matching mapping ID and treats an already absent ID as detached', async () => {
+    const send = provider({ [domainPath]: domain });
+    expect(
+      await detachCustomDomain(input, hostname, management, domainId, send),
+    ).toMatchObject({ code: 'detached' });
+    expect(
+      send.mock.calls.map(([url, init]) => [
+        new URL(String(url)).pathname,
+        init?.method,
+      ]),
+    ).toContainEqual([domainPath, 'DELETE']);
+
+    const absent = provider({
+      [domainPath]: new Response(null, { status: 404 }),
+    });
+    expect(
+      await detachCustomDomain(input, hostname, management, domainId, absent),
+    ).toMatchObject({ code: 'detached' });
+    expect(absent.mock.calls.every(([, init]) => init?.method === 'GET')).toBe(
+      true,
+    );
+  });
+
+  it('rejects mapping identifiers containing path delimiters or whitespace before any request', async () => {
+    const send = provider();
+    for (const invalidId of [
+      `${domainId.slice(0, -1)}/`,
+      `${domainId}\n`,
+      'c'.repeat(38),
+    ]) {
+      expect(
+        await detachCustomDomain(input, hostname, management, invalidId, send),
+      ).toEqual({
+        code: 'unsupported',
+      });
+    }
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('preserves a mapping that changed Worker, zone or hostname before detach', async () => {
+    for (const changed of [
+      { ...domain, service: 'another-worker' },
+      { ...domain, zone_id: accountId },
+      { ...domain, hostname: 'other.example.com' },
+    ]) {
+      const send = provider({ [domainPath]: changed });
+      expect(
+        await detachCustomDomain(input, hostname, management, domainId, send),
+      ).toMatchObject({ code: 'conflict' });
       expect(send.mock.calls.every(([, init]) => init?.method === 'GET')).toBe(
         true,
       );

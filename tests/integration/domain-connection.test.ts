@@ -2,7 +2,9 @@ import { readFile, readdir } from 'node:fs/promises';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { getPlatformProxy, unstable_splitSqlQuery } from 'wrangler';
 import {
+  beginProviderOperation,
   domainHostname,
+  finishProviderOperation,
   readDomainConnection,
   setDomainConnection,
 } from '../../src/lib/server/domains/connection';
@@ -81,6 +83,59 @@ it('checks public DNS via the fixed resolver and rejects nonpublic answers', asy
   await expect(
     checkPublicDns(hostname, async () => new Response(null, { status: 503 })),
   ).resolves.toBe('dns_unavailable');
+});
+
+it('serializes provider changes and records which mapping may be removed', async () => {
+  await db
+    .prepare(
+      "INSERT INTO domains(id, hostname, is_active) VALUES ('managed', 'managed.example.org', 0)",
+    )
+    .run();
+  const draft = (await readDomainConnection(db, 'managed'))!;
+  const claims = await Promise.all([
+    beginProviderOperation(db, draft, 'owner', 'attach'),
+    beginProviderOperation(db, draft, 'owner', 'attach'),
+  ]);
+  const attached = claims.filter((entry) => entry !== null);
+  expect(attached).toHaveLength(1);
+  const updating = (await readDomainConnection(db, 'managed'))!;
+  expect(updating).toMatchObject({ status: 'provisioning', managed: false });
+  expect(
+    await setDomainConnection(db, updating, 'owner', 'verify', 'too-early'),
+  ).toBe(false);
+  expect(
+    await finishProviderOperation(db, attached[0], {
+      code: 'attached',
+      mappingId: 'owned-id',
+      zoneId: 'some-zone',
+    }),
+  ).toBe(true);
+  const verifying = (await readDomainConnection(db, 'managed'))!;
+  expect(verifying).toMatchObject({
+    status: 'verifying',
+    managed: true,
+    mappingId: 'owned-id',
+  });
+  expect(
+    await setDomainConnection(
+      db,
+      verifying,
+      'owner',
+      'verify',
+      'managed-proof',
+    ),
+  ).toBe(true);
+  const active = (await readDomainConnection(db, 'managed'))!;
+  const detach = await beginProviderOperation(db, active, 'owner', 'detach');
+  expect(detach).not.toBeNull();
+  expect(await finishProviderOperation(db, detach!, { code: 'detached' })).toBe(
+    true,
+  );
+  expect(await readDomainConnection(db, 'managed')).toMatchObject({
+    status: 'disconnected',
+    managed: false,
+    mappingId: null,
+  });
 });
 
 it('requires HTTPS and a proof from the registered hostname before enabling publication', async () => {

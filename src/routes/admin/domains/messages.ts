@@ -102,7 +102,7 @@ const en: DomainMessages = {
   token: 'API token',
   diagnoseButton: 'Diagnose',
   tokenWarning:
-    'The token is used once, never shown in the URL, and is not retained.',
+    'The token is sent securely for each check or connection, never shown in the URL, and is not retained.',
   httpsOnly:
     'Browser verification requires HTTPS. On local HTTP preview, use the guide or advanced diagnosis.',
   backToDomains: 'Back to domains',
@@ -162,7 +162,8 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     zoneId: 'ゾーン ID',
     token: 'API トークン',
     diagnoseButton: '診断',
-    tokenWarning: 'トークンは一度だけ使用し、URL に表示せず保存もしません。',
+    tokenWarning:
+      'トークンは確認または接続のために送信され、URL に表示せず保存もしません。',
     httpsOnly:
       'ブラウザー確認には HTTPS が必要です。ローカル HTTP プレビューでは案内または高度な診断を利用してください。',
     backToDomains: 'ドメイン一覧に戻る',
@@ -201,7 +202,7 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     zoneId: '区域 ID',
     token: 'API 令牌',
     diagnoseButton: '诊断',
-    tokenWarning: '令牌只使用一次，不会显示在 URL 中，也不会保存。',
+    tokenWarning: '令牌用于检查或连接，不会显示在 URL 中，也不会保存。',
     httpsOnly: '浏览器验证需要 HTTPS。本地 HTTP 预览请使用指引或高级诊断。',
     backToDomains: '返回域名',
   },
@@ -234,7 +235,7 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     zoneId: '區域 ID',
     token: 'API 權杖',
     diagnoseButton: '診斷',
-    tokenWarning: '權杖只使用一次，不會顯示於 URL，也不會保存。',
+    tokenWarning: '權杖用於檢查或連線，不會顯示於 URL，也不會保存。',
     httpsOnly: '瀏覽器驗證需要 HTTPS。本機 HTTP 預覽請使用指引或進階診斷。',
     backToDomains: '返回網域',
   },
@@ -273,7 +274,7 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     token: 'Token de API',
     diagnoseButton: 'Diagnosticar',
     tokenWarning:
-      'El token se usa una vez, no aparece en la URL ni se conserva.',
+      'El token se usa para comprobar o conectar, no aparece en la URL ni se conserva.',
     httpsOnly:
       'La verificación del navegador requiere HTTPS. En una vista previa HTTP local, usa la guía o el diagnóstico avanzado.',
     backToDomains: 'Volver a dominios',
@@ -313,7 +314,7 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     token: 'Token API',
     diagnoseButton: 'Diagnosi',
     tokenWarning:
-      'Il token viene usato una volta, non appare nell’URL e non viene conservato.',
+      'Il token viene usato per la verifica o la connessione, non appare nell’URL e non viene conservato.',
     httpsOnly:
       'La verifica nel browser richiede HTTPS. Nella preview HTTP locale usa la guida o la diagnosi avanzata.',
     backToDomains: 'Torna ai domini',
@@ -353,7 +354,7 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     token: 'Jeton API',
     diagnoseButton: 'Diagnostiquer',
     tokenWarning:
-      'Le jeton est utilisé une fois, n’apparaît pas dans l’URL et n’est pas conservé.',
+      'Le jeton sert à vérifier ou connecter, n’apparaît pas dans l’URL et n’est pas conservé.',
     httpsOnly:
       'La vérification dans le navigateur nécessite HTTPS. En aperçu HTTP local, utilisez le guide ou le diagnostic avancé.',
     backToDomains: 'Retour aux domaines',
@@ -432,4 +433,343 @@ export function domainMessages(locale: Locale): DomainMessages {
     errors: { ...en.errors, ...(translated.errors ?? {}) },
     ...(guidance[locale] ?? {}),
   };
+}
+
+export type AutomaticDomainMessages = {
+  title: string;
+  intro: string;
+  workerName: string;
+  preflight: string;
+  preflightReady: string;
+  preflightAttached: string;
+  preflightFailed: string;
+  confirm: string;
+  attach: string;
+  attached: string;
+  pending: string;
+  error: string;
+  manual: string;
+  optionalIds: string;
+  detachTitle: string;
+  detachConfirm: string;
+  detachButton: string;
+  detached: string;
+};
+
+const automaticMessages: Record<Locale, AutomaticDomainMessages> = {
+  en: {
+    title: 'Connect automatically',
+    intro:
+      'For a hostname managed by Cloudflare, enter an API token with permission to manage Workers custom domains. Check access before connecting.',
+    workerName: 'Worker name',
+    preflight: 'Check access',
+    preflightReady:
+      'Access checked. Review the hostname and confirm to connect.',
+    preflightAttached:
+      'This hostname is already attached. Check its connection below.',
+    preflightFailed:
+      'The access check failed. Check the token, account and zone IDs, and hostname, then try again.',
+    confirm:
+      'I authorize connecting this hostname to this Worker in Cloudflare:',
+    attach: 'Connect hostname',
+    attached: 'Cloudflare accepted the connection. Check the connection below.',
+    pending:
+      'Cloudflare is preparing the connection. Wait a moment, then check it below.',
+    error:
+      'Could not connect the hostname. Check the details and permissions, then try again or use the manual guide.',
+    manual: 'Connect manually',
+    optionalIds: 'Optional: enter both IDs together. ',
+    detachTitle: 'Remove from Cloudflare',
+    detachConfirm:
+      'I authorize removing this hostname from the Worker in Cloudflare:',
+    detachButton: 'Remove hostname',
+    detached: 'The hostname was removed from Cloudflare.',
+  },
+  ja: {
+    title: '自動で接続',
+    intro:
+      'Cloudflare で管理するホスト名は、Workers のカスタムドメインを管理できる API トークンを入力します。接続前にアクセスを確認してください。',
+    workerName: 'Worker 名',
+    preflight: 'アクセスを確認',
+    preflightReady:
+      'アクセスを確認しました。ホスト名を確認し、接続を承認してください。',
+    preflightAttached:
+      'このホスト名はすでに接続されています。下で接続を確認してください。',
+    preflightFailed:
+      'アクセスを確認できませんでした。トークン、アカウント ID、ゾーン ID、ホスト名を確認して再試行してください。',
+    confirm:
+      'このホスト名を Cloudflare のこの Worker に接続することを承認します：',
+    attach: 'ホスト名を接続',
+    attached: 'Cloudflare が接続を受け付けました。下で接続を確認してください。',
+    pending:
+      'Cloudflare が接続を準備しています。しばらく待ってから下で確認してください。',
+    error:
+      '接続できませんでした。入力内容と権限を確認して再試行するか、手動の案内を利用してください。',
+    manual: '手動で接続',
+    optionalIds: '任意：ID は両方入力してください。',
+    detachTitle: 'Cloudflare から削除',
+    detachConfirm:
+      'このホスト名を Cloudflare の Worker から削除することを承認します：',
+    detachButton: 'ホスト名を削除',
+    detached: 'Cloudflare からホスト名を削除しました。',
+  },
+  'zh-CN': {
+    title: '自动连接',
+    intro:
+      '对于由 Cloudflare 管理的主机名，请输入有权管理 Workers 自定义域名的 API 令牌。连接前请检查访问权限。',
+    workerName: 'Worker 名称',
+    preflight: '检查访问权限',
+    preflightReady: '访问权限已检查。请核对主机名并确认连接。',
+    preflightAttached: '此主机名已连接。请在下方检查连接。',
+    preflightFailed:
+      '访问检查失败。请检查令牌、账户和区域 ID 及主机名，然后重试。',
+    confirm: '我授权将此主机名连接到 Cloudflare 中的此 Worker：',
+    attach: '连接主机名',
+    attached: 'Cloudflare 已接受连接。请在下方检查连接。',
+    pending: 'Cloudflare 正在准备连接。请稍后在下方检查。',
+    error: '无法连接主机名。请检查信息和权限后重试，或使用手动指南。',
+    manual: '手动连接',
+    optionalIds: '可选：请同时输入两个 ID。',
+    detachTitle: '从 Cloudflare 删除',
+    detachConfirm: '我授权从 Cloudflare 的 Worker 中删除此主机名：',
+    detachButton: '删除主机名',
+    detached: '已从 Cloudflare 删除主机名。',
+  },
+  'zh-TW': {
+    title: '自動連線',
+    intro:
+      '對於由 Cloudflare 管理的主機名稱，請輸入有權管理 Workers 自訂網域的 API 權杖。連線前請檢查存取權限。',
+    workerName: 'Worker 名稱',
+    preflight: '檢查存取權限',
+    preflightReady: '存取權限已檢查。請核對主機名稱並確認連線。',
+    preflightAttached: '此主機名稱已連線。請在下方檢查連線。',
+    preflightFailed:
+      '存取檢查失敗。請檢查權杖、帳戶和區域 ID 及主機名稱，然後重試。',
+    confirm: '我授權將此主機名稱連線至 Cloudflare 中的此 Worker：',
+    attach: '連線主機名稱',
+    attached: 'Cloudflare 已接受連線。請在下方檢查連線。',
+    pending: 'Cloudflare 正在準備連線。請稍後在下方檢查。',
+    error: '無法連線主機名稱。請檢查資料和權限後重試，或使用手動指南。',
+    manual: '手動連線',
+    optionalIds: '選填：請同時輸入兩個 ID。',
+    detachTitle: '從 Cloudflare 移除',
+    detachConfirm: '我授權從 Cloudflare 的 Worker 移除此主機名稱：',
+    detachButton: '移除主機名稱',
+    detached: '已從 Cloudflare 移除主機名稱。',
+  },
+  es: {
+    title: 'Conectar automáticamente',
+    intro:
+      'Para un host gestionado por Cloudflare, introduce un token API con permiso para gestionar dominios personalizados de Workers. Comprueba el acceso antes de conectar.',
+    workerName: 'Nombre del Worker',
+    preflight: 'Comprobar acceso',
+    preflightReady: 'Acceso comprobado. Revisa el host y confirma la conexión.',
+    preflightAttached:
+      'Este host ya está conectado. Comprueba la conexión abajo.',
+    preflightFailed:
+      'No se pudo comprobar el acceso. Revisa el token, los ID de cuenta y zona y el host, y vuelve a intentarlo.',
+    confirm: 'Autorizo conectar este host a este Worker en Cloudflare:',
+    attach: 'Conectar host',
+    attached: 'Cloudflare aceptó la conexión. Compruébala abajo.',
+    pending:
+      'Cloudflare está preparando la conexión. Espera y compruébala abajo.',
+    error:
+      'No se pudo conectar el host. Revisa los datos y permisos y vuelve a intentarlo, o usa la guía manual.',
+    manual: 'Conectar manualmente',
+    optionalIds: 'Opcional: introduce ambos ID. ',
+    detachTitle: 'Eliminar de Cloudflare',
+    detachConfirm: 'Autorizo eliminar este host del Worker en Cloudflare:',
+    detachButton: 'Eliminar host',
+    detached: 'El host se eliminó de Cloudflare.',
+  },
+  it: {
+    title: 'Connetti automaticamente',
+    intro:
+      'Per un hostname gestito da Cloudflare, inserisci un token API con il permesso di gestire i domini personalizzati Workers. Verifica l’accesso prima di connettere.',
+    workerName: 'Nome del Worker',
+    preflight: 'Verifica accesso',
+    preflightReady:
+      'Accesso verificato. Controlla l’hostname e conferma la connessione.',
+    preflightAttached:
+      'Questo hostname è già collegato. Verifica la connessione qui sotto.',
+    preflightFailed:
+      'Verifica dell’accesso non riuscita. Controlla token, ID di account e zona e hostname, poi riprova.',
+    confirm:
+      'Autorizzo la connessione di questo hostname a questo Worker in Cloudflare:',
+    attach: 'Connetti hostname',
+    attached: 'Cloudflare ha accettato la connessione. Verificala qui sotto.',
+    pending:
+      'Cloudflare sta preparando la connessione. Attendi e verificala qui sotto.',
+    error:
+      'Impossibile connettere l’hostname. Controlla dati e permessi e riprova, oppure usa la guida manuale.',
+    manual: 'Connetti manualmente',
+    optionalIds: 'Facoltativo: inserisci entrambi gli ID. ',
+    detachTitle: 'Rimuovi da Cloudflare',
+    detachConfirm:
+      'Autorizzo la rimozione di questo hostname dal Worker in Cloudflare:',
+    detachButton: 'Rimuovi hostname',
+    detached: 'Hostname rimosso da Cloudflare.',
+  },
+  fr: {
+    title: 'Connecter automatiquement',
+    intro:
+      'Pour un hôte géré par Cloudflare, saisissez un jeton API autorisé à gérer les domaines personnalisés Workers. Vérifiez l’accès avant la connexion.',
+    workerName: 'Nom du Worker',
+    preflight: 'Vérifier l’accès',
+    preflightReady: 'Accès vérifié. Vérifiez l’hôte et confirmez la connexion.',
+    preflightAttached:
+      'Cet hôte est déjà connecté. Vérifiez la connexion ci-dessous.',
+    preflightFailed:
+      'La vérification a échoué. Vérifiez le jeton, les ID du compte et de la zone et l’hôte, puis réessayez.',
+    confirm:
+      'J’autorise la connexion de cet hôte à ce Worker dans Cloudflare :',
+    attach: 'Connecter l’hôte',
+    attached: 'Cloudflare a accepté la connexion. Vérifiez-la ci-dessous.',
+    pending:
+      'Cloudflare prépare la connexion. Patientez puis vérifiez-la ci-dessous.',
+    error:
+      'Impossible de connecter l’hôte. Vérifiez les informations et les autorisations, puis réessayez ou suivez le guide manuel.',
+    manual: 'Connecter manuellement',
+    optionalIds: 'Facultatif : saisissez les deux ID. ',
+    detachTitle: 'Supprimer de Cloudflare',
+    detachConfirm:
+      'J’autorise la suppression de cet hôte du Worker dans Cloudflare :',
+    detachButton: 'Supprimer l’hôte',
+    detached: 'L’hôte a été supprimé de Cloudflare.',
+  },
+};
+
+export function automaticDomainMessages(
+  locale: Locale,
+): AutomaticDomainMessages {
+  return automaticMessages[locale] ?? automaticMessages.en;
+}
+
+const operationMessages: Record<Locale, Record<string, string>> = {
+  en: {
+    permissions:
+      'The token lacks access. Check the permissions and account and zone scope, then retry.',
+    unsupported:
+      'This hostname requires an active Cloudflare DNS zone and a Worker reachable at its workers.dev hostname. Check both, or follow the manual guide.',
+    conflict:
+      'A DNS record or another Worker may already use this hostname. Review it in Cloudflare before retrying.',
+    operation_unknown:
+      'Cloudflare did not confirm the result. Check the hostname in Cloudflare before retrying to avoid a duplicate change.',
+    invalid_credentials:
+      'The token or account and zone IDs are invalid. Check them and try again.',
+    domain_changed:
+      'The domain changed since this page opened. Reload the page and try again.',
+    busy: 'Another operation is in progress. Wait, reload the page, and try again.',
+    tokenLink: 'Create a Cloudflare API token',
+    scopes:
+      'For this account and zone, grant Account → Workers Scripts → Edit; Zone → Zone → Read; DNS → Read; and Workers Routes → Edit (Write).',
+  },
+  ja: {
+    permissions:
+      'トークンの権限が不足しています。権限と対象アカウント・ゾーンを確認して再試行してください。',
+    unsupported:
+      '有効な Cloudflare DNS ゾーンと workers.dev で到達可能な Worker が必要です。両方を確認するか、手動の案内を利用してください。',
+    conflict:
+      'このホスト名は DNS レコードまたは別の Worker で使用されている可能性があります。Cloudflare で確認してから再試行してください。',
+    operation_unknown:
+      'Cloudflare の処理結果を確認できませんでした。重複操作を避けるため、再試行前に Cloudflare でホスト名を確認してください。',
+    invalid_credentials:
+      'トークンまたはアカウント・ゾーン ID が無効です。確認して再試行してください。',
+    domain_changed:
+      'この画面を開いてからドメインが変更されました。ページを再読み込みして再試行してください。',
+    busy: '別の操作が進行中です。待ってからページを再読み込みし、再試行してください。',
+    tokenLink: 'Cloudflare API トークンを作成',
+    scopes:
+      '対象のアカウントとゾーンに、Account → Workers Scripts → Edit、Zone → Zone → Read、DNS → Read、Workers Routes → Edit（Write）を設定してください。',
+  },
+  'zh-CN': {
+    permissions: '令牌权限不足。请检查权限及账户和区域范围后重试。',
+    unsupported:
+      '需要有效的 Cloudflare DNS 区域以及可通过 workers.dev 访问的 Worker。请检查两者或使用手动指南。',
+    conflict:
+      'DNS 记录或其他 Worker 可能已使用此主机名。请先在 Cloudflare 中检查。',
+    operation_unknown:
+      '无法确认 Cloudflare 操作结果。重试前请先在 Cloudflare 中检查主机名，避免重复操作。',
+    invalid_credentials: '令牌或账户和区域 ID 无效。请检查后重试。',
+    domain_changed: '打开页面后域名已更改。请重新加载页面后重试。',
+    busy: '另一操作正在进行。请稍候并重新加载页面后重试。',
+    tokenLink: '创建 Cloudflare API 令牌',
+    scopes:
+      '请为相关账户和区域授予 Account → Workers Scripts → Edit；Zone → Zone → Read、DNS → Read 和 Workers Routes → Edit（Write）。',
+  },
+  'zh-TW': {
+    permissions: '權杖權限不足。請檢查權限以及帳戶和區域範圍後重試。',
+    unsupported:
+      '需要有效的 Cloudflare DNS 區域以及可透過 workers.dev 存取的 Worker。請檢查兩者或使用手動指南。',
+    conflict:
+      'DNS 記錄或其他 Worker 可能已使用此主機名稱。請先在 Cloudflare 檢查。',
+    operation_unknown:
+      '無法確認 Cloudflare 的操作結果。重試前請先在 Cloudflare 檢查主機名稱，避免重複操作。',
+    invalid_credentials: '權杖或帳戶和區域 ID 無效。請檢查後重試。',
+    domain_changed: '開啟頁面後網域已變更。請重新載入頁面後重試。',
+    busy: '另一操作正在進行。請稍候並重新載入頁面後重試。',
+    tokenLink: '建立 Cloudflare API 權杖',
+    scopes:
+      '請為相關帳戶和區域授予 Account → Workers Scripts → Edit；Zone → Zone → Read、DNS → Read 及 Workers Routes → Edit（Write）。',
+  },
+  es: {
+    permissions:
+      'El token no tiene acceso suficiente. Revisa los permisos y el alcance de la cuenta y zona.',
+    unsupported:
+      'Se necesitan una zona DNS activa de Cloudflare y un Worker accesible en workers.dev. Comprueba ambos o usa la guía manual.',
+    conflict:
+      'Un registro DNS u otro Worker ya podría usar este host. Revísalo en Cloudflare antes de reintentar.',
+    operation_unknown:
+      'Cloudflare no confirmó el resultado. Comprueba el host en Cloudflare antes de reintentar para evitar duplicados.',
+    invalid_credentials:
+      'El token o los ID de cuenta y zona no son válidos. Compruébalos y vuelve a intentarlo.',
+    domain_changed:
+      'El dominio cambió desde que abriste la página. Recárgala y vuelve a intentarlo.',
+    busy: 'Hay otra operación en curso. Espera, recarga la página y vuelve a intentarlo.',
+    tokenLink: 'Crear un token API de Cloudflare',
+    scopes:
+      'Para la cuenta y zona correspondientes, concede Account → Workers Scripts → Edit; Zone → Zone → Read; DNS → Read y Workers Routes → Edit (Write).',
+  },
+  it: {
+    permissions:
+      'Il token non dispone dell’accesso necessario. Controlla permessi e ambito di account e zona.',
+    unsupported:
+      'Servono una zona DNS Cloudflare attiva e un Worker raggiungibile su workers.dev. Controlla entrambi o usa la guida manuale.',
+    conflict:
+      'Un record DNS o un altro Worker potrebbe già usare questo hostname. Controlla su Cloudflare prima di riprovare.',
+    operation_unknown:
+      'Cloudflare non ha confermato il risultato. Controlla l’hostname su Cloudflare prima di riprovare per evitare duplicati.',
+    invalid_credentials:
+      'Il token o gli ID di account e zona non sono validi. Controllali e riprova.',
+    domain_changed:
+      'Il dominio è cambiato dall’apertura della pagina. Ricaricala e riprova.',
+    busy: 'Un’altra operazione è in corso. Attendi, ricarica la pagina e riprova.',
+    tokenLink: 'Crea un token API Cloudflare',
+    scopes:
+      'Per account e zona interessati, concedi Account → Workers Scripts → Edit; Zone → Zone → Read; DNS → Read e Workers Routes → Edit (Write).',
+  },
+  fr: {
+    permissions:
+      'Le jeton ne dispose pas des accès nécessaires. Vérifiez les autorisations et la portée du compte et de la zone.',
+    unsupported:
+      'Une zone DNS Cloudflare active et un Worker accessible sur workers.dev sont nécessaires. Vérifiez les deux ou suivez le guide manuel.',
+    conflict:
+      'Un enregistrement DNS ou un autre Worker utilise peut-être déjà cet hôte. Vérifiez dans Cloudflare avant de réessayer.',
+    operation_unknown:
+      'Cloudflare n’a pas confirmé le résultat. Vérifiez l’hôte dans Cloudflare avant de réessayer pour éviter une opération en double.',
+    invalid_credentials:
+      'Le jeton ou les ID du compte et de la zone sont invalides. Vérifiez-les et réessayez.',
+    domain_changed:
+      'Le domaine a changé depuis l’ouverture de cette page. Rechargez-la et réessayez.',
+    busy: 'Une autre opération est en cours. Patientez, rechargez la page et réessayez.',
+    tokenLink: 'Créer un jeton API Cloudflare',
+    scopes:
+      'Pour le compte et la zone concernés, accordez Account → Workers Scripts → Edit ; Zone → Zone → Read ; DNS → Read et Workers Routes → Edit (Write).',
+  },
+};
+
+export function domainOperationMessages(
+  locale: Locale,
+): Record<string, string> {
+  return operationMessages[locale] ?? operationMessages.en;
 }

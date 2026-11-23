@@ -852,6 +852,24 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     expect(response.status()).toBe(400);
     expect(await response.json()).toMatchObject({ code: 'https_required' });
     await expect(page.getByRole('alert')).toBeVisible();
+
+    const assignment = page.locator('form[action="?/attach"]');
+    const fixtureToken = 'fixture-cloudflare-token-not-a-real-credential';
+    await assignment.locator('[name=token]').fill(fixtureToken);
+    await assignment.locator('[name=confirmed]').check();
+    const attaching = page.waitForResponse(
+      (reply) =>
+        reply.request().method() === 'POST' &&
+        new URL(reply.url()).search === '?/attach',
+    );
+    await assignment.locator('button[type=submit]').click();
+    const attachment = await attaching;
+    expect(attachment.status()).toBe(422);
+    expect(await attachment.text()).not.toContain(fixtureToken);
+    await expect(assignment.locator('[name=token]')).toHaveValue('');
+    expect(
+      await (await context.request.get(`${apiPath}/connection`)).json(),
+    ).toMatchObject({ managed: false, status: 'failed' });
   });
 
   await test.step('persists the chosen theme and provides keyboard navigation at 360 px', async () => {

@@ -2,7 +2,13 @@ import { uuidV7 } from '../auth/crypto';
 import { normalizeHostname } from '../security/url-policy';
 
 const fields = `id, hostname, is_primary AS isPrimary, connection_status AS status,
-  connection_version AS version, provider_mode AS providerMode, verified_at AS verifiedAt`;
+  connection_version AS version, provider_mode AS providerMode, verified_at AS verifiedAt,
+  cloudflare_domain_id AS mappingId`;
+
+const noProviderOperation = `NOT EXISTS (
+  SELECT 1 FROM domain_connection_operations WHERE domain_id = domains.id
+    AND status = 'running' AND started_at > unixepoch() - 60
+)`;
 
 export type DomainConnection = {
   id: string;
@@ -12,6 +18,8 @@ export type DomainConnection = {
   version: number;
   providerMode: string;
   verifiedAt: number | null;
+  mappingId: string | null;
+  managed: boolean;
 };
 
 export function domainHostname(value: unknown) {
@@ -26,13 +34,14 @@ export function domainHostname(value: unknown) {
   return hostname;
 }
 
-export function readDomainConnection(db: D1Database, id: string) {
-  return db
+export async function readDomainConnection(db: D1Database, id: string) {
+  const row = await db
     .prepare(
       `SELECT ${fields} FROM domains WHERE id = ? AND backup_archived_at IS NULL`,
     )
     .bind(id)
-    .first<DomainConnection>();
+    .first<Omit<DomainConnection, 'managed'>>();
+  return row && { ...row, managed: row.mappingId !== null };
 }
 
 export function managementHostname(db: D1Database) {
@@ -58,7 +67,7 @@ export async function setDomainConnection(
       provider_mode = CASE WHEN ? THEN 'cloudflare_custom_domain' ELSE provider_mode END,
       connection_error_code = NULL
       WHERE id = ? AND hostname = ? AND connection_version = ? AND is_primary = 0
-        AND backup_archived_at IS NULL
+        AND backup_archived_at IS NULL AND ${noProviderOperation}
       RETURNING id`,
       )
       .bind(
@@ -77,6 +86,105 @@ export async function setDomainConnection(
       SELECT ?, ?, ?, 'succeeded', 1, ?, ?, unixepoch() WHERE changes() = 1`,
       )
       .bind(uuidV7(), domain.id, operation, operationKey, actorId),
+  ]);
+  return updated.results.length === 1;
+}
+
+export type ProviderOperation = {
+  id: string;
+  domainId: string;
+  version: number;
+  action: 'attach' | 'detach';
+};
+
+export async function beginProviderOperation(
+  db: D1Database,
+  domain: DomainConnection,
+  actorId: string,
+  action: ProviderOperation['action'],
+): Promise<ProviderOperation | null> {
+  const id = uuidV7();
+  const [updated] = await db.batch<{ version: number }>([
+    db
+      .prepare(
+        `UPDATE domains SET connection_status = ?, is_active = 0, verified_at = NULL,
+      connection_version = connection_version + 1, last_checked_at = unixepoch(),
+      updated_at = unixepoch(), connection_error_code = NULL
+      WHERE id = ? AND connection_version = ? AND is_primary = 0
+        AND backup_archived_at IS NULL AND ${noProviderOperation}
+        AND (CASE WHEN ? = 'attach' THEN connection_status != 'active' ELSE cloudflare_domain_id IS NOT NULL END)
+      RETURNING connection_version AS version`,
+      )
+      .bind(
+        action === 'attach' ? 'provisioning' : 'checking',
+        domain.id,
+        domain.version,
+        action,
+      ),
+    db
+      .prepare(
+        `INSERT INTO domain_connection_operations
+      (id, domain_id, operation_type, status, attempt, idempotency_key, actor_id)
+      SELECT ?, ?, ?, 'running', 1, ?, ? WHERE changes() = 1`,
+      )
+      .bind(
+        id,
+        domain.id,
+        action === 'attach' ? 'connect' : 'disconnect',
+        id,
+        actorId,
+      ),
+  ]);
+  const row = updated.results[0];
+  return row ? { id, domainId: domain.id, version: row.version, action } : null;
+}
+
+export async function finishProviderOperation(
+  db: D1Database,
+  operation: ProviderOperation,
+  result: { code: string; mappingId?: string; zoneId?: string },
+) {
+  const attached = result.code === 'attached';
+  const detached = result.code === 'detached';
+  const completed = attached || detached;
+  const status = attached
+    ? 'verifying'
+    : detached
+      ? 'disconnected'
+      : operation.action === 'attach'
+        ? 'failed'
+        : 'warning';
+  const error = completed ? null : result.code;
+  const [updated] = await db.batch<{ id: string }>([
+    db
+      .prepare(
+        `UPDATE domains SET connection_status = ?, connection_version = connection_version + 1,
+      connection_error_code = ?, updated_at = unixepoch(),
+      provider_mode = CASE WHEN ? THEN 'cloudflare_custom_domain' ELSE provider_mode END,
+      cloudflare_domain_id = CASE WHEN ? THEN ? ELSE cloudflare_domain_id END,
+      cloudflare_zone_id = CASE WHEN ? THEN ? ELSE cloudflare_zone_id END
+      WHERE id = ? AND connection_version = ? AND backup_archived_at IS NULL
+        AND EXISTS (SELECT 1 FROM domain_connection_operations WHERE id = ? AND status = 'running')
+      RETURNING id`,
+      )
+      .bind(
+        status,
+        error,
+        Number(attached),
+        Number(completed),
+        result.mappingId ?? null,
+        Number(completed),
+        result.zoneId ?? null,
+        operation.domainId,
+        operation.version,
+        operation.id,
+      ),
+    db
+      .prepare(
+        `UPDATE domain_connection_operations SET status = ?, error_code = ?, finished_at = unixepoch()
+      WHERE id = ? AND changes() = 1`,
+      )
+      .bind(completed ? 'succeeded' : 'failed', error, operation.id),
   ]);
   return updated.results.length === 1;
 }

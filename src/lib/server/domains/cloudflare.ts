@@ -1,20 +1,33 @@
-export type CloudflareInput = {
-  accountId: string;
-  zoneId: string;
-  token: string;
-};
+type CloudflareScope = { accountId: string; zoneId: string };
+export type CloudflareInput = { token: string } & (
+  CloudflareScope | { accountId?: undefined; zoneId?: undefined }
+);
 
-type CloudflareOutcome = {
-  code:
-    | 'ready'
-    | 'attached'
-    | 'unsupported'
-    | 'permissions'
-    | 'conflict'
-    | 'provider_error';
-  zoneName?: string;
-  service?: string;
-};
+type ProviderErrorCode = 'permissions' | 'provider_error' | 'conflict';
+type DomainDetails = { zoneName: string; service: string };
+
+type PreflightOutcome =
+  | ({ code: 'ready' | 'conflict' } & DomainDetails)
+  | ({ code: 'attached'; mappingId: string } & DomainDetails);
+
+export type CloudflareOutcome =
+  | ({
+      code: 'attached';
+      mappingId: string;
+      accountId: string;
+      zoneId: string;
+      created: boolean;
+    } & DomainDetails)
+  | {
+      code:
+        | ProviderErrorCode
+        | 'ready'
+        | 'detached'
+        | 'unsupported'
+        | 'operation_unknown';
+      zoneName?: string;
+      service?: string;
+    };
 
 const idPattern = /^[0-9a-f]{32}$/i;
 const label = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?';
@@ -30,6 +43,14 @@ function validId(value: unknown): value is string {
   );
 }
 
+function validMappingId(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    (value.length === 32 || value.length === 40) &&
+    !/[^0-9a-f]/i.test(value)
+  );
+}
+
 function validHostname(value: unknown): value is string {
   return (
     typeof value === 'string' &&
@@ -40,14 +61,12 @@ function validHostname(value: unknown): value is string {
 }
 
 export function parseCloudflareInput(raw: {
-  accountId: unknown;
-  zoneId: unknown;
+  accountId?: unknown;
+  zoneId?: unknown;
   token: unknown;
 }): CloudflareInput | null {
   const { accountId, zoneId, token } = raw;
   if (
-    !validId(accountId) ||
-    !validId(zoneId) ||
     typeof token !== 'string' ||
     token.length < 32 ||
     token.length > 128 ||
@@ -56,6 +75,13 @@ export function parseCloudflareInput(raw: {
   ) {
     return null;
   }
+  if (
+    (accountId == null || accountId === '') &&
+    (zoneId == null || zoneId === '')
+  ) {
+    return { token };
+  }
+  if (!validId(accountId) || !validId(zoneId)) return null;
   return {
     accountId: accountId.toLowerCase(),
     zoneId: zoneId.toLowerCase(),
@@ -70,7 +96,10 @@ function object(value: unknown): Record<string, unknown> | null {
 }
 
 class ProviderFailure extends Error {
-  constructor(readonly code: 'permissions' | 'provider_error') {
+  constructor(
+    readonly code: ProviderErrorCode,
+    readonly status?: number,
+  ) {
     super(code);
   }
 }
@@ -96,10 +125,13 @@ async function responseJSON(response: Response): Promise<unknown> {
 
 function client(input: CloudflareInput, send: typeof fetch) {
   const signal = AbortSignal.timeout(5000);
-  return async (path: string) => {
+  return async (path: string, method = 'GET', body?: unknown) => {
+    const headers = new Headers({ Authorization: `Bearer ${input.token}` });
+    if (body) headers.set('Content-Type', 'application/json');
     const response = await send(`https://api.cloudflare.com/client/v4${path}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${input.token}` },
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
       redirect: 'manual',
       signal,
     });
@@ -108,7 +140,10 @@ function client(input: CloudflareInput, send: typeof fetch) {
       throw new ProviderFailure(
         response.status === 401 || response.status === 403
           ? 'permissions'
-          : 'provider_error',
+          : response.status === 409
+            ? 'conflict'
+            : 'provider_error',
+        response.status,
       );
     }
     const envelope = object(await responseJSON(response));
@@ -141,6 +176,36 @@ async function list(
   return result;
 }
 
+async function discoverScope(
+  api: CloudflareClient,
+  hostname: string,
+): Promise<CloudflareScope | null> {
+  const labels = hostname.split('.');
+  // Query exact suffixes nearest first. Deeper hosts can use explicit IDs
+  // when their zone lies beyond the discovery limit.
+  for (let index = 0; index < Math.min(labels.length - 1, 6); index++) {
+    const name = labels.slice(index).join('.');
+    const results = await list(
+      api,
+      `/zones?${new URLSearchParams({ name, per_page: '5' })}`,
+    );
+    if (!results.length) continue;
+    const zone = object(results[0]);
+    const accountId = object(zone?.account)?.id;
+    const zoneId = zone?.id;
+    if (
+      results.length !== 1 ||
+      zone?.name !== name ||
+      !validId(accountId) ||
+      !validId(zoneId)
+    ) {
+      throw new ProviderFailure('provider_error');
+    }
+    return { accountId: accountId.toLowerCase(), zoneId: zoneId.toLowerCase() };
+  }
+  return null;
+}
+
 async function scope(
   input: CloudflareInput,
   hostname: string,
@@ -161,8 +226,13 @@ async function scope(
   }
   const [, service, accountSubdomain] = worker;
   const api = client(scoped, send);
-  const workers = `/accounts/${scoped.accountId}/workers`;
-  const zones = `/zones/${scoped.zoneId}`;
+  const scopeIds = scoped.accountId
+    ? scoped
+    : await discoverScope(api, hostname);
+  if (!scopeIds) return null;
+  const { accountId, zoneId } = scopeIds;
+  const workers = `/accounts/${accountId}/workers`;
+  const zones = `/zones/${zoneId}`;
   const [subdomain, zone] = await Promise.all([
     api(`${workers}/subdomain`),
     api(zones),
@@ -172,8 +242,8 @@ async function scope(
   const zoneName = zoneResult?.name;
   if (
     subdomainResult?.subdomain !== accountSubdomain ||
-    zoneResult?.id !== scoped.zoneId ||
-    object(zoneResult.account)?.id !== scoped.accountId ||
+    zoneResult?.id !== zoneId ||
+    object(zoneResult.account)?.id !== accountId ||
     zoneResult.status !== 'active' ||
     zoneResult.type !== 'full' ||
     !validHostname(zoneName) ||
@@ -181,7 +251,7 @@ async function scope(
   ) {
     return null;
   }
-  return { api, workers, zones, zoneId: scoped.zoneId, zoneName, service };
+  return { api, workers, zones, accountId, zoneId, zoneName, service };
 }
 
 function matchesRoute(value: unknown, hostname: string): boolean {
@@ -201,22 +271,77 @@ function domainMatches(
   domain: Record<string, unknown> | null,
   hostname: string,
   settings: { zoneName: string; zoneId: string; service: string },
-): boolean {
+): domain is Record<string, unknown> & { id: string } {
   return (
-    validId(domain?.id) &&
+    validMappingId(domain?.id) &&
     domain.hostname === hostname &&
     domain.zone_name === settings.zoneName &&
     domain.zone_id === settings.zoneId &&
     domain.service === settings.service &&
-    domain.environment === 'production' &&
+    (domain.environment === '' || domain.environment === 'production') &&
     domain.enabled === true
   );
 }
 
-function failure(error: unknown): CloudflareOutcome {
+function failure(error: unknown): { code: ProviderErrorCode } {
   return {
     code: error instanceof ProviderFailure ? error.code : 'provider_error',
   };
+}
+
+type DomainScope = NonNullable<Awaited<ReturnType<typeof scope>>>;
+
+function domainsPath({ workers }: DomainScope, hostname: string) {
+  return `${workers}/domains?${new URLSearchParams({ hostname })}`;
+}
+
+function matchingDomain(
+  domains: unknown[],
+  hostname: string,
+  settings: DomainScope,
+) {
+  const domain = object(domains[0]);
+  return domains.length === 1 && domainMatches(domain, hostname, settings)
+    ? domain
+    : null;
+}
+
+async function preflight(
+  settings: DomainScope,
+  hostname: string,
+): Promise<PreflightOutcome> {
+  const { api, zones, service, zoneName } = settings;
+  const details = { service, zoneName };
+  const dnsQuery = new URLSearchParams({
+    'name.exact': hostname,
+    per_page: '1',
+  });
+  // DNS delegation can shadow records at a non-apex hostname or an ancestor.
+  const delegationQuery = new URLSearchParams({
+    shadowing_name: hostname,
+    per_page: '1',
+  });
+  const [domains, routes, dns, delegation] = await Promise.all([
+    list(api, domainsPath(settings, hostname)),
+    list(api, `${zones}/workers/routes`),
+    list(api, `${zones}/dns_records?${dnsQuery}`, true),
+    hostname === zoneName
+      ? []
+      : list(api, `${zones}/dns_records?${delegationQuery}`, true),
+  ]);
+  if (
+    routes.some((route) => matchesRoute(route, hostname)) ||
+    delegation.length
+  ) {
+    return { code: 'conflict', ...details };
+  }
+  if (domains.length) {
+    const domain = matchingDomain(domains, hostname, settings);
+    return domain
+      ? { code: 'attached', mappingId: domain.id, ...details }
+      : { code: 'conflict', ...details };
+  }
+  return { code: dns.length ? 'conflict' : 'ready', ...details };
 }
 
 export async function diagnoseCustomDomain(
@@ -224,42 +349,170 @@ export async function diagnoseCustomDomain(
   hostname: string,
   managementHostname: string,
   send = fetch,
+) {
+  try {
+    const settings = await scope(input, hostname, managementHostname, send);
+    if (!settings) return { code: 'unsupported' } as const;
+    const { code, service, zoneName } = await preflight(settings, hostname);
+    return { code, service, zoneName };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+async function verifyWorker({ api, workers, service }: DomainScope) {
+  const { result } = await api(`${workers}/scripts/${service}/subdomain`);
+  return object(result)?.enabled === true;
+}
+
+function mutationFailure(error: unknown): {
+  code: ProviderErrorCode | 'operation_unknown';
+} {
+  if (error instanceof ProviderFailure) {
+    if (error.code !== 'provider_error') return { code: error.code };
+    if (
+      error.status &&
+      error.status >= 400 &&
+      error.status < 500 &&
+      error.status !== 408 &&
+      error.status !== 429
+    ) {
+      return { code: 'provider_error' };
+    }
+  }
+  return { code: 'operation_unknown' };
+}
+
+export async function attachCustomDomain(
+  input: CloudflareInput,
+  hostname: string,
+  managementHostname: string,
+  send = fetch,
 ): Promise<CloudflareOutcome> {
   try {
     const settings = await scope(input, hostname, managementHostname, send);
-    if (!settings) return { code: 'unsupported' };
-    const { api, workers, zones, service, zoneName } = settings;
+    if (!settings || !(await verifyWorker(settings)))
+      return { code: 'unsupported' };
+
+    const readiness = await preflight(settings, hostname);
+    if (readiness.code === 'attached')
+      return {
+        ...readiness,
+        accountId: settings.accountId,
+        zoneId: settings.zoneId,
+        created: false,
+      };
+    if (readiness.code === 'conflict') return readiness;
+
+    const { api, workers, service, accountId, zoneId, zoneName } = settings;
+    let result: unknown;
+    try {
+      // Wrangler's Worker-scoped endpoint has separate controls for replacing
+      // the Worker's domain set, existing origins, and conflicting DNS records.
+      ({ result } = await api(
+        `${workers}/scripts/${service}/domains/records`,
+        'PUT',
+        {
+          override_scope: false,
+          override_existing_origin: false,
+          override_existing_dns_record: false,
+          origins: [
+            {
+              hostname,
+              zone_id: zoneId,
+              enabled: true,
+              previews_enabled: false,
+            },
+          ],
+        },
+      ));
+    } catch (error) {
+      return { ...mutationFailure(error), service, zoneName };
+    }
+
+    const returned = matchingDomain(
+      Array.isArray(result) ? result : [result],
+      hostname,
+      settings,
+    );
+    if (returned) {
+      return {
+        code: 'attached',
+        mappingId: returned.id,
+        accountId,
+        zoneId,
+        created: true,
+        service,
+        zoneName,
+      };
+    }
+
+    try {
+      // If the response did not identify the mapping, a read can establish
+      // that routing exists but cannot establish which operation created it.
+      const observed = matchingDomain(
+        await list(api, domainsPath(settings, hostname)),
+        hostname,
+        settings,
+      );
+      return observed
+        ? {
+            code: 'attached',
+            mappingId: observed.id,
+            accountId,
+            zoneId,
+            created: false,
+            service,
+            zoneName,
+          }
+        : { code: 'operation_unknown', service, zoneName };
+    } catch {
+      return { code: 'operation_unknown', service, zoneName };
+    }
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function detachCustomDomain(
+  input: CloudflareInput,
+  hostname: string,
+  managementHostname: string,
+  mappingId: string,
+  send = fetch,
+): Promise<CloudflareOutcome> {
+  if (!validMappingId(mappingId)) return { code: 'unsupported' };
+  try {
+    const settings = await scope(input, hostname, managementHostname, send);
+    if (!settings || !(await verifyWorker(settings)))
+      return { code: 'unsupported' };
+    const { api, workers, service, zoneName } = settings;
+    const path = `${workers}/domains/${mappingId}`;
     const details = { service, zoneName };
-    const dnsQuery = new URLSearchParams({
-      'name.exact': hostname,
-      per_page: '1',
-    });
-    // DNS delegation can shadow records at a non-apex hostname or an ancestor.
-    const delegationQuery = new URLSearchParams({
-      shadowing_name: hostname,
-      per_page: '1',
-    });
-    const [domains, routes, dns, delegation] = await Promise.all([
-      list(api, `${workers}/domains?${new URLSearchParams({ hostname })}`),
-      list(api, `${zones}/workers/routes`),
-      list(api, `${zones}/dns_records?${dnsQuery}`, true),
-      hostname === zoneName
-        ? []
-        : list(api, `${zones}/dns_records?${delegationQuery}`, true),
-    ]);
-    if (
-      routes.some((route) => matchesRoute(route, hostname)) ||
-      delegation.length
-    ) {
-      return { code: 'conflict', ...details };
+    try {
+      const mapping = object((await api(path)).result);
+      if (
+        !domainMatches(mapping, hostname, settings) ||
+        mapping.id !== mappingId
+      ) {
+        return { code: 'conflict', ...details };
+      }
+    } catch (error) {
+      if (error instanceof ProviderFailure && error.status === 404) {
+        return { code: 'detached', ...details };
+      }
+      throw error;
     }
-    if (domains.length) {
-      const domain = object(domains[0]);
-      return domains.length === 1 && domainMatches(domain, hostname, settings)
-        ? { code: 'attached', ...details }
-        : { code: 'conflict', ...details };
+
+    try {
+      await api(path, 'DELETE');
+      return { code: 'detached', ...details };
+    } catch (error) {
+      if (error instanceof ProviderFailure && error.status === 404) {
+        return { code: 'detached', ...details };
+      }
+      return { ...mutationFailure(error), ...details };
     }
-    return { code: dns.length ? 'conflict' : 'ready', ...details };
   } catch (error) {
     return failure(error);
   }
