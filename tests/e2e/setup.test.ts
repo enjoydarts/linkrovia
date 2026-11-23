@@ -8,6 +8,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   context,
   request,
   browser,
+  baseURL,
 }) => {
   test.setTimeout(90_000);
   const email = 'owner@example.com';
@@ -945,11 +946,19 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     );
     await expect(personal.locator('[name=theme]')).toHaveValue('dark');
 
-    const originalViewport = page.viewportSize();
-    await page.setViewportSize({ width: 360, height: 800 });
+    const mobile = await browser.newContext({
+      baseURL,
+      storageState: await context.storageState(),
+      viewport: { width: 360, height: 800 },
+      javaScriptEnabled: false,
+    });
     try {
-      await page.getByRole('button', { name: 'Ouvrir la navigation' }).click();
-      const drawer = page.getByRole('dialog');
+      const mobilePage = await mobile.newPage();
+      await mobilePage.goto('/admin/settings');
+      await mobilePage
+        .getByRole('button', { name: 'Ouvrir la navigation' })
+        .click();
+      const drawer = mobilePage.getByRole('dialog');
       await expect(
         drawer.getByRole('link', { name: 'Linkrovia' }),
       ).toBeVisible();
@@ -961,10 +970,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         .click();
       await expect(drawer).not.toBeVisible();
       expect(
-        await page.evaluate(() => document.documentElement.scrollWidth),
+        await mobilePage.evaluate(() => document.documentElement.scrollWidth),
       ).toBe(360);
     } finally {
-      if (originalViewport) await page.setViewportSize(originalViewport);
+      await mobile.close();
     }
 
     await page.goto('/admin/links?q=csv-e2e');

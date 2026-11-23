@@ -147,14 +147,16 @@
     aria-label={messages['admin.title']}
   >
     <div class="drawer-header">
-      <Brand href="/admin" tone="dark" /><button
-        class="drawer-close"
-        type="button"
-        aria-label={closeLabels[data.locale]}
-        onclick={() => drawer.close()}
-      >
-        <X size={22} />
-      </button>
+      <Brand href="/admin" tone="dark" />
+      <form method="dialog">
+        <button
+          class="drawer-close"
+          type="submit"
+          aria-label={closeLabels[data.locale]}
+        >
+          <X size={22} />
+        </button>
+      </form>
     </div>
     {@render navigation()}
   </dialog>
@@ -166,7 +168,11 @@
         aria-label={menuLabels[data.locale]}
         aria-haspopup="dialog"
         aria-controls="admin-navigation"
-        onclick={() => drawer.showModal()}
+        commandfor="admin-navigation"
+        command="show-modal"
+        onclick={(event) => {
+          if (!('commandForElement' in event.currentTarget)) drawer.showModal();
+        }}
       >
         <Menu size={23} />
       </button>
