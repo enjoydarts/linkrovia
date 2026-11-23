@@ -349,7 +349,7 @@ it('isolates the goals, archived results, and archive action for a link', async 
   expect(await archiveGoal(db, shared.id, 'fixture')).toBe(false);
   expect(await listGoals(db, 'fixture')).toContainEqual(goal);
   expect(await listGoals(db, 'fixture')).not.toContainEqual(other);
-  expect(await listGoals(db, 'fixture')).not.toContainEqual(shared);
+  expect(await listGoals(db, 'fixture')).toContainEqual(shared);
 
   await recordConversion(
     db,
@@ -368,5 +368,117 @@ it('isolates the goals, archived results, and archive action for a link', async 
     expect.objectContaining({ goalId: goal.id, archived: true, total: 1 }),
   );
   expect(summary.map(({ goalId }) => goalId)).not.toContain(other.id);
-  expect(summary.map(({ goalId }) => goalId)).not.toContain(shared.id);
+  expect(summary).toContainEqual(
+    expect.objectContaining({ goalId: shared.id, total: 0, eligibleClicks: 0 }),
+  );
+});
+
+it('isolates shared goal outcomes and eligible cohorts by link before and after rollup', async () => {
+  const goal = await saveGoal(db, {
+    ...payload,
+    eventName: 'shared_cohorts',
+    linkId: null,
+  });
+  if (!goal) throw new Error('Missing shared goal');
+  const { id } = goal;
+  const from = Date.parse('2025-01-20T00:00:00Z') / 1000;
+  const to = from + 86400;
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO click_attributions
+      (ref_hash, link_id, created_at, expires_at, eligible_goals_json)
+      VALUES ('shared-fixture', 'fixture', ?1, ?2, json_object(?3, ?2)),
+        ('shared-other', 'other', ?1, ?2, json_object(?3, ?2))`,
+      )
+      .bind(from + 60, from + 3600, id),
+    db
+      .prepare(
+        `INSERT INTO conversion_receipts
+      (id, goal_id, link_id, click_ref_hash, dedupe_key_hash, occurred_at, status, created_at)
+      VALUES ('shared-attributed', ?1, 'fixture', 'shared-fixture', 'shared-one', ?2, 'accepted', ?2),
+        ('shared-unattributed', ?1, NULL, NULL, 'shared-two', ?2, 'unattributed', ?2)`,
+      )
+      .bind(id, from + 61),
+  ]);
+
+  async function verifySummary() {
+    const find = async (linkId?: string) =>
+      (await conversionSummary(db, from, to, linkId)).find(
+        ({ goalId }) => goalId === id,
+      );
+    expect(await find('fixture')).toMatchObject({
+      total: 1,
+      attributed: 1,
+      unattributed: 0,
+      eligibleClicks: 1,
+      rate: 1,
+      incompleteLinkHistory: false,
+    });
+    expect(await find('other')).toMatchObject({
+      total: 0,
+      attributed: 0,
+      unattributed: 0,
+      eligibleClicks: 1,
+      rate: 0,
+      incompleteLinkHistory: false,
+    });
+    expect(await find()).toMatchObject({
+      total: 2,
+      attributed: 1,
+      unattributed: 1,
+      eligibleClicks: 2,
+      rate: 0.5,
+    });
+  }
+
+  await verifySummary();
+  await rollupConversions(db, new Date());
+  await verifySummary();
+});
+
+it('discloses legacy shared cohorts with missing link history and leaves their global totals readable', async () => {
+  const goal = await saveGoal(db, {
+    ...payload,
+    linkId: null,
+    eventName: 'shared_legacy',
+  });
+  if (!goal) throw new Error('Missing shared goal');
+  const day = '2025-01-21';
+  const from = Date.parse(day + 'T00:00:00Z') / 1000;
+  const to = from + 86400;
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO conversion_cohort_rollups
+       (day_utc, goal_id, eligible_clicks, converted_clicks) VALUES (?1, ?2, 3, 2)`,
+      )
+      .bind(day, goal.id),
+    db
+      .prepare(
+        `INSERT INTO conversion_rollups
+       (day_utc, goal_id, link_id, conversions, attributed) VALUES (?1, ?2, 'fixture', 1, 0)`,
+      )
+      .bind(day, goal.id),
+  ]);
+  expect(await archiveGoal(db, goal.id)).toBe(true);
+  expect(await conversionSummary(db, from, to, 'fixture')).toContainEqual(
+    expect.objectContaining({
+      goalId: goal.id,
+      archived: true,
+      total: 1,
+      attributed: 1,
+      eligibleClicks: 0,
+      rate: null,
+      incompleteLinkHistory: true,
+    }),
+  );
+  expect(await conversionSummary(db, from, to)).toContainEqual(
+    expect.objectContaining({
+      goalId: goal.id,
+      attributed: 0,
+      eligibleClicks: 3,
+      rate: 2 / 3,
+    }),
+  );
 });

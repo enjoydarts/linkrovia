@@ -66,6 +66,16 @@
     ],
   } as const;
   let labels = $derived(dashboardLabels[data.locale]);
+  const comparisonLabels = {
+    en: ['Previous 14 days', 'Comparison unavailable'],
+    ja: ['前の14日間', '比較データを取得できません'],
+    'zh-CN': ['前 14 天', '无法获取比较数据'],
+    'zh-TW': ['前 14 天', '無法取得比較資料'],
+    es: ['14 días anteriores', 'Comparación no disponible'],
+    it: ['14 giorni precedenti', 'Confronto non disponibile'],
+    fr: ['14 jours précédents', 'Comparaison indisponible'],
+  } as const;
+  let comparison = $derived(comparisonLabels[data.locale]);
 </script>
 
 <svelte:head>
@@ -100,6 +110,15 @@
             <p class="metric-label">{analytics.clicks}</p>
             <p class="click-count">
               {data.report.totalClicks?.toLocaleString(data.locale) ?? '—'}
+            </p>
+            <p class="comparison">
+              {comparison[0]}:
+              {#if data.previous}
+                {data.previous.total.toLocaleString(data.locale)}
+                ({data.previous.from} – {data.previous
+                  .to}){#if data.previous.estimated}
+                  · {analytics.estimated}{/if}
+              {:else}{comparison[1]}{/if}
             </p>
           </div>
           <p class="period">
@@ -156,6 +175,41 @@
       {/if}
     </section>
     <div class="link-cards">
+      {#if data.report}
+        <section class="card link-card" aria-labelledby="breakdown-heading">
+          <div class="section-heading">
+            <h2 id="breakdown-heading">{analytics.breakdown}</h2>
+            <a href="/admin/analytics">
+              {labels[4]} <span aria-hidden="true">→</span>
+            </a>
+          </div>
+          <div class="breakdowns">
+            {#each data.breakdowns as item (item.dimension)}
+              <section class="breakdown" aria-label={analytics[item.dimension]}>
+                <h3>{analytics[item.dimension]}</h3>
+                {#if item.result}
+                  {#if item.result.breakdown.length}
+                    <ul class="popular">
+                      {#each item.result.breakdown.slice(0, 3) as row (row.key)}
+                        <li>
+                          <span>{row.key || '—'}</span><strong>
+                            {row.clicks.toLocaleString(data.locale)}
+                          </strong>
+                        </li>
+                      {/each}
+                    </ul>
+                    {#if item.result.estimated}<p class="breakdown-note">
+                        {analytics.estimated}
+                      </p>{/if}
+                  {:else}<p class="breakdown-note">{analytics.empty}</p>{/if}
+                {:else}<p class="breakdown-note" role="status">
+                    {labels[2]}
+                  </p>{/if}
+              </section>
+            {/each}
+          </div>
+        </section>
+      {/if}
       {#if data.report}
         <section class="card link-card" aria-labelledby="popular-heading">
           <div class="section-heading">
@@ -311,6 +365,31 @@
   .chart-footer,
   .empty {
     color: var(--ui-text-muted);
+    font-size: 0.83rem;
+  }
+  .comparison,
+  .breakdown-note {
+    margin-top: 0.45rem;
+    color: var(--ui-text-muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+  .breakdowns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+  .breakdown h3 {
+    font-size: 0.85rem;
+    font-weight: 650;
+  }
+  .breakdown ul {
+    margin-top: 0.4rem;
+  }
+  .breakdown li {
+    min-height: 0;
+    padding: 0.4rem 0;
     font-size: 0.83rem;
   }
   .metric-label {

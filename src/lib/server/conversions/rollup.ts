@@ -24,7 +24,7 @@ export async function rollupConversions(
 
   // D1 executes this batch in a single transaction. Both DELETE statements use
   // the same bounded selections as their preceding snapshots.
-  const [, , , deleted] = await db.batch([
+  const [, , , , deleted] = await db.batch([
     db
       .prepare(
         `INSERT INTO conversion_cohort_rollups
@@ -35,6 +35,21 @@ export async function rollupConversions(
       WHERE ref.ref_hash IN (${expiredReferences})
       GROUP BY 1, 2
       ON CONFLICT(day_utc, goal_id) DO UPDATE SET
+        eligible_clicks = eligible_clicks + excluded.eligible_clicks,
+        converted_clicks = converted_clicks + excluded.converted_clicks`,
+      )
+      .bind(createdBefore, now),
+    db
+      .prepare(
+        `INSERT INTO conversion_link_cohort_rollups
+      (day_utc, goal_id, link_id, eligible_clicks, converted_clicks)
+      SELECT date(ref.created_at, 'unixepoch'), eligibility.key, ref.link_id, COUNT(*), COUNT(r.id)
+      FROM click_attributions ref JOIN json_each(ref.eligible_goals_json) eligibility
+      JOIN conversion_goals g ON g.id = eligibility.key AND g.link_id IS NULL
+      LEFT JOIN conversion_receipts r ON r.goal_id = eligibility.key AND r.click_ref_hash = ref.ref_hash
+      WHERE ref.ref_hash IN (${expiredReferences})
+      GROUP BY 1, 2, 3
+      ON CONFLICT(day_utc, goal_id, link_id) DO UPDATE SET
         eligible_clicks = eligible_clicks + excluded.eligible_clicks,
         converted_clicks = converted_clicks + excluded.converted_clicks`,
       )

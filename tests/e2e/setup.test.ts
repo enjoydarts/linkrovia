@@ -104,6 +104,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
 
     await page.goto('/admin');
     await expect(page.locator('canvas')).toBeVisible();
+    await expect(page.getByText(/Previous 14 days/)).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: 'Country', exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole('heading', { name: 'Popular links' }),
     ).toBeVisible();
@@ -119,6 +123,25 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await test.step('view analytics and create a conversion goal', async () => {
       const linkPage = page.url();
       const linkId = new URL(linkPage).pathname.split('/').at(-1)!;
+      const detailsTabs = page.getByRole('navigation', {
+        name: 'Links',
+        exact: true,
+      });
+      await detailsTabs.getByRole('link', { name: 'Rule simulator' }).click();
+      await expect(page).toHaveURL(`${linkPage}/simulate`);
+      await page.getByLabel('Country code').fill('JP');
+      await page.getByLabel('Region code').fill('JP-13');
+      await page.getByRole('button', { name: 'Run simulation' }).click();
+      const simulation = page.getByRole('region', {
+        name: 'Simulation result',
+      });
+      await expect(simulation).toContainText(
+        'The default destination applies.',
+      );
+      await expect(simulation.locator('code')).toHaveText(
+        'https://example.org/path?fixed=1#target',
+      );
+      await expect(simulation.locator('a')).toHaveCount(0);
       await page.goto('/admin/analytics');
       await expect(
         page.getByRole('heading', { name: 'Analytics', exact: true }),
@@ -281,6 +304,26 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await expect(
         page.getByRole('heading', { name: 'Purchase' }),
       ).toBeVisible();
+      await page.goto('/admin/analytics/conversions');
+      const shared = page.locator('form[action="?/create"]');
+      await expect(shared.locator('[name=linkId]')).toHaveValue('');
+      await shared.locator('[name=name]').fill('Shared purchase');
+      await shared.locator('[name=eventName]').fill('shared_purchase');
+      await shared.getByRole('button', { name: 'Create goal' }).click();
+      await expect(page).toHaveURL(
+        '/admin/analytics/conversions?saved=created',
+      );
+      await page.goto(`${linkPage}/conversions`);
+      const sharedCard = page.locator('.goal-list .card').filter({
+        has: page.getByRole('heading', {
+          name: 'Shared purchase',
+          exact: true,
+        }),
+      });
+      await expect(
+        sharedCard.getByRole('link', { name: 'All links' }),
+      ).toHaveAttribute('href', '/admin/analytics/conversions');
+      await expect(sharedCard.locator('form')).toHaveCount(0);
       await page.goto(linkPage, { waitUntil: 'networkidle' });
     });
 
@@ -320,8 +363,11 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await page.goto('/admin/links', { waitUntil: 'networkidle' });
     const toolbar = page.getByRole('search', { name: 'Search links' });
     await toolbar.getByRole('searchbox').fill('fixture link');
+    await toolbar.getByLabel('Sort by').selectOption('created_asc');
     await toolbar.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page).toHaveURL(/\/admin\/links\?q=fixture\+link/);
+    expect(new URL(page.url()).searchParams.get('sort')).toBe('created_asc');
+    await expect(toolbar.getByLabel('Sort by')).toHaveValue('created_asc');
     const row = page.getByRole('listitem').filter({
       has: page.getByRole('link', { name: 'A fixture link', exact: true }),
     });
@@ -963,6 +1009,12 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       'Europe/Paris',
     );
     await expect(personal.locator('[name=theme]')).toHaveValue('dark');
+
+    const frenchCsv = await context.request.get(
+      '/admin/analytics/export?range=7d',
+    );
+    expect(frenchCsv.status()).toBe(200);
+    expect((await frenchCsv.text()).split('\r\n')[0]).toContain('"Clics"');
 
     const mobile = await browser.newContext({
       baseURL,

@@ -18,6 +18,7 @@ export const GET = (async (event) => {
     return analyticsCsv(
       await loadAnalyticsReport(event.locals.env, parsed, { development: dev }),
       parsed.bom,
+      event.locals.locale,
     );
   } catch {
     error(400, 'Unable to export analytics');

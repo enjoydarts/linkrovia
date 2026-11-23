@@ -98,6 +98,34 @@ it('escapes spreadsheet values and marks date basis and sampling in CSV', async 
   expect(response.headers.get('content-disposition')).toContain('attachment');
 });
 
+it('translates downloaded CSV headers without changing report rows', async () => {
+  const parsed = parseAnalyticsQuery(new URLSearchParams(), 'UTC', { now });
+  const report = await loadAnalyticsReport(
+    {
+      ANALYTICS_SQL: {
+        async query() {
+          throw new Error('Unexpected provider call');
+        },
+      },
+    },
+    parsed,
+    { development: true },
+  );
+  const [apiHeader, ...apiRows] = (
+    await analyticsCsv(report, false).text()
+  ).split('\r\n');
+  const [jaHeader, ...jaRows] = (
+    await analyticsCsv(report, false, 'ja').text()
+  ).split('\r\n');
+  const [frHeader] = (await analyticsCsv(report, false, 'fr').text()).split(
+    '\r\n',
+  );
+  expect(apiHeader).toContain('"date_basis"');
+  expect(jaHeader).toContain('"クリック数"');
+  expect(frHeader).toContain('"Clics"');
+  expect(jaRows).toEqual(apiRows);
+});
+
 it('resolves calendar presets and retains explicit dates for custom ranges', () => {
   const options = { now, allowArchived: true };
   for (const [range, from] of [

@@ -1,5 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { csvCell } from '../../csv';
+import { analyticsCsvHeaders } from '../../i18n/analytics-csv';
+import type { Locale } from '../../i18n/locale';
 import { isTimeZone } from '../../timezone/timezone';
 import {
   CloudflareAnalyticsRepository,
@@ -349,7 +351,11 @@ export async function loadAnalyticsReport(
   );
 }
 
-export function analyticsCsv(report: AnalyticsReport, bom: boolean): Response {
+export function analyticsCsv(
+  report: AnalyticsReport,
+  bom: boolean,
+  locale: Locale = 'en',
+): Response {
   const { dateBasis, estimated, source, timezone, granularity } = report.meta;
   const metadata = [
     dateBasis,
@@ -365,18 +371,7 @@ export function analyticsCsv(report: AnalyticsReport, bom: boolean): Response {
     month: 'monthly',
   }[granularity];
   const rows = [
-    [
-      'type',
-      'date',
-      'dimension',
-      'key',
-      'clicks',
-      'date_basis',
-      'timezone',
-      'estimated',
-      'source',
-      'granularity',
-    ],
+    analyticsCsvHeaders[locale],
     ...report.series.map((row) => [
       rowType,
       row.date,

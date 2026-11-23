@@ -8,6 +8,7 @@
     goalHelp,
     ratePending,
     archivedDates,
+    incompleteLinkHistory,
   } from './messages';
   type Props = {
     data: Awaited<ReturnType<typeof loadConversions>> & {
@@ -46,6 +47,9 @@
   {#if data.summary.some((goal) => goal.partialUtcDays)}<p class="muted">
       {archivedDates[data.locale][1]}
     </p>{/if}
+  {#if data.summary.some((goal) => goal.incompleteLinkHistory)}<p class="muted">
+      {incompleteLinkHistory[data.locale]}
+    </p>{/if}
   <p class="muted">{m.rateHelp} {ratePending[data.locale]}</p>
   {#if data.summary.length === 0}<p>{m.none}</p>{:else}<div class="table-wrap">
       <table>
@@ -71,7 +75,9 @@
               </td><td>
                 {summary?.unattributed.toLocaleString(data.locale) ?? '0'}
               </td><td>
-                {summary?.eligibleClicks.toLocaleString(data.locale) ?? '0'}
+                {summary.incompleteLinkHistory
+                  ? '—'
+                  : summary.eligibleClicks.toLocaleString(data.locale)}
               </td><td>
                 {summary?.rate == null
                   ? '—'
@@ -122,7 +128,7 @@
     <div class="goal-list">
       {#each data.goals as goal (goal.id)}<div class="card">
           <h3>{goal.name}</h3>
-          {#if data.isOwner}<form
+          {#if data.isOwner && (!data.linkId || goal.linkId !== null)}<form
               method="POST"
               action="?/update"
               class="fields"
@@ -192,6 +198,11 @@
             </form>{:else}<p>
               <code>{goal.eventName}</code> · {goal.attributionWindowHours}
               {m.hours} · {goal.isActive ? m.activeLabel : m.inactive}
+              {#if data.linkId && goal.linkId === null}
+                · {#if data.isOwner}<a href="/admin/analytics/conversions">
+                    {m.allLinks}
+                  </a>{:else}{m.allLinks}{/if}
+              {/if}
             </p>{/if}
         </div>{/each}
     </div>

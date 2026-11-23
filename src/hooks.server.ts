@@ -20,6 +20,8 @@ export const handle: Handle = async ({ event, resolve }) => {
     id === '/login' ||
     id?.startsWith('/login/') ||
     id === '/logout' ||
+    id === '/invite/admin' ||
+    id === '/invite/admin/passkey' ||
     id === '/admin' ||
     id?.startsWith('/admin/') ||
     id?.startsWith('/api/v1/domains/') ||

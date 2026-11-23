@@ -24,11 +24,11 @@ Use an API key with `analytics:read`. Use `from` and `to` as inclusive `YYYY-MM-
 | GET    | `/api/v1/links/:id/analytics`     |
 | GET    | `/api/v1/links/:id/analytics.csv` |
 
-The CSV identifies each row as `hourly`, `daily`, `weekly`, `monthly`, or `breakdown` and includes the granularity, time zone, date basis, estimate flag, and data source.
+The CSV identifies each row as `hourly`, `daily`, `weekly`, `monthly`, or `breakdown` and includes the granularity, time zone, date basis, estimate flag, and data source. Downloads from the admin console use your interface language for column headers. The REST API uses stable field names and values for scripts.
 
 ## Conversion setup
 
-Open **Analytics → Conversions** for the account-wide report and shared goals. A link's **Conversions** tab shows goals assigned to that link and its tracking setting.
+Open **Analytics → Conversions** for the account-wide report and shared goals. A link's **Conversions** tab shows goals assigned to that link, the link's attributed results for shared goals, and its tracking setting. Manage shared goals in the account-wide report.
 
 1. Create a goal, such as `purchase`. In the account-wide view, pick a link or apply the goal to all tracked links. The event identifier and link define that goal's historical identity. Create a new goal when either changes.
 2. For attribution, enable tracking in the link's **Conversions** tab. This applies to temporary redirects. Linkrovia adds a short-lived `cl_ref` query value to the destination. Treat it as sensitive and retain it on your server. Changes to a link destination or redirect rules, and restores that overwrite a link, clear the tracking opt-in.
@@ -57,4 +57,4 @@ An event without a click reference is counted as unattributed. A valid reference
 | PATCH, DELETE | `/api/v1/conversion-goals/:id`  |
 | GET           | `/api/v1/conversions/analytics` |
 
-The conversion report accepts `from`, `to`, and `tz` for a range of up to 30 calendar days. The scheduled Worker retains receipts for at least 30 days to deduplicate retries, then stores daily event and click-cohort totals in UTC in D1. Older reports use UTC dates. Where the selected local dates clip an already archived UTC day, the report excludes that day and marks `partialUtcDays` for the affected goals. The response includes its `dateBasis`.
+The conversion report accepts `from`, `to`, and `tz` for a range of up to 30 calendar days. The scheduled Worker retains receipts for at least 30 days to deduplicate retries, then stores daily event and click-cohort totals in UTC in D1. Older reports use UTC dates. Where the selected local dates clip an already archived UTC day, the report excludes that day and marks `partialUtcDays` for the affected goals. The response includes its `dateBasis`. When older shared-goal totals lack per-link click cohorts, the per-link report shows recorded attributed events and leaves eligible clicks and the rate unavailable for the affected period.

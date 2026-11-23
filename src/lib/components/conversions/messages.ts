@@ -365,3 +365,15 @@ export const ratePending: Record<Locale, string> = {
   it: 'Il tasso resta in sospeso finché la finestra di attribuzione è aperta.',
   fr: 'Le taux reste en attente tant que la fenêtre d’attribution est ouverte.',
 };
+
+export const incompleteLinkHistory: Record<Locale, string> = {
+  en: 'Eligible clicks and the rate are unavailable for goals with older clicks that were saved only across all links.',
+  ja: '過去のクリックが全リンクの合計でのみ保存されている目標は、リンク別の対象クリック数とコンバージョン率を表示できません。',
+  'zh-CN':
+    '如果目标的历史点击仅按所有链接汇总保存，则无法显示该链接的有效点击数和转化率。',
+  'zh-TW':
+    '如果目標的歷史點擊僅按所有連結彙總儲存，則無法顯示該連結的有效點擊數和轉換率。',
+  es: 'Los clics válidos y la tasa no están disponibles cuando los clics históricos de un objetivo solo se guardaron como un total de todos los enlaces.',
+  it: 'I clic idonei e il tasso non sono disponibili se i clic storici di un obiettivo sono stati salvati solo come totale di tutti i link.',
+  fr: 'Les clics éligibles et le taux sont indisponibles lorsque les anciens clics d’un objectif ont été enregistrés uniquement pour l’ensemble des liens.',
+};

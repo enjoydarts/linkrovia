@@ -164,6 +164,69 @@ describe('link management and delivery', () => {
     ).toEqual([link.id]);
   });
 
+  it('paginates each supported link order with stable cursors and keeps legacy default cursors', async () => {
+    const db = platform.env.DB;
+    const fixtures = [
+      { slug: 'sort-one', createdAt: 1000, updatedAt: 3000 },
+      { slug: 'sort-two', createdAt: 2000, updatedAt: 1000 },
+      { slug: 'sort-three', createdAt: 3000, updatedAt: 2000 },
+    ];
+    for (const fixture of fixtures) {
+      const created = await createLink(db, null, {
+        ...draft,
+        slug: fixture.slug,
+        tags: ['sorting'],
+      });
+      if (!created.ok) throw new Error(created.code);
+      await db
+        .prepare('UPDATE links SET created_at = ?, updated_at = ? WHERE id = ?')
+        .bind(fixture.createdAt, fixture.updatedAt, created.id)
+        .run();
+    }
+
+    async function readAll(
+      sort: 'created_desc' | 'created_asc' | 'updated_desc',
+    ) {
+      const slugs: string[] = [];
+      let cursor = '';
+      do {
+        const page = await listLinks(db, {
+          tag: 'sorting',
+          sort,
+          limit: 2,
+          cursor,
+        });
+        slugs.push(...page.links.map(({ slug }) => slug));
+        cursor = page.nextCursor ?? '';
+      } while (cursor);
+      return slugs;
+    }
+
+    expect(await readAll('created_desc')).toEqual([
+      'sort-three',
+      'sort-two',
+      'sort-one',
+    ]);
+    expect(await readAll('created_asc')).toEqual([
+      'sort-one',
+      'sort-two',
+      'sort-three',
+    ]);
+    expect(await readAll('updated_desc')).toEqual([
+      'sort-one',
+      'sort-three',
+      'sort-two',
+    ]);
+
+    const first = await listLinks(db, { tag: 'sorting', limit: 1 });
+    const legacy = await listLinks(db, {
+      tag: 'sorting',
+      limit: 1,
+      cursor: `${first.links[0].createdAt}:${first.links[0].id}`,
+    });
+    expect(legacy.links.map(({ slug }) => slug)).toEqual(['sort-two']);
+  });
+
   it('applies snapshotted UTM values to the selected destination without forwarding visitor query parameters', async () => {
     const db = platform.env.DB;
     const created = await createLink(db, null, {

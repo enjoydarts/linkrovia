@@ -679,3 +679,57 @@ export const passkeyChallenges = sqliteTable(
     index('passkey_challenges_expiry').on(table.expiresAt),
   ],
 );
+
+export const conversionLinkCohortRollups = sqliteTable(
+  'conversion_link_cohort_rollups',
+  {
+    dayUtc: text('day_utc').notNull(),
+    goalId: text('goal_id').notNull(),
+    linkId: text('link_id').notNull(),
+    eligibleClicks: integer('eligible_clicks').notNull(),
+    convertedClicks: integer('converted_clicks').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.dayUtc, table.goalId, table.linkId] }),
+    check(
+      'conversion_link_cohort_eligible_check',
+      sql`${table.eligibleClicks} > 0`,
+    ),
+    check(
+      'conversion_link_cohort_converted_check',
+      sql`${table.convertedClicks} BETWEEN 0 AND ${table.eligibleClicks}`,
+    ),
+  ],
+);
+
+export const adminInvites = sqliteTable(
+  'admin_invites',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    codeHash: text('code_hash').notNull().unique(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch())`),
+    expiresAt: integer('expires_at').notNull(),
+    revokedAt: integer('revoked_at'),
+    acceptedBy: text('accepted_by').references(() => users.id),
+    acceptedAt: integer('accepted_at'),
+  },
+  (table) => [
+    check(
+      'admin_invites_acceptance',
+      sql`(${table.acceptedBy} IS NULL) = (${table.acceptedAt} IS NULL)`,
+    ),
+    check(
+      'admin_invites_not_revoked',
+      sql`${table.acceptedBy} IS NULL OR ${table.revokedAt} IS NULL`,
+    ),
+    uniqueIndex('admin_invites_pending_email')
+      .on(table.email)
+      .where(sql`${table.revokedAt} IS NULL AND ${table.acceptedBy} IS NULL`),
+  ],
+);

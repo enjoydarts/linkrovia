@@ -1,4 +1,14 @@
 import { dev } from '$app/env';
+import { Temporal } from '@js-temporal/polyfill';
+import {
+  CloudflareAnalyticsRepository,
+  type ClickAnalyticsEnv,
+} from '$lib/server/analytics/cloudflare';
+import { MockAnalyticsRepository } from '$lib/server/analytics/mock';
+import type {
+  AnalyticsDimension,
+  BreakdownResult,
+} from '$lib/server/analytics/repository';
 import {
   requireSession,
   shortUrl,
@@ -27,6 +37,16 @@ export const load = (async (event) => {
     url: string | null;
     id: string | null;
   }> = [];
+  let previous: {
+    total: number;
+    from: string;
+    to: string;
+    estimated: boolean;
+  } | null = null;
+  let breakdowns: Array<{
+    dimension: AnalyticsDimension;
+    result: BreakdownResult | null;
+  }> = [];
   try {
     const parsed = parseAnalyticsQuery(
       new URLSearchParams({ dimension: 'link' }),
@@ -34,6 +54,49 @@ export const load = (async (event) => {
     );
     report = await loadAnalyticsReport(event.locals.env, parsed, {
       development: dev,
+    });
+    const repository = dev
+      ? new MockAnalyticsRepository()
+      : new CloudflareAnalyticsRepository(
+          event.locals.env.ANALYTICS_SQL,
+          (event.locals.env as ClickAnalyticsEnv).LINKROVIA_CLICKS_DATASET,
+        );
+    const priorEnd = Temporal.PlainDate.from(parsed.from).subtract({ days: 1 });
+    const priorStart = priorEnd.subtract({ days: 13 });
+    const prior = parseAnalyticsQuery(
+      new URLSearchParams({
+        from: priorStart.toString(),
+        to: priorEnd.toString(),
+      }),
+      timezone,
+    );
+    const dimensions = ['country', 'referrer', 'os', 'rule'] as const;
+    const [priorResult, ...dimensionResults] = await Promise.allSettled([
+      repository.getClickTrend({ ...prior.query, granularity: 'day' }),
+      ...dimensions.map((dimension) =>
+        repository.getBreakdown(parsed.query, dimension),
+      ),
+    ]);
+    if (priorResult.status === 'fulfilled' && 'series' in priorResult.value) {
+      previous = {
+        total: priorResult.value.series.reduce(
+          (sum, row) => sum + row.clicks,
+          0,
+        ),
+        from: prior.from,
+        to: prior.to,
+        estimated: priorResult.value.meta.estimated,
+      };
+    }
+    breakdowns = dimensions.map((dimension, index) => {
+      const result = dimensionResults[index];
+      return {
+        dimension,
+        result:
+          result.status === 'fulfilled' && 'breakdown' in result.value
+            ? result.value
+            : null,
+      };
     });
     popularLinks = await Promise.all(
       report.breakdown.slice(0, 5).map(async (row) => {
@@ -57,6 +120,8 @@ export const load = (async (event) => {
   return {
     report,
     popularLinks,
+    previous,
+    breakdowns,
     recentLinks: links.map((link) => ({
       id: link.id,
       title: link.title,

@@ -13,6 +13,7 @@ import {
   decodeClientDataJSON,
   isoBase64URL,
 } from '@simplewebauthn/server/helpers';
+import { getInviteEmail, inviteCodeHash } from './admin-invites';
 import { isLocale } from '../../i18n/locale';
 import { normalizeEmail } from './credential';
 import { hex, randomHex, sha256, uuidV7 } from './crypto';
@@ -53,7 +54,7 @@ export function passkeyRp(
   return { id: hostname, origin };
 }
 
-interface OwnerIdentity {
+interface RegistrationIdentity {
   id: string;
   email: string;
   locale: string;
@@ -81,7 +82,7 @@ async function issueChallenge(
   db: D1Database,
   rp: PasskeyRp,
   challenge: string,
-  owner?: OwnerIdentity,
+  identity?: RegistrationIdentity,
 ): Promise<string> {
   const token = randomHex(32);
   await db.batch([
@@ -102,13 +103,13 @@ async function issueChallenge(
       .bind(
         await fingerprint(token),
         challenge,
-        owner ? 'owner' : 'login',
+        identity ? 'owner' : 'login',
         rp.id,
         rp.origin,
-        owner?.proofHash ?? null,
-        owner?.id ?? null,
-        owner?.email ?? null,
-        owner?.locale ?? null,
+        identity?.proofHash ?? null,
+        identity?.id ?? null,
+        identity?.email ?? null,
+        identity?.locale ?? null,
         passkeyMaxAge,
       ),
   ]);
@@ -119,7 +120,7 @@ async function consumeChallenge(
   db: D1Database,
   rp: PasskeyRp,
   token: unknown,
-  setupProof?: string,
+  proofHash?: string,
 ): Promise<ChallengeRow | null> {
   if (
     typeof token !== 'string' ||
@@ -137,10 +138,10 @@ async function consumeChallenge(
     )
     .bind(
       await fingerprint(token),
-      setupProof === undefined ? 'login' : 'owner',
+      proofHash === undefined ? 'login' : 'owner',
       rp.id,
       rp.origin,
-      setupProof === undefined ? null : await fingerprint(setupProof),
+      proofHash ?? null,
     )
     .first<ChallengeRow>();
 }
@@ -245,17 +246,24 @@ export async function beginOwnerPasskey(
     return null;
   }
 
-  const owner = {
+  return beginRegistration(db, rp, {
     id: uuidV7(),
     email,
     locale: isLocale(locale) ? locale : 'en',
     proofHash: await fingerprint(setupProof),
-  };
+  });
+}
+
+async function beginRegistration(
+  db: D1Database,
+  rp: PasskeyRp,
+  identity: RegistrationIdentity,
+) {
   const options = await generateRegistrationOptions({
     rpName: 'Linkrovia',
     rpID: rp.id,
-    userName: owner.email,
-    userID: new TextEncoder().encode(owner.id),
+    userName: identity.email,
+    userID: new TextEncoder().encode(identity.id),
     timeout: passkeyMaxAge * 1000,
     attestationType: 'none',
     authenticatorSelection: {
@@ -266,7 +274,7 @@ export async function beginOwnerPasskey(
   });
   return {
     options,
-    ceremonyToken: await issueChallenge(db, rp, options.challenge, owner),
+    ceremonyToken: await issueChallenge(db, rp, options.challenge, identity),
   };
 }
 
@@ -290,7 +298,12 @@ export async function finishOwnerPasskey(
   ) {
     return null;
   }
-  const stored = await consumeChallenge(db, rp, ceremonyToken, setupProof);
+  const stored = await consumeChallenge(
+    db,
+    rp,
+    ceremonyToken,
+    await fingerprint(setupProof),
+  );
   const registration = parseRegistration(response);
   if (
     !stored?.owner_id ||
@@ -301,37 +314,12 @@ export async function finishOwnerPasskey(
     return null;
   }
 
-  let credential: WebAuthnCredential;
-  try {
-    const client = decodeClientDataJSON(registration.response.clientDataJSON);
-    if (
-      (client.crossOrigin !== undefined && client.crossOrigin !== false) ||
-      client.topOrigin !== undefined
-    )
-      return null;
-    // The platform must return no attestation. Reject other formats before
-    // invoking verification routines for a particular authenticator vendor.
-    if (
-      decodeAttestationObject(
-        isoBase64URL.toBuffer(registration.response.attestationObject),
-      ).get('fmt') !== 'none'
-    )
-      return null;
-    const result = await verifyRegistrationResponse({
-      response: registration,
-      expectedChallenge: stored.challenge,
-      expectedOrigin: rp.origin,
-      expectedRPID: rp.id,
-      requireUserPresence: true,
-      requireUserVerification: true,
-      supportedAlgorithmIDs: algorithms,
-    });
-    if (!result.verified || !result.registrationInfo.userVerified) return null;
-    credential = result.registrationInfo.credential;
-    if (credential.id !== registration.id) return null;
-  } catch {
-    return null;
-  }
+  const credential = await verifiedCredential(
+    rp,
+    stored.challenge,
+    registration,
+  );
+  if (!credential) return null;
 
   const [, completion] = await db.batch([
     db
@@ -384,6 +372,134 @@ export async function finishOwnerPasskey(
       .bind(uuidV7(), rp.id, stored.owner_id),
   ]);
   return completion.meta.changes === 1 ? { userId: stored.owner_id } : null;
+}
+
+async function verifiedCredential(
+  rp: PasskeyRp,
+  challenge: string,
+  registration: RegistrationResponseJSON,
+): Promise<WebAuthnCredential | null> {
+  try {
+    const client = decodeClientDataJSON(registration.response.clientDataJSON);
+    if (
+      (client.crossOrigin !== undefined && client.crossOrigin !== false) ||
+      client.topOrigin !== undefined
+    )
+      return null;
+    // The platform must return no attestation. Reject other formats before
+    // invoking verification routines for a particular authenticator vendor.
+    if (
+      decodeAttestationObject(
+        isoBase64URL.toBuffer(registration.response.attestationObject),
+      ).get('fmt') !== 'none'
+    )
+      return null;
+    const result = await verifyRegistrationResponse({
+      response: registration,
+      expectedChallenge: challenge,
+      expectedOrigin: rp.origin,
+      expectedRPID: rp.id,
+      requireUserPresence: true,
+      requireUserVerification: true,
+      supportedAlgorithmIDs: algorithms,
+    });
+    if (!result.verified || !result.registrationInfo.userVerified) return null;
+    const { credential } = result.registrationInfo;
+    return credential.id === registration.id ? credential : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function beginInvitedPasskey(
+  db: D1Database,
+  { rp, code, locale }: { rp: PasskeyRp; code: unknown; locale: string },
+) {
+  const proofHash = await inviteCodeHash(code);
+  const email = proofHash && (await getInviteEmail(db, proofHash));
+  if (!proofHash || !email) return null;
+  return beginRegistration(db, rp, {
+    id: uuidV7(),
+    email,
+    locale: isLocale(locale) ? locale : 'en',
+    proofHash,
+  });
+}
+
+export async function finishInvitedPasskey(
+  db: D1Database,
+  {
+    rp,
+    code,
+    ceremonyToken,
+    response,
+  }: {
+    rp: PasskeyRp;
+    code: unknown;
+    ceremonyToken: unknown;
+    response: unknown;
+  },
+): Promise<string | null> {
+  const proofHash = await inviteCodeHash(code);
+  if (!proofHash) return null;
+  // The legacy 'owner' challenge type stores registration identities. The
+  // namespaced invitation fingerprint keeps its proofs separate from setup.
+  const stored = await consumeChallenge(db, rp, ceremonyToken, proofHash);
+  const registration = parseRegistration(response);
+  if (
+    !stored?.owner_id ||
+    !stored.owner_email ||
+    !stored.owner_locale ||
+    !registration
+  )
+    return null;
+  const credential = await verifiedCredential(
+    rp,
+    stored.challenge,
+    registration,
+  );
+  if (!credential) return null;
+  const { owner_id: userId, owner_email: email, owner_locale: locale } = stored;
+  // A competing ceremony gets a fresh user ID. Only the ceremony that
+  // inserted its own user can consume the invite and store a credential.
+  const [user] = await db.batch([
+    db
+      .prepare(
+        `INSERT INTO users (id, email, password_hash, role, locale)
+       SELECT ?, email, ?, 'admin', ? FROM admin_invites
+       WHERE code_hash = ? AND email = ? AND accepted_by IS NULL
+         AND revoked_at IS NULL AND expires_at > unixepoch()
+         AND NOT EXISTS (
+           SELECT 1 FROM passkey_credentials WHERE credential_id = ?
+         )
+       ON CONFLICT (email) DO NOTHING`,
+      )
+      .bind(userId, passwordDisabled, locale, proofHash, email, credential.id),
+    db
+      .prepare(
+        `UPDATE admin_invites SET accepted_by = ?, accepted_at = unixepoch()
+       WHERE code_hash = ? AND accepted_by IS NULL AND revoked_at IS NULL
+         AND EXISTS (SELECT 1 FROM users WHERE id = ? AND email = admin_invites.email AND role = 'admin')`,
+      )
+      .bind(userId, proofHash, userId),
+    db
+      .prepare(
+        `INSERT INTO passkey_credentials
+         (credential_id, user_id, rp_id, origin, public_key, sign_count)
+       SELECT ?, accepted_by, ?, ?, ?, ? FROM admin_invites
+       WHERE code_hash = ? AND accepted_by = ?`,
+      )
+      .bind(
+        credential.id,
+        rp.id,
+        rp.origin,
+        Buffer.from(credential.publicKey).toString('base64url'),
+        credential.counter,
+        proofHash,
+        userId,
+      ),
+  ]);
+  return user.meta.changes === 1 ? userId : null;
 }
 
 export async function beginPasskeySignIn(db: D1Database, rp: PasskeyRp) {
@@ -491,8 +607,8 @@ export async function getSignInMethods(
 }
 
 type PasskeyRequest =
-  | { step: 'begin'; email?: unknown; turnstileToken?: unknown }
-  | { step: 'finish'; response: unknown };
+  | { step: 'begin'; email?: unknown; turnstileToken?: unknown; code?: unknown }
+  | { step: 'finish'; response: unknown; code?: unknown };
 
 export async function readPasskeyRequest(
   request: Request,
@@ -523,16 +639,18 @@ export async function readPasskeyRequest(
     const payload: unknown = JSON.parse(body + decoder.decode());
     if (!payload || typeof payload !== 'object' || !('step' in payload))
       return null;
+    const code = 'code' in payload ? payload.code : undefined;
     if (payload.step === 'begin') {
       return {
         step: 'begin',
+        code,
         email: 'email' in payload ? payload.email : undefined,
         turnstileToken:
           'turnstileToken' in payload ? payload.turnstileToken : undefined,
       };
     }
     if (payload.step === 'finish' && 'response' in payload) {
-      return { step: 'finish', response: payload.response };
+      return { step: 'finish', code, response: payload.response };
     }
     return null;
   } catch {

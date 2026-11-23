@@ -4,15 +4,31 @@ import { isoCBOR } from '@simplewebauthn/server/helpers';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { getPlatformProxy } from 'wrangler';
 import {
+  beginInvitedPasskey,
   beginOwnerPasskey,
   beginPasskeySignIn,
+  finishInvitedPasskey,
   finishOwnerPasskey,
   finishPasskeySignIn,
   getSignInMethods,
   passkeyRp,
   readPasskeyRequest,
 } from '../../src/lib/server/auth/passkeys';
-import { authenticate } from '../../src/lib/server/auth/session';
+import {
+  createAdminInvite,
+  disableAdmin,
+  listAdminAccess,
+  revokeAdminInvite,
+} from '../../src/lib/server/auth/admin-invites';
+import {
+  authorizeApiKey,
+  createApiKey,
+} from '../../src/lib/server/auth/api-keys';
+import {
+  authenticate,
+  createSession,
+  getSession,
+} from '../../src/lib/server/auth/session';
 import { createSetupProof } from '../../src/lib/server/auth/setup';
 
 let platform: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
@@ -31,6 +47,8 @@ beforeAll(async () => {
     '0001_initial.sql',
     '0002_domain_connections.sql',
     '0003_passkeys.sql',
+    '0005_user_theme.sql',
+    '0011_admin_invites.sql',
   ]) {
     const sql = await readFile(
       new URL('../../migrations/' + migration, import.meta.url),
@@ -295,4 +313,154 @@ it('keeps supported password accounts usable alongside passkeys', async () => {
   await expect(
     authenticate(db, 'legacy@example.com', ' longer秘密 password 🌔 '),
   ).resolves.toBe('legacy');
+});
+
+it('redeems an invitation for the recorded email exactly once under concurrent registration', async () => {
+  const owner = await db
+    .prepare(
+      "UPDATE users SET disabled_at = NULL WHERE role = 'owner' RETURNING id",
+    )
+    .first<string>('id');
+  if (!owner) throw new Error('Owner unavailable');
+  const invitations = await Promise.all(
+    Array.from({ length: 3 }, () =>
+      createAdminInvite(db, owner, 'invitee@example.com'),
+    ),
+  );
+  const codes = invitations.filter((code) => code !== null);
+  expect(codes).toHaveLength(1);
+  const [code] = codes;
+  const inputs = await Promise.all(
+    Array.from({ length: 3 }, async (_, index) => {
+      const started = await beginInvitedPasskey(db, { rp, code, locale: 'fr' });
+      if (!started) throw new Error('Invitation challenge unavailable');
+      expect(started.options.user.name).toBe('invitee@example.com');
+      return {
+        rp,
+        code,
+        ceremonyToken: started.ceremonyToken,
+        response: testAuthenticator('invited-' + index).register(
+          started.options.challenge,
+        ),
+      };
+    }),
+  );
+  await expect(
+    finishInvitedPasskey(db, {
+      ...inputs[0],
+      rp: { ...rp, origin: origin + ':8443' },
+    }),
+  ).resolves.toBeNull();
+  await expect(
+    finishInvitedPasskey(db, { ...inputs[0], code: 'a'.repeat(64) }),
+  ).resolves.toBeNull();
+  const results = await Promise.all(
+    inputs.map((input) => finishInvitedPasskey(db, input)),
+  );
+  const users = results.filter((id) => id !== null);
+  expect(users).toHaveLength(1);
+  const [admin] = users;
+  await expect(
+    finishInvitedPasskey(db, inputs[results.indexOf(admin)]),
+  ).resolves.toBeNull();
+  expect(
+    await db
+      .prepare('SELECT email, role, locale FROM users WHERE id = ?')
+      .bind(admin)
+      .first(),
+  ).toEqual({
+    email: 'invitee@example.com',
+    role: 'admin',
+    locale: 'fr',
+  });
+  expect(
+    await db
+      .prepare('SELECT count(*) n FROM passkey_credentials WHERE user_id = ?')
+      .bind(admin)
+      .first('n'),
+  ).toBe(1);
+  await expect(
+    beginInvitedPasskey(db, { rp, code, locale: 'fr' }),
+  ).resolves.toBeNull();
+  await expect(
+    createAdminInvite(db, admin, 'another@example.com'),
+  ).resolves.toBeNull();
+
+  const [ownerToken, adminToken] = await Promise.all([
+    createSession(db, owner),
+    createSession(db, admin),
+  ]);
+  const key = await createApiKey(db, admin, {
+    name: 'Invited key',
+    scopes: ['links:read'],
+  });
+  if (!key) throw new Error('API key unavailable');
+  const authorization = 'Bearer ' + key.token;
+  await expect(
+    authorizeApiKey(db, authorization, 'links:read'),
+  ).resolves.toMatchObject({ userId: admin });
+  await disableAdmin(db, owner, owner);
+  await disableAdmin(db, admin, admin);
+  await expect(getSession(db, adminToken)).resolves.toMatchObject({
+    user: { id: admin },
+  });
+  await expect(getSession(db, ownerToken)).resolves.toMatchObject({
+    user: { id: owner },
+  });
+  await disableAdmin(db, owner, admin);
+  await expect(getSession(db, adminToken)).resolves.toBeNull();
+  await expect(
+    authorizeApiKey(db, authorization, 'links:read'),
+  ).resolves.toBeNull();
+  expect(
+    await db
+      .prepare('SELECT revoked_at FROM sessions WHERE user_id = ?')
+      .bind(admin)
+      .first('revoked_at'),
+  ).toBeGreaterThan(0);
+  expect(
+    await db
+      .prepare('SELECT revoked_at FROM api_keys WHERE id = ?')
+      .bind(key.id)
+      .first('revoked_at'),
+  ).toBeGreaterThan(0);
+});
+
+it('rejects a revoked or expired invitation even after its passkey challenge was issued', async () => {
+  const owner = await db
+    .prepare("SELECT id FROM users WHERE role = 'owner'")
+    .first<string>('id');
+  if (!owner) throw new Error('Owner unavailable');
+  for (const state of ['revoked', 'expired']) {
+    const email = state + '@example.com';
+    const code = await createAdminInvite(db, owner, email);
+    const start = await beginInvitedPasskey(db, { rp, code, locale: 'en' });
+    const { invitations } = await listAdminAccess(db);
+    const invitation = invitations.find(
+      (candidate) => candidate.email === email,
+    );
+    if (!start || !invitation) throw new Error('Invitation unavailable');
+    if (state === 'revoked') {
+      await revokeAdminInvite(db, owner, invitation.id);
+    } else {
+      await db
+        .prepare(
+          'UPDATE admin_invites SET expires_at = unixepoch() WHERE id = ?',
+        )
+        .bind(invitation.id)
+        .run();
+    }
+    await expect(
+      finishInvitedPasskey(db, {
+        rp,
+        code,
+        ceremonyToken: start.ceremonyToken,
+        response: testAuthenticator(state).register(start.options.challenge),
+      }),
+    ).resolves.toBeNull();
+    await expect(
+      beginInvitedPasskey(db, { rp, code, locale: 'en' }),
+    ).resolves.toBeNull();
+    expect(await createAdminInvite(db, owner, email)).toMatch(/^[a-f0-9]{64}$/);
+  }
 });

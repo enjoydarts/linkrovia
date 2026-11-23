@@ -39,6 +39,7 @@
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries({ ...data.filters, ...options }))
       if (value) params.set(key, value);
+    if (data.sort !== 'created_desc') params.set('sort', data.sort);
     return `?${params}`;
   }
 
@@ -110,6 +111,20 @@
       <label>
         <span class="sr-only">{m.tag}</span>
         <input name="tag" value={data.filters.tag} placeholder={m.tag} />
+      </label>
+      <label>
+        <span class="sr-only">{copy.sort}</span>
+        <select name="sort" aria-label={copy.sort}>
+          <option value="created_desc" selected={data.sort === 'created_desc'}>
+            {copy.newest}
+          </option>
+          <option value="created_asc" selected={data.sort === 'created_asc'}>
+            {copy.oldest}
+          </option>
+          <option value="updated_desc" selected={data.sort === 'updated_desc'}>
+            {copy.recentlyUpdated}
+          </option>
+        </select>
       </label>
       <button class="apply-compact" type="submit">{m.filter}</button>
     </div>

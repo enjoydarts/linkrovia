@@ -7,15 +7,18 @@
   import Link2 from '@lucide/svelte/icons/link-2';
   import QrCode from '@lucide/svelte/icons/qr-code';
   import Shield from '@lucide/svelte/icons/shield';
+  import FlaskConical from '@lucide/svelte/icons/flask-conical';
   import { analyticsMessages } from '$lib/components/analytics/messages';
   import { linkMessages } from '$lib/i18n/links';
   import { protectionMessages } from '$lib/i18n/protection';
+  import { simulationMessages } from './[id]/simulate/messages';
   import type { LayoutProps } from './$types';
 
   let { data, children }: LayoutProps = $props();
   let m = $derived(linkMessages(data.locale));
   let analytics = $derived(analyticsMessages(data.locale));
   let protection = $derived(protectionMessages(data.locale));
+  let simulation = $derived(simulationMessages(data.locale));
   let detailId = $derived(page.params.id);
   let isDetail = $derived(Boolean(detailId));
   let isNew = $derived(page.url.pathname === '/admin/links/new');
@@ -39,6 +42,11 @@
     },
     { href: `${detailBase}/qr`, label: protection.qr, icon: QrCode },
     { href: `${detailBase}/protection`, label: protection.title, icon: Shield },
+    {
+      href: `${detailBase}/simulate`,
+      label: simulation.title,
+      icon: FlaskConical,
+    },
   ]);
 
   function isCurrent(href: string) {
@@ -68,9 +76,11 @@
                   ? protection.qr
                   : currentPath.endsWith('/protection')
                     ? protection.title
-                    : isDetail
-                      ? m.edit
-                      : m.links}
+                    : currentPath.endsWith('/simulate')
+                      ? simulation.title
+                      : isDetail
+                        ? m.edit
+                        : m.links}
         </h1>
         {#if data.linkContext}
           <p class="break-words text-sm">

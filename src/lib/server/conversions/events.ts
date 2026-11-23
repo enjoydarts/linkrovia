@@ -162,30 +162,58 @@ export async function conversionSummary(
       SELECT ?1 AS start_at, ?2 AS end_at, date(?1, 'unixepoch') AS start_day,
         date(?2 - 1, 'unixepoch') AS end_day
     ), event_counts AS (
-      SELECT goal_id, COUNT(*) AS total, SUM(status = 'accepted') AS attributed, 0 AS partial
-      FROM conversion_receipts WHERE occurred_at >= ?1 AND occurred_at < ?2 GROUP BY goal_id
+      SELECT r.goal_id, COUNT(*) AS total, SUM(r.status = 'accepted') AS attributed, 0 AS partial
+      FROM conversion_receipts r JOIN conversion_goals g ON g.id = r.goal_id
+      WHERE r.occurred_at >= ?1 AND r.occurred_at < ?2
+        AND (?3 IS NULL OR g.link_id = ?3
+          OR (g.link_id IS NULL AND r.link_id = ?3 AND r.status = 'accepted'))
+      GROUP BY r.goal_id
       UNION ALL
       SELECT goal_id, SUM(conversions) FILTER (WHERE complete), SUM(attributed) FILTER (WHERE complete),
         MAX(NOT complete)
       FROM (
-        SELECT r.*, unixepoch(r.day_utc) >= start_at AND unixepoch(r.day_utc) + 86400 <= end_at AS complete
-        FROM conversion_rollups r CROSS JOIN bounds WHERE r.day_utc BETWEEN start_day AND end_day
+        SELECT r.goal_id, r.conversions,
+          -- Older rollups may lack the attributed count, but their link ID records attribution.
+          CASE WHEN ?3 IS NOT NULL AND g.link_id IS NULL THEN r.conversions ELSE r.attributed END AS attributed,
+          unixepoch(r.day_utc) >= start_at AND unixepoch(r.day_utc) + 86400 <= end_at AS complete
+        FROM conversion_rollups r JOIN conversion_goals g ON g.id = r.goal_id CROSS JOIN bounds
+        WHERE r.day_utc BETWEEN start_day AND end_day
+          AND (?3 IS NULL OR g.link_id = ?3 OR (g.link_id IS NULL AND r.link_id = ?3))
       ) GROUP BY goal_id
     ), events AS (
       SELECT goal_id, SUM(total) AS total, SUM(attributed) AS attributed, MAX(partial) AS partial
       FROM event_counts GROUP BY goal_id
+    ), archived_cohorts AS (
+      SELECT r.day_utc, r.goal_id, r.eligible_clicks, r.converted_clicks
+      FROM conversion_cohort_rollups r JOIN conversion_goals g ON g.id = r.goal_id CROSS JOIN bounds
+      WHERE r.day_utc BETWEEN start_day AND end_day AND (?3 IS NULL OR g.link_id = ?3)
+      UNION ALL
+      SELECT r.day_utc, r.goal_id, r.eligible_clicks, r.converted_clicks
+      FROM conversion_link_cohort_rollups r CROSS JOIN bounds
+      WHERE r.day_utc BETWEEN start_day AND end_day AND r.link_id = ?3
+    ), link_history_gaps AS (
+      -- Older cohort rollups retain global counts without the original link IDs.
+      SELECT DISTINCT r.goal_id
+      FROM conversion_cohort_rollups r JOIN conversion_goals g ON g.id = r.goal_id CROSS JOIN bounds
+      WHERE ?3 IS NOT NULL AND g.link_id IS NULL AND r.day_utc BETWEEN start_day AND end_day
+        AND r.eligible_clicks > COALESCE((
+          SELECT SUM(scoped.eligible_clicks) FROM conversion_link_cohort_rollups scoped
+          WHERE scoped.day_utc = r.day_utc AND scoped.goal_id = r.goal_id
+        ), 0)
     ), cohort_counts AS (
       SELECT eligibility.key AS id, COUNT(*) AS eligible_clicks, COUNT(r.id) AS converted_clicks,
         MAX(eligibility.value) AS closes_at, 0 AS partial
       FROM click_attributions ref JOIN json_each(ref.eligible_goals_json) eligibility
       LEFT JOIN conversion_receipts r ON r.goal_id = eligibility.key AND r.click_ref_hash = ref.ref_hash
-      WHERE ref.created_at >= ?1 AND ref.created_at < ?2 GROUP BY eligibility.key
+      WHERE ref.created_at >= ?1 AND ref.created_at < ?2
+        AND (?3 IS NULL OR ref.link_id = ?3)
+      GROUP BY eligibility.key
       UNION ALL
       SELECT goal_id, SUM(eligible_clicks) FILTER (WHERE complete),
         SUM(converted_clicks) FILTER (WHERE complete), 0, MAX(NOT complete)
       FROM (
         SELECT r.*, unixepoch(r.day_utc) >= start_at AND unixepoch(r.day_utc) + 86400 <= end_at AS complete
-        FROM conversion_cohort_rollups r CROSS JOIN bounds WHERE r.day_utc BETWEEN start_day AND end_day
+        FROM archived_cohorts r CROSS JOIN bounds
       ) GROUP BY goal_id
     ), cohort AS (
       SELECT id, SUM(eligible_clicks) AS eligible_clicks, SUM(converted_clicks) AS converted_clicks,
@@ -195,11 +223,14 @@ export async function conversionSummary(
     SELECT g.id AS goalId, g.name AS goalName, g.backup_archived_at IS NOT NULL AS archived,
       COALESCE(e.total, 0) AS total, COALESCE(e.attributed, 0) AS attributed,
       COALESCE(e.total - e.attributed, 0) AS unattributed, COALESCE(c.eligible_clicks, 0) AS eligibleClicks,
-      CASE WHEN c.closes_at <= unixepoch() AND c.partial = 0 THEN 1.0 * c.converted_clicks / c.eligible_clicks END AS rate,
-      COALESCE(e.partial, 0) OR COALESCE(c.partial, 0) AS partialUtcDays
+      CASE WHEN c.closes_at <= unixepoch() AND c.partial = 0 AND h.goal_id IS NULL
+        THEN 1.0 * c.converted_clicks / c.eligible_clicks END AS rate,
+      COALESCE(e.partial, 0) OR COALESCE(c.partial, 0) AS partialUtcDays,
+      h.goal_id IS NOT NULL AS incompleteLinkHistory
     FROM conversion_goals g LEFT JOIN events e ON e.goal_id = g.id LEFT JOIN cohort c ON c.id = g.id
-    WHERE (?3 IS NULL OR g.link_id = ?3)
-      AND (g.backup_archived_at IS NULL OR e.goal_id IS NOT NULL OR c.id IS NOT NULL)
+      LEFT JOIN link_history_gaps h ON h.goal_id = g.id
+    WHERE (?3 IS NULL OR g.link_id = ?3 OR g.link_id IS NULL)
+      AND (g.backup_archived_at IS NULL OR e.goal_id IS NOT NULL OR c.id IS NOT NULL OR h.goal_id IS NOT NULL)
     ORDER BY archived, g.name COLLATE NOCASE, g.id LIMIT 200`,
     )
     .bind(from, to, linkId ?? null)
@@ -213,10 +244,14 @@ export async function conversionSummary(
       eligibleClicks: number;
       rate: number | null;
       partialUtcDays: number;
+      incompleteLinkHistory: number;
     }>();
-  return results.map((row) => ({
+  return results.map(({ incompleteLinkHistory, ...row }) => ({
     ...row,
     archived: row.archived === 1,
     partialUtcDays: row.partialUtcDays === 1,
+    ...(linkId === undefined
+      ? {}
+      : { incompleteLinkHistory: incompleteLinkHistory === 1 }),
   }));
 }

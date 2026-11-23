@@ -72,7 +72,7 @@ export async function listGoals(db: D1Database, linkId?: string) {
   const { results } = await db
     .prepare(
       `SELECT ${fields} FROM conversion_goals
-    WHERE backup_archived_at IS NULL AND (?1 IS NULL OR link_id = ?1)
+    WHERE backup_archived_at IS NULL AND (?1 IS NULL OR link_id IS NULL OR link_id = ?1)
     ORDER BY name COLLATE NOCASE, id LIMIT 100`,
     )
     .bind(linkId ?? null)

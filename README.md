@@ -18,6 +18,8 @@ Owners can download, validate, and restore a configuration backup from **Backup*
 
 Use **Analytics** for click totals, daily trends, and breakdowns, or open a link for its own report and CSV. Use **Conversions** to manage goals and connect a server-side event sender. The analytics guide explains the local sample data and Cloudflare setup. [Analytics and conversions](docs/analytics.md)
 
+For deployment operations and recovery, see [Operations](docs/operations.md). Contributors maintaining the seven UI languages can use the [translation guide](docs/translation.md).
+
 Owners can enable a scoped Model Context Protocol endpoint for clients that support bearer credentials. [Connect an MCP client](docs/mcp.md)
 
 The [OpenAPI 3.1 contract](static/openapi.yaml) describes the REST API, including required scopes and error responses. Deployed instances serve it at `/openapi.yaml`.

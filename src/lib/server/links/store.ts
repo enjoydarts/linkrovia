@@ -55,7 +55,9 @@ export type LinkFilter = {
   status?: string;
   cursor?: string;
   limit?: number;
+  sort?: LinkSort;
 };
+export type LinkSort = 'created_desc' | 'created_asc' | 'updated_desc';
 export type DomainSummary = {
   id: string;
   hostname: string;
@@ -124,15 +126,35 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
     clauses.push('l.is_active = ?');
     parameters.push(filter.status === 'active' ? 1 : 0);
   }
-  const cursor = /^(\d{1,12}):([0-9a-f-]{36})$/.exec(filter.cursor ?? '');
+  const sort: LinkSort =
+    filter.sort === 'created_asc' || filter.sort === 'updated_desc'
+      ? filter.sort
+      : 'created_desc';
+  const cursorValue = filter.cursor ?? '';
+  // Keep accepting the original cursor for API/MCP clients using the default order.
+  const legacyCursor =
+    sort === 'created_desc'
+      ? /^(\d{1,12}):([0-9a-f-]{36})$/i.exec(cursorValue)
+      : null;
+  const sortedCursor =
+    /^v1\.(created_desc|created_asc|updated_desc)\.(\d{1,12})\.([0-9a-f-]{36})$/i.exec(
+      cursorValue,
+    );
+  const cursor = legacyCursor
+    ? { timestamp: Number(legacyCursor[1]), id: legacyCursor[2] }
+    : sortedCursor?.[1] === sort
+      ? { timestamp: Number(sortedCursor[2]), id: sortedCursor[3] }
+      : null;
+  const ascending = sort === 'created_asc';
+  const field = sort === 'updated_desc' ? 'l.updated_at' : 'l.created_at';
   if (cursor) {
-    clauses.push('(l.created_at, l.id) < (?, ?)');
-    parameters.push(Number(cursor[1]), cursor[2]);
+    clauses.push(`(${field}, l.id) ${ascending ? '>' : '<'} (?, ?)`);
+    parameters.push(cursor.timestamp, cursor.id);
   }
   const result = await db
     .prepare(
       `SELECT ${linkFields} ${linkSource} WHERE ${clauses.join(' AND ')}
-     ORDER BY l.created_at DESC, l.id DESC LIMIT ?`,
+     ORDER BY ${field} ${ascending ? 'ASC' : 'DESC'}, l.id ${ascending ? 'ASC' : 'DESC'} LIMIT ?`,
     )
     .bind(...parameters, pageSize + 1)
     .all<LinkRow>();
@@ -142,7 +164,9 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
     links,
     nextCursor:
       last && result.results.length > pageSize
-        ? `${last.createdAt}:${last.id}`
+        ? sort === 'created_desc'
+          ? `${last.createdAt}:${last.id}`
+          : `v1.${sort}.${sort === 'updated_desc' ? last.updatedAt : last.createdAt}.${last.id}`
         : null,
   };
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { adminInviteMessages } from '$lib/i18n/admin-invites';
   import { brand } from '$lib/brand';
   import { messagesFor } from '$lib/i18n/locale';
   import '../admin-context.css';
@@ -47,6 +48,11 @@
       >
         {messagesFor(data.locale)['admin.security']}
       </a>
+      {#if data.isOwner}
+        <a href="/admin/settings/admins">
+          {adminInviteMessages[data.locale].title}
+        </a>
+      {/if}
     </nav>
     <h1 class="text-3xl font-semibold tracking-tight">{m.personal}</h1>
     <p>{m.intro}</p>

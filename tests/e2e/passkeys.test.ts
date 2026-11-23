@@ -55,6 +55,34 @@ test('registers and signs in with a discoverable passkey', async ({
       .click();
     await expect(page).toHaveURL('/admin');
     await expect(page.locator('form[action="/logout"]')).toBeVisible();
+    await page.goto('/admin/settings/admins');
+    await page.locator('input[name="email"]').fill('second-admin@example.com');
+    await page.locator('form[action="?/invite"] button').click();
+    const inviteUrl = page.locator('#invite-url');
+    await expect(inviteUrl).toHaveValue(/\/invite\/admin#[0-9a-f]{64}$/);
+    const invite = await inviteUrl.inputValue();
+
+    await page.locator('form[action="/logout"] button').click();
+    await page.goto(invite);
+    await expect(page).toHaveURL('/invite/admin');
+    await page.locator('form[action="/invite/admin/passkey"] button').click();
+    await expect(page).toHaveURL('/admin');
+    await expect(page.locator('.account-email')).toHaveText(
+      'second-admin@example.com',
+    );
+
+    const denied = await page.goto('/admin/settings/admins');
+    expect(denied?.status()).toBe(403);
+    await page.goto('/admin');
+    await page.locator('form[action="/logout"] button').click();
+    await page.goto(invite);
+    await expect(page).toHaveURL('/invite/admin');
+    await page.locator('form[action="/invite/admin/passkey"] button').click();
+    await expect(page.getByRole('alert')).toBeVisible();
+    const registered = await cdp.send('WebAuthn.getCredentials', {
+      authenticatorId,
+    });
+    expect(registered.credentials).toHaveLength(2);
   } finally {
     if (!page.isClosed()) {
       await cdp.send('WebAuthn.removeVirtualAuthenticator', {
