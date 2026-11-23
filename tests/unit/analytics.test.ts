@@ -109,6 +109,35 @@ it('orders tied breakdown keys and limits results after filtering', async () => 
 });
 
 describe('Cloudflare analytics', () => {
+  it('uses the configured dataset for every query shape', async () => {
+    const binding = fakeBinding([]);
+    const repository = new CloudflareAnalyticsRepository(
+      binding,
+      'preview-clicks',
+    );
+    const query = { from: today, to: today + day, timezone: 'UTC' };
+
+    await repository.getClickTrend(query);
+    await repository.getBreakdown(query, 'country');
+    await repository.getDevices(query);
+    await repository.getDailyClickRollup(query);
+
+    expect(binding.requests.length).toBeGreaterThan(3);
+    for (const request of binding.requests) {
+      expect(request.query).toContain(
+        'FROM events.analyticsEngine."preview-clicks" WHERE ',
+      );
+    }
+  });
+
+  it('rejects invalid SQL dataset names before submitting a query', () => {
+    const binding = fakeBinding([]);
+    expect(
+      () => new CloudflareAnalyticsRepository(binding, 'clicks" WHERE true'),
+    ).toThrow('Invalid analytics dataset name');
+    expect(binding.requests).toEqual([]);
+  });
+
   it('uses the weighted analytics SQL dataset and binds filter and timezone values', async () => {
     const binding = fakeBinding([{ date: '2026-11-22', clicks: '34' }]);
     const repository = new CloudflareAnalyticsRepository(binding);

@@ -1,13 +1,16 @@
 import { processClickRepair } from '../src/lib/server/analytics/click-repair';
 import { runDailyClickRollup } from '../src/lib/server/analytics/click-rollup';
-import { CloudflareAnalyticsRepository } from '../src/lib/server/analytics/cloudflare';
+import {
+  CloudflareAnalyticsRepository,
+  type ClickAnalyticsEnv,
+} from '../src/lib/server/analytics/cloudflare';
 import { rollupConversions } from '../src/lib/server/conversions/rollup';
 
 const daySeconds = 86_400;
 const daily = '15 3 * * *';
 const reconcile = '45 * * * *';
 
-type RollupEnv = Pick<Cloudflare.Env, 'DB' | 'ANALYTICS_SQL'>;
+type RollupEnv = Pick<Cloudflare.Env, 'DB'> & ClickAnalyticsEnv;
 
 async function reconciliationDate(
   db: D1Database,
@@ -33,6 +36,7 @@ async function reconciliationDate(
 async function rollupClicks(cron: string, env: RollupEnv, now: number) {
   const analyticsRepository = new CloudflareAnalyticsRepository(
     env.ANALYTICS_SQL,
+    env.LINKROVIA_CLICKS_DATASET,
   );
   if (cron === reconcile) {
     const repair = await processClickRepair(env.DB, analyticsRepository);

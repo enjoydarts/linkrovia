@@ -15,7 +15,10 @@ import {
   type TrendResult,
 } from './repository';
 
-const dataset = 'events.analyticsEngine.linkrovia_clicks';
+export type ClickAnalyticsEnv = Pick<Cloudflare.Env, 'ANALYTICS_SQL'> & {
+  LINKROVIA_CLICKS_DATASET?: string;
+};
+
 const columns = {
   country: 'blob2',
   region: 'blob3',
@@ -108,7 +111,23 @@ function deviceFrom(value: unknown): Device {
 export class CloudflareAnalyticsRepository
   implements AnalyticsRepository, ClickRollupRepository
 {
-  constructor(private readonly binding: AnalyticsSQLBinding) {}
+  private readonly dataset: string;
+
+  constructor(
+    private readonly binding: AnalyticsSQLBinding,
+    datasetName = 'linkrovia_clicks',
+  ) {
+    if (
+      typeof datasetName !== 'string' ||
+      !datasetName ||
+      /[^A-Za-z0-9_-]/.test(datasetName)
+    )
+      throw new Error('Invalid analytics dataset name');
+    const identifier = /^[A-Za-z_][A-Za-z0-9_]*$/.test(datasetName)
+      ? datasetName
+      : `"${datasetName}"`;
+    this.dataset = `events.analyticsEngine.${identifier}`;
+  }
 
   async getDailyClickRollup({ from, to }: Pick<StatsQuery, 'from' | 'to'>) {
     const rows: ClickRollupRow[] = [];
@@ -121,7 +140,7 @@ export class CloudflareAnalyticsRepository
       );
       const { data } = await this.binding.query({
         query: `SELECT index1 AS link_id, ${column ?? "'all'"} AS dimension_key, COUNT(*) AS clicks
-FROM ${dataset} WHERE ${where}
+FROM ${this.dataset} WHERE ${where}
 GROUP BY index1${column ? `, ${column}` : ''}
 LIMIT ${clickRollupMaxRows - rows.length + 1}`,
         params,
@@ -154,7 +173,7 @@ LIMIT ${clickRollupMaxRows - rows.length + 1}`,
       : /^\d{4}-\d{2}-\d{2}$/;
     const { data } = await this.binding.query({
       query: `SELECT ${bucket} AS date, COUNT(*) AS clicks
-FROM ${dataset} WHERE ${where}
+FROM ${this.dataset} WHERE ${where}
 GROUP BY date ORDER BY date ASC`,
       params: hourly ? params : { ...params, timezone },
     });
@@ -187,7 +206,7 @@ GROUP BY date ORDER BY date ASC`,
     const { where, params } = whereClause(query);
     const { data } = await this.binding.query({
       query: `SELECT ${column} AS dimension_key, COUNT(*) AS clicks
-FROM ${dataset} WHERE ${where}
+FROM ${this.dataset} WHERE ${where}
 GROUP BY ${column} ORDER BY clicks DESC, dimension_key ASC LIMIT ${breakdownLimit}`,
       params,
     });
@@ -215,7 +234,7 @@ GROUP BY ${column} ORDER BY clicks DESC, dimension_key ASC LIMIT ${breakdownLimi
     const { where, params } = whereClause(query);
     const { data } = await this.binding.query({
       query: `SELECT blob5 AS device, blob6 AS os, blob7 AS browser, COUNT(*) AS clicks
-FROM ${dataset} WHERE ${where}
+FROM ${this.dataset} WHERE ${where}
 GROUP BY blob5, blob6, blob7 ORDER BY clicks DESC, device ASC, os ASC, browser ASC LIMIT ${breakdownLimit}`,
       params,
     });

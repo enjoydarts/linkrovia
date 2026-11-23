@@ -1,7 +1,10 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { csvCell } from '../../csv';
 import { isTimeZone } from '../../timezone/timezone';
-import { CloudflareAnalyticsRepository } from './cloudflare';
+import {
+  CloudflareAnalyticsRepository,
+  type ClickAnalyticsEnv,
+} from './cloudflare';
 import { hourSeconds, utcHourLabel, utcHourStart } from './date-buckets';
 import { MockAnalyticsRepository } from './mock';
 import { loadArchivedClickReport } from './stored-report';
@@ -255,7 +258,7 @@ function groupReport(
 }
 
 export async function loadAnalyticsReport(
-  env: Pick<Cloudflare.Env, 'ANALYTICS_SQL'> & { DB?: D1Database },
+  env: ClickAnalyticsEnv & { DB?: D1Database },
   { query, dimension, from, to, archived, granularity, range }: AnalyticsQuery,
   { development }: { development: boolean },
 ): Promise<AnalyticsReport> {
@@ -280,7 +283,10 @@ export async function loadAnalyticsReport(
   }
   const repository = development
     ? new MockAnalyticsRepository()
-    : new CloudflareAnalyticsRepository(env.ANALYTICS_SQL);
+    : new CloudflareAnalyticsRepository(
+        env.ANALYTICS_SQL,
+        env.LINKROVIA_CLICKS_DATASET,
+      );
   const hourly = granularity === 'hour';
   const [trend, result] = await Promise.all([
     repository.getClickTrend({

@@ -1,6 +1,6 @@
 # Deploying Linkrovia
 
-Linkrovia runs on Cloudflare Workers with a D1 database. The browser-based deployment below is a preview. The build and package have been verified locally. A complete installation on a new Workers Free account, including Analytics Engine and Analytics SQL availability, is pending verification.
+Linkrovia runs on one Cloudflare Worker with a D1 database. The same Worker serves the app and runs the scheduled analytics jobs. A complete installation through the Deploy to Cloudflare button on a new Workers Free account is pending verification.
 
 If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine), enable it for the account, and retry the build. The retry skips D1 migrations that already ran. Linkrovia records clicks as soon as the Worker serves short links, and [Cloudflare creates the dataset on its first write](https://developers.cloudflare.com/analytics/analytics-engine/get-started/).
 
@@ -13,15 +13,11 @@ If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine]
 5. In your Worker's **Settings → Variables and Secrets**, add a **Secret** named `SETUP_TOKEN`. Use your password manager to generate and save a fresh private random value of at least 32 characters. Deploy the secret and keep it available for setup. The Worker requires this secret to start owner registration. [Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
 6. Open your Worker's `workers.dev` address from **Workers & Pages**. Check that `/health` returns `{"status":"ok"}`, then open `/setup`, enter your setup token, and follow the prompts to create an owner passkey. Keep using the same management hostname to sign in. After you confirm that you can sign in, remove `SETUP_TOKEN` from **Variables and Secrets**. If setup asks you to configure the Worker, check the health result and confirm the secret is present on the deployed Worker. If you lost the token before completing setup, replace it with a newly generated one and deploy the change.
 
-The official [Deploy to Cloudflare flow](https://developers.cloudflare.com/workers/platform/deploy-buttons/) documents D1 provisioning and secret entry for public templates. The button requires an installation test against the public Linkrovia repository before it is enabled. Cloudflare's provisioning list covers D1. Verify the analytics bindings on the deployed Worker separately. The flow deploys one Worker.
+The [Deploy to Cloudflare flow](https://developers.cloudflare.com/workers/platform/deploy-buttons/) can create the D1 database and request the setup secret for public templates. Linkrovia's deploy command applies the migrations before deploying the Worker. After deployment, open `/setup` to register your passkey and check that clicks appear in Analytics.
 
 ## Keep analytics history
 
-Deploy the scheduled Worker from the same GitHub repository and branch to save click and conversion history in the main application's D1 database.
-
-1. In **Workers & Pages → Create application → Import a repository**, select the same repository and deployment branch. Use the main Worker's name followed by `-rollup` for the scheduled Worker.
-2. Use `npm run build` as the build command and `npm run deploy -- --rollup` as the deploy command. Use a build API token with permissions to deploy the scheduled Worker and edit the same D1 database. Deploy the main Worker first so the application and database bindings are ready.
-3. Confirm the scheduled Worker lists the `DB` and `ANALYTICS_SQL` bindings. Check **Settings → Triggers** for a daily run at 03:15 UTC and an hourly reconciliation. The hourly run revisits recent days one at a time. The scheduled Worker needs no setup token or public URL. Check run outcomes in **Observability**. [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+The deployment registers both analytics jobs on the application Worker. Under **Settings → Triggers**, check for a daily run at 03:15 UTC and a reconciliation at minute 45 of every hour. The hourly run revisits recent days one at a time. The jobs store click and conversion history in the application's D1 database. Check run outcomes in **Observability**. [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
 
 ## Use and verify your deployment
 
@@ -40,4 +36,4 @@ npm run deploy -- --dry-run
 npm run deploy
 ```
 
-The dry run packages the Worker and skips D1 migrations. A real deploy requires an explicit database ID, and it stops before uploading the Worker if a migration fails. Use the dashboard for the owner setup secret and follow the browser setup steps above. After deploying the main Worker, run `npm run deploy -- --rollup --dry-run` to package the scheduled Worker and `npm run deploy -- --rollup` to deploy it.
+The dry run packages the Worker and skips D1 migrations. A real deploy requires an explicit database ID, and it stops before uploading the Worker if a migration fails. Use the dashboard for the owner setup secret and follow the browser setup steps above.

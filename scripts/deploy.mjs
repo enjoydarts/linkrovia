@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,15 +18,15 @@ function runWrangler(args) {
 
 try {
   const args = process.argv.slice(2);
-  if (
-    args.some((arg) => arg !== '--dry-run' && arg !== '--rollup') ||
-    new Set(args).size !== args.length
-  )
-    throw new Error('Usage: npm run deploy [-- [--dry-run] [--rollup]]');
+  if (args.includes('--rollup'))
+    throw new Error(
+      'The application Worker now runs the scheduled jobs. Remove the legacy rollup Worker’s Cron Triggers and disconnect its build before upgrading.',
+    );
+  if (args.length > 1 || args.some((arg) => arg !== '--dry-run'))
+    throw new Error('Usage: npm run deploy [-- --dry-run]');
   // npm consumes --dry-run if it was passed before the argument separator.
   const dryRun =
     args.includes('--dry-run') || process.env.npm_config_dry_run === 'true';
-  const rollup = args.includes('--rollup');
 
   const { configPath } = JSON.parse(readFileSync(redirectPath, 'utf8'));
   const generatedPath = resolve(dirname(redirectPath), configPath);
@@ -48,17 +48,32 @@ try {
   const config = JSON.parse(readFileSync(generatedPath, 'utf8'));
   if (
     !config.name ||
-    config.main !== 'index.js' ||
-    config.assets?.binding !== 'ASSETS'
+    config.main !== 'linkrovia.js' ||
+    config.assets?.binding !== 'ASSETS' ||
+    config.triggers?.crons?.length !== 2 ||
+    !config.triggers.crons.includes('15 3 * * *') ||
+    !config.triggers.crons.includes('45 * * * *')
   )
     throw new Error(
-      'The generated configuration must describe the Linkrovia Worker and its assets.',
+      'Run npm run build to generate the Linkrovia Worker, assets, and Cron Triggers.',
     );
 
   const [database] = config.d1_databases ?? [];
   if (config.d1_databases?.length !== 1 || database?.binding !== 'DB')
     throw new Error(
       'The production Worker must have a single D1 binding named DB.',
+    );
+
+  const clicks = config.analytics_engine_datasets?.find(
+    (entry) => entry.binding === 'CLICKS',
+  );
+  if (
+    !clicks?.dataset ||
+    clicks.dataset === 'linkrovia_clicks_auto' ||
+    clicks.dataset !== config.vars?.LINKROVIA_CLICKS_DATASET
+  )
+    throw new Error(
+      'Run npm run build to generate matching Analytics Engine write and query bindings.',
     );
 
   const migrationsDir = resolve(
@@ -81,35 +96,15 @@ try {
     (!/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(
       database.database_id,
     ) ||
+      database.database_id === '00000000-0000-0000-0000-000000000000' ||
       database.database_id === '00000000-0000-4000-8000-000000000001')
   )
     throw new Error(
       'Set DB to the Cloudflare D1 database ID and run npm run build again.',
     );
 
-  let deployPath = generatedPath;
-  if (rollup) {
-    deployPath = resolve(dirname(generatedPath), 'rollup.json');
-    writeFileSync(
-      deployPath,
-      JSON.stringify({
-        name: `${config.name}-rollup`,
-        main: relative(dirname(deployPath), resolve(root, 'workers/rollup.ts')),
-        account_id: config.account_id,
-        compatibility_date: config.compatibility_date,
-        compatibility_flags: config.compatibility_flags,
-        workers_dev: false,
-        preview_urls: false,
-        triggers: { crons: ['15 3 * * *', '45 * * * *'] },
-        d1_databases: [database],
-        analytics: config.analytics,
-        observability: config.observability,
-      }),
-    );
-  }
-
   // D1 commands do not follow the adapter redirect. Pin both commands to the same build.
-  const configArgs = ['--config', relative(root, deployPath)];
+  const configArgs = ['--config', relative(root, generatedPath)];
   runWrangler(['deploy', ...configArgs, '--dry-run']);
   if (!dryRun) {
     runWrangler(['d1', 'migrations', 'apply', 'DB', '--remote', ...configArgs]);
