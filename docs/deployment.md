@@ -2,6 +2,8 @@
 
 Linkrovia runs on Cloudflare Workers with a D1 database. The browser-based deployment below is a preview. The build and package have been verified locally. A complete installation on a new Workers Free account, including Analytics Engine and Analytics SQL availability, is pending verification.
 
+If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine), enable it for the account, and retry the build. The retry skips D1 migrations that already ran. Linkrovia records clicks as soon as the Worker serves short links, and [Cloudflare creates the dataset on its first write](https://developers.cloudflare.com/analytics/analytics-engine/get-started/).
+
 ## Install from your browser
 
 1. Create a GitHub copy of [Linkrovia](https://github.com/enjoydarts/linkrovia) that you can manage. Your copy will be connected to Cloudflare for deployments and will receive your installation's Worker and database settings.
