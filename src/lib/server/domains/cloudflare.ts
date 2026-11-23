@@ -36,6 +36,8 @@ const workerHostnamePattern = new RegExp(
   `^(${label})\\.(${label})\\.workers\\.dev$`,
 );
 const maxResponseBytes = 256 * 1024;
+const lookupTimeout = 5000;
+const attachTimeout = 15000;
 
 function validId(value: unknown): value is string {
   return (
@@ -123,8 +125,12 @@ async function responseJSON(response: Response): Promise<unknown> {
   }
 }
 
-function client(input: CloudflareInput, send: typeof fetch) {
-  const signal = AbortSignal.timeout(5000);
+function client(
+  input: CloudflareInput,
+  send: typeof fetch,
+  timeout = lookupTimeout,
+) {
+  const signal = AbortSignal.timeout(timeout);
   return async (path: string, method = 'GET', body?: unknown) => {
     const headers = new Headers({ Authorization: `Bearer ${input.token}` });
     if (body) headers.set('Content-Type', 'application/json');
@@ -409,12 +415,13 @@ export async function attachCustomDomain(
       };
     if (readiness.code === 'conflict') return readiness;
 
-    const { api, workers, service, accountId, zoneId, zoneName } = settings;
+    const { workers, service, accountId, zoneId, zoneName } = settings;
+    const write = client(input, send, attachTimeout);
     let result: unknown;
     try {
       // Wrangler's Worker-scoped endpoint has separate controls for replacing
       // the Worker's domain set, existing origins, and conflicting DNS records.
-      ({ result } = await api(
+      ({ result } = await write(
         `${workers}/scripts/${service}/domains/records`,
         'PUT',
         {
@@ -432,7 +439,9 @@ export async function attachCustomDomain(
         },
       ));
     } catch (error) {
-      return { ...mutationFailure(error), service, zoneName };
+      const failed = mutationFailure(error);
+      if (failed.code !== 'operation_unknown')
+        return { ...failed, service, zoneName };
     }
 
     const returned = matchingDomain(
@@ -453,13 +462,16 @@ export async function attachCustomDomain(
     }
 
     try {
-      // If the response did not identify the mapping, a read can establish
-      // that routing exists but cannot establish which operation created it.
-      const observed = matchingDomain(
-        await list(api, domainsPath(settings, hostname)),
-        hostname,
-        settings,
-      );
+      // A fresh read can establish routing after an ambiguous write. The
+      // result does not establish which operation created the mapping.
+      const confirm = client(input, send);
+      const path = domainsPath(settings, hostname);
+      let observedDomains = await list(confirm, path);
+      if (!observedDomains.length) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        observedDomains = await list(confirm, path);
+      }
+      const observed = matchingDomain(observedDomains, hostname, settings);
       return observed
         ? {
             code: 'attached',

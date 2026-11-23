@@ -2,8 +2,8 @@ import { uuidV7 } from '../auth/crypto';
 import { setupOpen } from '../auth/setup';
 import { attachCustomDomain, type CloudflareInput } from './cloudflare';
 
-// The Cloudflare client applies a five-second deadline to the entire provider call.
-const leaseSeconds = 30;
+// Allow for separate provider lookup, write and confirmation deadlines.
+const leaseSeconds = 45;
 const leaseAvailable = `(management_operation_expires_at IS NULL
   OR management_operation_expires_at <= unixepoch())`;
 const workersHost =
@@ -61,7 +61,7 @@ export async function attachSetupCustomDomain(
   input: CloudflareInput,
   hostname: string,
   deployment: string,
-  send: typeof fetch,
+  send = fetch,
 ) {
   if (!supportsSetupCustomDomain(deployment))
     return { code: 'unsupported' } as const;

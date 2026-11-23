@@ -152,7 +152,6 @@ const managementAction =
         credentials,
         selected,
         hostname,
-        event.fetch,
       );
       if (result.code !== 'attached')
         return fail(

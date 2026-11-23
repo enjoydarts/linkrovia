@@ -1,14 +1,16 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import { enhance } from '$app/forms';
   import { messagesFor } from '$lib/i18n/locale';
   import AuthFrame from '$lib/components/auth/AuthFrame.svelte';
   import PasskeyForm from '$lib/components/auth/PasskeyForm.svelte';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
   import { domainOperationMessages } from '../admin/domains/messages';
   import { setupDomainMessages } from './messages';
-  import type { PageProps } from './$types';
+  import type { PageProps, SubmitFunction } from './$types';
 
   let { data, form }: PageProps = $props();
+  let connecting = $state(false);
   let messages = $derived(messagesFor(data.locale));
   let domainMessages = $derived(setupDomainMessages[data.locale]);
   let cloudflareMessages = $derived(domainOperationMessages(data.locale));
@@ -26,12 +28,30 @@
         return messages['error.turnstile'];
       case 'csrf':
         return messages['error.csrf'];
+      case 'operation_unknown':
+        return domainMessages.operationUnknown;
       default:
         return form?.code
           ? (cloudflareMessages[form.code] ?? messages['error.generic'])
           : '';
     }
   });
+  const connectDomain: SubmitFunction = ({ cancel, formElement }) => {
+    if (connecting) {
+      cancel();
+      return;
+    }
+    connecting = true;
+    return async ({ update }) => {
+      try {
+        await update({ reset: false });
+      } finally {
+        const token = formElement.elements.namedItem('token');
+        if (token instanceof HTMLInputElement) token.value = '';
+        connecting = false;
+      }
+    };
+  };
 </script>
 
 <svelte:head>
@@ -112,7 +132,13 @@
             </a>
           </p>
           <p>{cloudflareMessages.scopes}</p>
-          <form method="POST" action="?/connectDomain" class="space-y-4">
+          <form
+            method="POST"
+            action="?/connectDomain"
+            use:enhance={connectDomain}
+            class="space-y-4"
+            aria-busy={connecting}
+          >
             <div class="space-y-2">
               <label for="managementHostname" class="block font-medium">
                 {domainMessages.hostname}
@@ -146,10 +172,12 @@
             </label>
             <button
               type="submit"
+              disabled={connecting}
               class="rounded-md bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
             >
               {domainMessages.connect}
             </button>
+            <p role="status">{connecting ? domainMessages.connecting : ''}</p>
           </form>
         {/if}
         <form method="POST" action="?/useDeployment" class="space-y-3">

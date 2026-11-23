@@ -265,12 +265,61 @@ it('checks setup proof binding, commits one owner, and enforces one-use signed a
   ).resolves.toBeNull();
 
   await expect(beginOwnerPasskey(db, ownerInput)).resolves.toBeNull();
-  await db
-    .prepare(
-      "UPDATE setup_state SET deployment_hostname = 'worker.account.workers.dev', management_hostname = ?",
-    )
-    .bind(rp.id)
-    .run();
+  const deployment = 'worker.account.workers.dev';
+  const accountId = 'a'.repeat(32);
+  const zoneId = 'b'.repeat(32);
+  const workers = `/client/v4/accounts/${accountId}/workers`;
+  const zones = `/client/v4/zones/${zoneId}`;
+  const zone = {
+    id: zoneId,
+    account: { id: accountId },
+    name: 'example.com',
+    status: 'active',
+    type: 'full',
+  };
+  const mapping = {
+    id: 'c'.repeat(40),
+    hostname: rp.id,
+    zone_id: zoneId,
+    zone_name: zone.name,
+    service: 'worker',
+    environment: 'production',
+    enabled: true,
+  };
+  const reads: Record<string, unknown> = {
+    '/client/v4/zones?name=admin.example.com&per_page=5': [],
+    '/client/v4/zones?name=example.com&per_page=5': [zone],
+    [zones]: zone,
+    [`${workers}/subdomain`]: { subdomain: 'account' },
+    [`${workers}/scripts/worker/subdomain`]: { enabled: true },
+    [`${zones}/workers/routes`]: [],
+    [`${zones}/dns_records?name.exact=${rp.id}&per_page=100`]: [{ type: 'MX' }],
+    [`${zones}/dns_records?shadowing_name=${rp.id}&per_page=1`]: [],
+  };
+  let writes = 0;
+  let mappingReads = 0;
+  const provider: typeof fetch = async (resource, init) => {
+    const url = new URL(String(resource));
+    if (init?.method === 'PUT') {
+      expect(url.pathname).toBe(`${workers}/scripts/worker/domains/records`);
+      writes++;
+      return new Response(null, { status: 204 });
+    }
+    const path = url.pathname + url.search;
+    const result =
+      path === `${workers}/domains?hostname=${rp.id}`
+        ? ++mappingReads > 2
+          ? [mapping]
+          : []
+        : reads[path];
+    return Response.json({ success: true, result });
+  };
+  const input = { token: 'test-cloudflare-token-for-integration-test' };
+  await expect(
+    attachSetupCustomDomain(db, input, rp.id, deployment, provider),
+  ).resolves.toEqual({ code: 'attached' });
+  expect(writes).toBe(1);
+  expect(mappingReads).toBe(3);
 
   const attempts = await Promise.all(
     Array.from({ length: 4 }, async (_, index) => {
@@ -299,7 +348,6 @@ it('checks setup proof binding, commits one owner, and enforces one-use signed a
     }),
   ).resolves.toBeNull();
 
-  const deployment = 'worker.account.workers.dev';
   expect(await selectDeploymentHostname(db, deployment)).toBe('selected');
   await expect(finishOwnerPasskey(db, attempts[0].input)).resolves.toBeNull();
   await db

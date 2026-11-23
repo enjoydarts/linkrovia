@@ -7,6 +7,8 @@ type SetupDomainMessages = {
   hostname: string;
   token: string;
   connect: string;
+  connecting: string;
+  operationUnknown: string;
   confirm: string;
   fallback: string;
   useCurrent: string;
@@ -22,6 +24,9 @@ export const setupDomainMessages: Record<Locale, SetupDomainMessages> = {
     hostname: 'Custom hostname',
     token: 'Cloudflare API token',
     connect: 'Connect hostname',
+    connecting: 'Connecting your hostname. This may take a little while.',
+    operationUnknown:
+      'The connection could not be confirmed. Wait a moment, then retry the same hostname on this screen.',
     confirm: 'I want Cloudflare to connect this hostname to this Worker.',
     fallback: 'You can set up your dashboard at the current hostname.',
     useCurrent: 'Use this hostname',
@@ -37,6 +42,9 @@ export const setupDomainMessages: Record<Locale, SetupDomainMessages> = {
     hostname: 'カスタムホスト名',
     token: 'Cloudflare API トークン',
     connect: 'ホスト名を接続',
+    connecting: 'ホスト名を接続しています。しばらくお待ちください。',
+    operationUnknown:
+      '接続結果を確認できませんでした。しばらく待ってから、この画面で同じホスト名を再試行してください。',
     confirm:
       'このホスト名を Cloudflare でこの Worker に接続することを確認します。',
     fallback: '現在のホスト名で管理画面を設定できます。',
@@ -52,6 +60,9 @@ export const setupDomainMessages: Record<Locale, SetupDomainMessages> = {
     hostname: '自定义主机名',
     token: 'Cloudflare API 令牌',
     connect: '连接主机名',
+    connecting: '正在连接主机名，请稍候。',
+    operationUnknown:
+      '无法确认连接结果。请稍等片刻，然后在此页面重试相同的主机名。',
     confirm: '我确认让 Cloudflare 将此主机名连接到此 Worker。',
     fallback: '可以在当前主机名上设置管理面板。',
     useCurrent: '使用此主机名',
@@ -66,6 +77,9 @@ export const setupDomainMessages: Record<Locale, SetupDomainMessages> = {
     hostname: '自訂主機名稱',
     token: 'Cloudflare API 權杖',
     connect: '連接主機名稱',
+    connecting: '正在連接主機名稱，請稍候。',
+    operationUnknown:
+      '無法確認連接結果。請稍候片刻，然後在此頁面重試相同的主機名稱。',
     confirm: '我確認讓 Cloudflare 將此主機名稱連接至此 Worker。',
     fallback: '可以在目前的主機名稱上設定管理介面。',
     useCurrent: '使用此主機名稱',
@@ -81,6 +95,9 @@ export const setupDomainMessages: Record<Locale, SetupDomainMessages> = {
     hostname: 'Host personalizado',
     token: 'Token de API de Cloudflare',
     connect: 'Conectar host',
+    connecting: 'Conectando el host. Esto puede tardar un momento.',
+    operationUnknown:
+      'No se pudo confirmar la conexión. Espera un momento y vuelve a intentar el mismo host en esta pantalla.',
     confirm: 'Confirmo que Cloudflare conecte este host a este Worker.',
     fallback: 'Puedes configurar tu panel en el host actual.',
     useCurrent: 'Usar este host',
@@ -96,6 +113,10 @@ export const setupDomainMessages: Record<Locale, SetupDomainMessages> = {
     hostname: 'Hostname personalizzato',
     token: 'Token API Cloudflare',
     connect: 'Collega hostname',
+    connecting:
+      'Connessione dell’hostname in corso. Potrebbe richiedere qualche istante.',
+    operationUnknown:
+      'Impossibile confermare la connessione. Attendi un momento, poi riprova lo stesso hostname su questa schermata.',
     confirm:
       'Confermo che Cloudflare colleghi questo hostname a questo Worker.',
     fallback: 'Puoi configurare il pannello sull’hostname attuale.',
@@ -112,6 +133,9 @@ export const setupDomainMessages: Record<Locale, SetupDomainMessages> = {
     hostname: 'Nom d’hôte personnalisé',
     token: 'Jeton API Cloudflare',
     connect: 'Connecter l’hôte',
+    connecting: 'Connexion de l’hôte en cours. Cela peut prendre un moment.',
+    operationUnknown:
+      'La connexion n’a pas pu être confirmée. Patientez, puis réessayez avec le même hôte sur cet écran.',
     confirm: 'Je confirme que Cloudflare peut connecter cet hôte à ce Worker.',
     fallback: 'Vous pouvez configurer votre tableau de bord sur l’hôte actuel.',
     useCurrent: 'Utiliser cet hôte',

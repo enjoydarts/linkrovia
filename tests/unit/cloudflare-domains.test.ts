@@ -386,6 +386,43 @@ describe('Cloudflare Custom Domain mutations', () => {
     ).toHaveLength(1);
   });
 
+  it.each([204, 503])(
+    'uses independent deadlines and confirms the exact mapping after HTTP %i',
+    async (status) => {
+      const before = provider();
+      const after = provider({ [domainList]: [domain] });
+      let mutationSent = false;
+      const send = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+        if (init?.method === 'PUT') {
+          mutationSent = true;
+          return Promise.resolve(new Response(null, { status }));
+        }
+        return (mutationSent ? after : before)(url, init);
+      });
+
+      expect(
+        await attachCustomDomain(input, hostname, management, send),
+      ).toMatchObject({
+        code: 'attached',
+        mappingId: domainId,
+        created: false,
+      });
+      const writes = send.mock.calls.filter(
+        ([, init]) => init?.method === 'PUT',
+      );
+      expect(writes).toHaveLength(1);
+      const preflightSignal = send.mock.calls[0][1]?.signal;
+      const writeSignal = writes[0][1]?.signal;
+      const confirmationSignal = send.mock.calls.at(-1)?.[1]?.signal;
+      expect(
+        new Set([preflightSignal, writeSignal, confirmationSignal]).size,
+      ).toBe(3);
+      expect(send.mock.calls.at(-1)?.[0]).toBe(
+        `https://api.cloudflare.com${domainList}`,
+      );
+    },
+  );
+
   it('detaches only the matching mapping ID and treats an already absent ID as detached', async () => {
     const send = provider({ [domainPath]: domain });
     expect(
