@@ -9,7 +9,7 @@ Your GitHub deployment copy has its own history. Follow the [upstream repository
 
 ## Move scheduled jobs to the application Worker
 
-If you deployed a separate `<worker-name>-rollup` Worker, disconnect its Workers Builds repository and remove its two Cron Triggers before updating the application Worker. The new deployment registers those triggers on the application Worker and uses the same D1 database. Confirm the trigger schedules on the updated Worker before removing the old Worker.
+If you deployed a separate `<worker-name>-rollup` Worker, disconnect its Workers Builds repository and remove its Cron Triggers before updating the application Worker. The new deployment registers a single Cron Trigger, `15,45 * * * *`, on the application Worker and uses the same D1 database. Confirm the trigger on the updated Worker before removing the old Worker.
 
 To continue reading an existing Analytics Engine dataset, set `analytics_engine_datasets[0].dataset` in `wrangler.jsonc` to its exact name before building. Older unmodified configurations used `linkrovia_clicks`. New installation templates use `linkrovia_clicks_auto` to select a separate dataset based on the D1 database ID.
 

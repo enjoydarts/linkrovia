@@ -7,10 +7,10 @@ import {
 import { rollupConversions } from '../src/lib/server/conversions/rollup';
 
 const daySeconds = 86_400;
-const daily = '15 3 * * *';
-const reconcile = '45 * * * *';
+const schedule = '15,45 * * * *';
 
 type RollupEnv = Pick<Cloudflare.Env, 'DB'> & ClickAnalyticsEnv;
+type ClickRollupJob = 'daily' | 'reconcile';
 
 async function reconciliationDate(
   db: D1Database,
@@ -33,12 +33,12 @@ async function reconciliationDate(
     .first<string>('day');
 }
 
-async function rollupClicks(cron: string, env: RollupEnv, now: number) {
+async function rollupClicks(job: ClickRollupJob, env: RollupEnv, now: number) {
   const analyticsRepository = new CloudflareAnalyticsRepository(
     env.ANALYTICS_SQL,
     env.LINKROVIA_CLICKS_DATASET,
   );
-  if (cron === reconcile) {
+  if (job === 'reconcile') {
     const repair = await processClickRepair(env.DB, analyticsRepository);
     if (repair?.status === 'failed')
       throw new Error(`Click rollup repair: ${repair.code}`);
@@ -49,7 +49,7 @@ async function rollupClicks(cron: string, env: RollupEnv, now: number) {
     .toISOString()
     .slice(0, 10);
   const date =
-    cron === daily
+    job === 'daily'
       ? yesterday
       : await reconciliationDate(env.DB, yesterday, now);
   if (!date) return;
@@ -65,14 +65,18 @@ async function rollupClicks(cron: string, env: RollupEnv, now: number) {
 export default {
   async scheduled(controller, env) {
     const { cron, scheduledTime } = controller;
-    const now = Math.floor(Math.min(scheduledTime, Date.now()) / 1000);
-    if (cron !== daily && cron !== reconcile) return;
+    if (cron !== schedule) return;
+    const scheduledAt = new Date(scheduledTime);
+    const minute = scheduledAt.getUTCMinutes();
+    const daily = minute === 15 && scheduledAt.getUTCHours() === 3;
+    if (!daily && minute !== 45) return;
+    const now = Math.floor(scheduledTime / 1000);
 
     // Wait for both jobs even when one fails, then report the failed invocation.
     const failed = (
       await Promise.allSettled([
-        rollupClicks(cron, env, now),
-        rollupConversions(env.DB, new Date(scheduledTime)),
+        rollupClicks(daily ? 'daily' : 'reconcile', env, now),
+        rollupConversions(env.DB, scheduledAt),
       ])
     ).find((result) => result.status === 'rejected');
     if (failed) throw failed.reason;

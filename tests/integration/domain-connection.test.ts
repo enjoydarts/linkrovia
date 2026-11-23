@@ -126,7 +126,23 @@ it('serializes provider changes and records which mapping may be removed', async
     ),
   ).toBe(true);
   const active = (await readDomainConnection(db, 'managed'))!;
-  const detach = await beginProviderOperation(db, active, 'owner', 'detach');
+  const rejected = await beginProviderOperation(db, active, 'owner', 'detach');
+  expect(rejected).not.toBeNull();
+  expect(
+    await finishProviderOperation(db, rejected!, { code: 'permissions' }),
+  ).toBe(true);
+  const stillActive = (await readDomainConnection(db, 'managed'))!;
+  expect(stillActive).toMatchObject({
+    status: 'active',
+    verifiedAt: active.verifiedAt,
+    managed: true,
+  });
+  const detach = await beginProviderOperation(
+    db,
+    stillActive,
+    'owner',
+    'detach',
+  );
   expect(detach).not.toBeNull();
   expect(await finishProviderOperation(db, detach!, { code: 'detached' })).toBe(
     true,

@@ -25,7 +25,9 @@ The [Deploy to Cloudflare flow](https://developers.cloudflare.com/workers/platfo
 
 ## Keep analytics history
 
-The deployment registers both analytics jobs on the application Worker. Under **Settings → Triggers**, check for a daily run at 03:15 UTC and a reconciliation at minute 45 of every hour. The hourly run revisits recent days one at a time. The jobs store click and conversion history in the application's D1 database. Check run outcomes in **Observability**. [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+Under **Settings → Triggers** on the application Worker, confirm the single Cron Trigger `15,45 * * * *`. It runs daily aggregation at 03:15 UTC and reconciles recent days one at a time at minute 45 of each hour. The other minute-15 invocations skip processing. The jobs store click and conversion history in the application's D1 database. Check run outcomes in **Observability**. [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+
+If Cloudflare reports `10072`, the account has reached its Cron Trigger limit. Linkrovia needs one slot. Check the trigger list for a retired rollup Worker before retrying. [Workers account limits](https://developers.cloudflare.com/workers/platform/limits/#account-plan-limits)
 
 ## Use and verify your deployment
 

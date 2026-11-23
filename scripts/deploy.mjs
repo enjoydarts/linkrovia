@@ -50,12 +50,11 @@ try {
     !config.name ||
     config.main !== 'linkrovia.js' ||
     config.assets?.binding !== 'ASSETS' ||
-    config.triggers?.crons?.length !== 2 ||
-    !config.triggers.crons.includes('15 3 * * *') ||
-    !config.triggers.crons.includes('45 * * * *')
+    config.triggers?.crons?.length !== 1 ||
+    config.triggers.crons[0] !== '15,45 * * * *'
   )
     throw new Error(
-      'Run npm run build to generate the Linkrovia Worker, assets, and Cron Triggers.',
+      'Run npm run build to generate the Linkrovia Worker, assets, and Cron Trigger.',
     );
 
   const [database] = config.d1_databases ?? [];

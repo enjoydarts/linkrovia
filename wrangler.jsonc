@@ -5,7 +5,7 @@
   "compatibility_date": "2026-11-22",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": ".svelte-kit/cloudflare", "binding": "ASSETS" },
-  "triggers": { "crons": ["15 3 * * *", "45 * * * *"] },
+  "triggers": { "crons": ["15,45 * * * *"] },
   "ratelimits": [
     {
       "name": "AUTH_LIMIT",

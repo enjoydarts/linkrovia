@@ -7,7 +7,7 @@ const redirectPath = '.wrangler/deploy/config.json';
 const redirect = JSON.parse(await readFile(redirectPath, 'utf8'));
 const configPath = resolve(dirname(redirectPath), redirect.configPath);
 const config = JSON.parse(await readFile(configPath, 'utf8'));
-assert.deepEqual(config.triggers.crons, ['15 3 * * *', '45 * * * *']);
+assert.deepEqual(config.triggers.crons, ['15,45 * * * *']);
 assert.equal(
   config.analytics_engine_datasets.find(({ binding }) => binding === 'CLICKS')
     ?.dataset,
@@ -30,8 +30,11 @@ try {
   assert.equal(asset.status, 200);
   assert.match(await asset.text(), /^openapi:/);
 
-  // An unscheduled expression verifies the handler without querying Analytics SQL.
-  const scheduled = await worker.fetch('/cdn-cgi/local/scheduled?cron=smoke');
+  const event = new URLSearchParams({
+    cron: config.triggers.crons[0],
+    time: String(Date.UTC(2026, 0, 11, 4, 15)),
+  });
+  const scheduled = await worker.fetch(`/cdn-cgi/local/scheduled?${event}`);
   assert.equal(scheduled.status, 200);
   assert.equal(await scheduled.text(), 'ok');
 } finally {

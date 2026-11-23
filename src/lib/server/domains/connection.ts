@@ -107,7 +107,7 @@ export async function beginProviderOperation(
   const [updated] = await db.batch<{ version: number }>([
     db
       .prepare(
-        `UPDATE domains SET connection_status = ?, is_active = 0, verified_at = NULL,
+        `UPDATE domains SET connection_status = COALESCE(?, connection_status),
       connection_version = connection_version + 1, last_checked_at = unixepoch(),
       updated_at = unixepoch(), connection_error_code = NULL
       WHERE id = ? AND connection_version = ? AND is_primary = 0
@@ -116,7 +116,7 @@ export async function beginProviderOperation(
       RETURNING connection_version AS version`,
       )
       .bind(
-        action === 'attach' ? 'provisioning' : 'checking',
+        action === 'attach' ? 'provisioning' : null,
         domain.id,
         domain.version,
         action,
@@ -147,18 +147,24 @@ export async function finishProviderOperation(
   const attached = result.code === 'attached';
   const detached = result.code === 'detached';
   const completed = attached || detached;
+  const uncertain = ['conflict', 'operation_unknown'].includes(result.code);
   const status = attached
     ? 'verifying'
     : detached
       ? 'disconnected'
       : operation.action === 'attach'
         ? 'failed'
-        : 'warning';
+        : uncertain
+          ? 'warning'
+          : null;
   const error = completed ? null : result.code;
   const [updated] = await db.batch<{ id: string }>([
     db
       .prepare(
-        `UPDATE domains SET connection_status = ?, connection_version = connection_version + 1,
+        `UPDATE domains SET connection_status = COALESCE(?, connection_status),
+      is_active = CASE WHEN ? THEN 0 ELSE is_active END,
+      verified_at = CASE WHEN ? THEN NULL ELSE verified_at END,
+      connection_version = connection_version + 1,
       connection_error_code = ?, updated_at = unixepoch(),
       provider_mode = CASE WHEN ? THEN 'cloudflare_custom_domain' ELSE provider_mode END,
       cloudflare_domain_id = CASE WHEN ? THEN ? ELSE cloudflare_domain_id END,
@@ -169,6 +175,8 @@ export async function finishProviderOperation(
       )
       .bind(
         status,
+        Number(status !== null),
+        Number(status !== null),
         error,
         Number(attached),
         Number(completed),

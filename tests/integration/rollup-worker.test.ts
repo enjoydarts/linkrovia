@@ -9,6 +9,7 @@ import {
 import worker from '../../workers/rollup';
 
 let platform: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
+const schedule = '15,45 * * * *';
 
 beforeAll(async () => {
   platform = await getPlatformProxy<{ DB: D1Database }>({
@@ -46,17 +47,22 @@ it('rolls up yesterday and reconciles a previously uncovered day on the hourly s
     data: [],
   }));
   const env = { DB, ANALYTICS_SQL: { query } as AnalyticsSQLBinding };
-  const scheduledTime = Date.now();
-  const controller = { scheduledTime, noRetry() {} };
-  const yesterday = new Date(scheduledTime - 86_400_000)
+  const scheduledDay = new Date(Date.now() - 86_400_000);
+  const dailyTime = scheduledDay.setUTCHours(3, 15, 0, 0);
+  const yesterday = new Date(dailyTime - 86_400_000).toISOString().slice(0, 10);
+  const previous = new Date(dailyTime - 2 * 86_400_000)
     .toISOString()
     .slice(0, 10);
-  const previous = new Date(scheduledTime - 2 * 86_400_000)
-    .toISOString()
-    .slice(0, 10);
-  await worker.scheduled({ ...controller, cron: '15 3 * * *' }, env);
-  await worker.scheduled({ ...controller, cron: '45 * * * *' }, env);
-  await worker.scheduled({ ...controller, cron: '45 * * * *' }, env);
+  for (const scheduledTime of [
+    dailyTime,
+    scheduledDay.setUTCHours(3, 45, 0, 0),
+    scheduledDay.setUTCHours(4, 45, 0, 0),
+  ]) {
+    await worker.scheduled(
+      { scheduledTime, cron: schedule, noRetry() {} },
+      env,
+    );
+  }
 
   const { results } = await DB.prepare(
     'SELECT day_utc, status, attempt_count FROM rollup_jobs ORDER BY day_utc DESC',
@@ -68,14 +74,39 @@ it('rolls up yesterday and reconciles a previously uncovered day on the hourly s
   ]);
 });
 
+it.each([0, 2, 4, 23])(
+  'skips %i:15 UTC without accessing bindings',
+  async (hour) => {
+    await worker.scheduled(
+      {
+        scheduledTime: Date.UTC(2026, 0, 11, hour, 15),
+        cron: schedule,
+        noRetry() {},
+      },
+      {
+        get DB(): never {
+          throw new Error('Unexpected D1 access');
+        },
+        get ANALYTICS_SQL(): never {
+          throw new Error('Unexpected Analytics SQL access');
+        },
+      },
+    );
+  },
+);
+
 it('validates, bounds and restores a missing day outside automatic reconciliation', async () => {
   const { DB } = platform.env;
-  const scheduledTime = Date.now();
-  const now = Math.floor(scheduledTime / 1000);
-  const date = new Date(scheduledTime - 15 * 86_400_000)
+  const now = Math.floor(Date.now() / 1000);
+  const scheduledTime = new Date(Date.now() - 3_600_000).setUTCMinutes(
+    45,
+    0,
+    0,
+  );
+  const date = new Date(now * 1000 - 15 * 86_400_000)
     .toISOString()
     .slice(0, 10);
-  const anotherDate = new Date(scheduledTime - 16 * 86_400_000)
+  const anotherDate = new Date(now * 1000 - 16 * 86_400_000)
     .toISOString()
     .slice(0, 10);
   expect(await queueClickRepair(DB, '2026-02-30', now)).toBe('invalid');
@@ -88,7 +119,7 @@ it('validates, bounds and restores a missing day outside automatic reconciliatio
     data: [],
   }));
   await worker.scheduled(
-    { scheduledTime, cron: '45 * * * *', noRetry() {} },
+    { scheduledTime, cron: schedule, noRetry() {} },
     { DB, ANALYTICS_SQL: { query } as AnalyticsSQLBinding },
   );
 
