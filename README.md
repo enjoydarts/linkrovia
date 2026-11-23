@@ -24,7 +24,9 @@ The [OpenAPI 3.1 contract](static/openapi.yaml) describes the REST API, includin
 
 ## Deploy to Cloudflare
 
-The [deployment guide](docs/deployment.md) covers Workers Builds, setting up your first owner passkey, and adding a short-link domain. The Deploy to Cloudflare button is pending an end-to-end installation test on Workers Free.
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia)
+
+Deploy to Cloudflare is available for preview installations. Follow the [deployment guide](docs/deployment.md) to register your first owner passkey and verify the deployment.
 
 Owners can assign a hostname from an active Cloudflare-managed zone in **Domains**. Linkrovia checks for conflicts and verifies the resulting HTTPS connection. [Connect a short-link domain](docs/domains.md)
 

@@ -50,8 +50,7 @@ const en: DomainMessages = {
   manage: 'Connect',
   none: 'No domains yet.',
   addDomain: 'Add a domain',
-  addHelp:
-    'Add a hostname, then follow the Cloudflare guide to connect it to this Worker.',
+  addHelp: 'Add a hostname to start the guided connection.',
   hostname: 'Hostname',
   readOnly: 'Only the owner can add or manage domains.',
   error: 'Could not save. Check the hostname and try again.',
@@ -70,7 +69,7 @@ const en: DomainMessages = {
   },
   wizardTitle: 'Connect domain',
   wizardIntro:
-    'Add this hostname as a Custom Domain for your own Worker in Cloudflare.',
+    'Assign this hostname to your Worker and verify its HTTPS connection.',
   cloudflareSteps: [
     'Open Cloudflare Workers & Pages and select your Worker.',
     'Open Settings → Domains & Routes → Add → Custom Domain.',
@@ -92,9 +91,8 @@ const en: DomainMessages = {
     'Cloudflare has not reported an active connection yet. Check the hostname and try again.',
   disconnect: 'Disconnect',
   disconnectConfirm:
-    'Disconnect this domain from Linkrovia? Remove the Custom Domain in Cloudflare separately.',
-  disconnected:
-    'Disconnected from Linkrovia. Remove the Custom Domain in Cloudflare separately.',
+    'Pause short links on this hostname? You can resume them by checking the connection.',
+  disconnected: 'Short links on this hostname are paused.',
   diagnose: 'Diagnose (advanced)',
   advanced: 'Optional Cloudflare account and zone details',
   accountId: 'Account ID',
@@ -133,13 +131,11 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     manage: '接続',
     none: 'ドメインはまだありません。',
     addDomain: 'ドメインを追加',
-    addHelp:
-      'ホスト名を追加し、Cloudflare の案内に従って Worker に接続します。',
+    addHelp: 'ホスト名を追加して、接続ウィザードを開始します。',
     hostname: 'ホスト名',
     readOnly: 'ドメインの追加・管理はオーナーのみ可能です。',
     wizardTitle: 'ドメインを接続',
-    wizardIntro:
-      'Cloudflare でこのホスト名を自分の Worker のカスタムドメインとして追加します。',
+    wizardIntro: 'このホスト名を Worker に割り当て、HTTPS 接続を確認します。',
     automatic:
       '有効な Cloudflare ゾーン内のホスト名なら DNS と TLS は自動で設定されます。',
     externalDns:
@@ -153,9 +149,8 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
       'まだ有効な接続が確認できません。ホスト名を確認して再試行してください。',
     disconnect: '接続を解除',
     disconnectConfirm:
-      'Linkrovia からこのドメインを解除しますか？Cloudflare 側のカスタムドメインは別途削除してください。',
-    disconnected:
-      'Linkrovia から解除しました。Cloudflare 側のカスタムドメインも削除してください。',
+      'このホスト名で短縮リンクの転送を停止しますか？接続を確認すると再開できます。',
+    disconnected: 'このホスト名での短縮リンクの転送を停止しました。',
     diagnose: '診断（高度な設定）',
     advanced: 'Cloudflare アカウントとゾーンの情報（任意）',
     accountId: 'アカウント ID',
@@ -177,12 +172,11 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     manage: '连接',
     none: '暂无域名。',
     addDomain: '添加域名',
-    addHelp: '添加主机名，然后按照 Cloudflare 指引将其连接到 Worker。',
+    addHelp: '添加主机名以开始连接向导。',
     hostname: '主机名',
     readOnly: '只有所有者可以添加或管理域名。',
     wizardTitle: '连接域名',
-    wizardIntro:
-      '在 Cloudflare 中将此主机名添加为您自己的 Worker 的自定义域名。',
+    wizardIntro: '将此主机名分配给您的 Worker，然后验证 HTTPS 连接。',
     automatic: '如果主机名位于有效的 Cloudflare 区域，DNS 和 TLS 会自动配置。',
     externalDns:
       '如果 DNS 由其他服务管理，请将区域转移到 Cloudflare，或使用 workers.dev 主机名。',
@@ -193,9 +187,8 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     active: '已启用',
     failed: '尚未检测到有效连接。请检查主机名后重试。',
     disconnect: '断开连接',
-    disconnectConfirm:
-      '要从 Linkrovia 断开此域名吗？请另行在 Cloudflare 中删除自定义域名。',
-    disconnected: '已从 Linkrovia 断开。请另行在 Cloudflare 中删除自定义域名。',
+    disconnectConfirm: '要暂停此主机名上的短链接跳转吗？验证连接后可恢复。',
+    disconnected: '此主机名上的短链接跳转已暂停。',
     diagnose: '诊断（高级）',
     advanced: '可选的 Cloudflare 账户和区域信息',
     accountId: '账户 ID',
@@ -215,20 +208,19 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     manage: '連線',
     none: '尚無網域。',
     addDomain: '新增網域',
-    addHelp: '新增主機名稱，然後依照 Cloudflare 指引連線至 Worker。',
+    addHelp: '新增主機名稱以啟動連線精靈。',
     hostname: '主機名稱',
     readOnly: '只有擁有者可以新增或管理網域。',
     wizardTitle: '連線網域',
-    wizardIntro: '在 Cloudflare 將此主機名稱新增為您自己的 Worker 自訂網域。',
+    wizardIntro: '將此主機名稱指派給您的 Worker，然後驗證 HTTPS 連線。',
     checkConnection: '檢查連線',
     checking: '檢查中…',
     ready: '連線已啟用。',
     active: '已啟用',
     failed: '尚未偵測到有效連線，請檢查主機名稱後重試。',
     disconnect: '中斷連線',
-    disconnectConfirm:
-      '要從 Linkrovia 中斷此網域嗎？請另行在 Cloudflare 刪除自訂網域。',
-    disconnected: '已從 Linkrovia 中斷，請另行在 Cloudflare 刪除自訂網域。',
+    disconnectConfirm: '要暫停此主機名稱上的短連結轉址嗎？驗證連線後即可恢復。',
+    disconnected: '此主機名稱上的短連結轉址已暫停。',
     diagnose: '診斷（進階）',
     advanced: '選填的 Cloudflare 帳戶和區域資訊',
     accountId: '帳戶 ID',
@@ -249,13 +241,11 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     manage: 'Conectar',
     none: 'Aún no hay dominios.',
     addDomain: 'Añadir un dominio',
-    addHelp:
-      'Añade un nombre de host y sigue la guía de Cloudflare para conectarlo a este Worker.',
+    addHelp: 'Añade un nombre de host para iniciar la conexión guiada.',
     hostname: 'Nombre de host',
     readOnly: 'Solo el propietario puede añadir o gestionar dominios.',
     wizardTitle: 'Conectar dominio',
-    wizardIntro:
-      'Añade este host como dominio personalizado de tu Worker en Cloudflare.',
+    wizardIntro: 'Asigna este host a tu Worker y verifica la conexión HTTPS.',
     checkConnection: 'Comprobar conexión',
     checking: 'Comprobando…',
     ready: 'La conexión está activa.',
@@ -264,9 +254,8 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
       'Cloudflare aún no indica una conexión activa. Comprueba el host y vuelve a intentarlo.',
     disconnect: 'Desconectar',
     disconnectConfirm:
-      '¿Desconectar este dominio de Linkrovia? Elimina el dominio personalizado en Cloudflare por separado.',
-    disconnected:
-      'Desconectado de Linkrovia. Elimina el dominio personalizado en Cloudflare por separado.',
+      '¿Pausar los enlaces cortos de este host? Puedes reanudarlos al comprobar la conexión.',
+    disconnected: 'Los enlaces cortos de este host están en pausa.',
     diagnose: 'Diagnosticar (avanzado)',
     advanced: 'Datos opcionales de cuenta y zona de Cloudflare',
     accountId: 'ID de cuenta',
@@ -289,13 +278,12 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     manage: 'Connetti',
     none: 'Nessun dominio.',
     addDomain: 'Aggiungi dominio',
-    addHelp:
-      'Aggiungi un hostname e segui la guida Cloudflare per collegarlo a questo Worker.',
+    addHelp: 'Aggiungi un hostname per avviare la connessione guidata.',
     hostname: 'Hostname',
     readOnly: 'Solo il proprietario può aggiungere o gestire domini.',
     wizardTitle: 'Connetti dominio',
     wizardIntro:
-      'Aggiungi questo hostname come dominio personalizzato del tuo Worker in Cloudflare.',
+      'Assegna questo hostname al Worker e verifica la connessione HTTPS.',
     checkConnection: 'Controlla connessione',
     checking: 'Controllo…',
     ready: 'Connessione attiva.',
@@ -304,9 +292,8 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
       'Cloudflare non segnala ancora una connessione attiva. Controlla l’hostname e riprova.',
     disconnect: 'Disconnetti',
     disconnectConfirm:
-      'Disconnettere questo dominio da Linkrovia? Rimuovi separatamente il dominio personalizzato in Cloudflare.',
-    disconnected:
-      'Disconnesso da Linkrovia. Rimuovi separatamente il dominio personalizzato in Cloudflare.',
+      'Sospendere i link brevi su questo hostname? Puoi riattivarli controllando la connessione.',
+    disconnected: 'I link brevi su questo hostname sono sospesi.',
     diagnose: 'Diagnosi (avanzata)',
     advanced: 'Dati facoltativi dell’account e della zona Cloudflare',
     accountId: 'ID account',
@@ -329,13 +316,12 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
     manage: 'Connecter',
     none: 'Aucun domaine.',
     addDomain: 'Ajouter un domaine',
-    addHelp:
-      'Ajoutez un nom d’hôte, puis suivez le guide Cloudflare pour le connecter à ce Worker.',
+    addHelp: 'Ajoutez un nom d’hôte pour lancer la connexion guidée.',
     hostname: 'Nom d’hôte',
     readOnly: 'Seul le propriétaire peut ajouter ou gérer des domaines.',
     wizardTitle: 'Connecter un domaine',
     wizardIntro:
-      'Ajoutez cet hôte comme domaine personnalisé de votre Worker dans Cloudflare.',
+      'Attribuez cet hôte à votre Worker et vérifiez la connexion HTTPS.',
     checkConnection: 'Vérifier la connexion',
     checking: 'Vérification…',
     ready: 'La connexion est active.',
@@ -344,9 +330,8 @@ const translations: Partial<Record<Locale, Partial<DomainMessages>>> = {
       'Cloudflare ne signale pas encore de connexion active. Vérifiez l’hôte et réessayez.',
     disconnect: 'Déconnecter',
     disconnectConfirm:
-      'Déconnecter ce domaine de Linkrovia ? Supprimez séparément le domaine personnalisé dans Cloudflare.',
-    disconnected:
-      'Déconnecté de Linkrovia. Supprimez séparément le domaine personnalisé dans Cloudflare.',
+      'Suspendre les liens courts sur cet hôte ? Vérifiez la connexion pour les réactiver.',
+    disconnected: 'Les liens courts de cet hôte sont suspendus.',
     diagnose: 'Diagnostiquer (avancé)',
     advanced: 'Informations facultatives du compte et de la zone Cloudflare',
     accountId: 'ID du compte',
@@ -423,13 +408,27 @@ const guidance: Partial<
   },
 };
 
+const assignmentStatuses = {
+  en: { provisioning: 'Assigning', warning: 'Needs attention' },
+  ja: { provisioning: '割り当て中', warning: '要確認' },
+  'zh-CN': { provisioning: '正在分配', warning: '需要处理' },
+  'zh-TW': { provisioning: '指派中', warning: '需要處理' },
+  es: { provisioning: 'Asignando', warning: 'Requiere atención' },
+  it: { provisioning: 'Assegnazione in corso', warning: 'Richiede attenzione' },
+  fr: { provisioning: 'Attribution en cours', warning: 'Action requise' },
+} as const;
+
 export function domainMessages(locale: Locale): DomainMessages {
   const translated = translations[locale] ?? {};
   return {
     ...en,
     ...common,
     ...translated,
-    statuses: { ...en.statuses, ...(translated.statuses ?? {}) },
+    statuses: {
+      ...en.statuses,
+      ...assignmentStatuses[locale],
+      ...(translated.statuses ?? {}),
+    },
     errors: { ...en.errors, ...(translated.errors ?? {}) },
     ...(guidance[locale] ?? {}),
   };

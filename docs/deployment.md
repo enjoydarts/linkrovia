@@ -4,7 +4,15 @@ Linkrovia runs on one Cloudflare Worker with a D1 database. The same Worker serv
 
 If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine), enable it for the account, and retry the build. The retry skips D1 migrations that already ran. Linkrovia records clicks as soon as the Worker serves short links, and [Cloudflare creates the dataset on its first write](https://developers.cloudflare.com/analytics/analytics-engine/get-started/).
 
-## Install from your browser
+## Install with Deploy to Cloudflare
+
+1. Open [Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia), sign in to Cloudflare, and connect GitHub when prompted.
+2. Choose the names for your repository, Worker, and new D1 database. When prompted for `SETUP_TOKEN`, generate and save a private random value of at least 32 characters. Keep `npm run build` and `npm run deploy` as the build and deploy commands.
+3. After the deployment succeeds, open the Worker URL and go to `/setup`. Enter your setup token and register your owner passkey. The deployed Worker serves the app and runs the scheduled jobs.
+
+[How Cloudflare provisions resources for the deploy button](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
+
+## Install with Workers Builds
 
 1. Create a GitHub copy of [Linkrovia](https://github.com/enjoydarts/linkrovia) that you can manage. Your copy will be connected to Cloudflare for deployments and will receive your installation's Worker and database settings.
 2. In the [Cloudflare dashboard](https://dash.cloudflare.com/), open **Storage & databases → D1 SQL Database**, create a database for this installation, and copy its name and database ID. In your GitHub copy, use **Edit** on `wrangler.jsonc`. In the `d1_databases` entry, keep the binding named `DB`, set `database_name` to your database name, and add `"database_id": "YOUR-DATABASE-ID"` using the ID you copied. Keep the `migrations_dir` setting. Save the change to your deployment branch. [D1 setup](https://developers.cloudflare.com/d1/get-started/)
