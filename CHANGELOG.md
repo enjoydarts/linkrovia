@@ -4,6 +4,10 @@ This changelog tracks changes during active development. See the [deployment gui
 
 ## Unreleased
 
+## v0.1.0 - 2026-11-24
+
+First public release.
+
 - Reworked the public and owner setup screens and redesigned the admin workspace, including link configuration, reports, provisioning, and instance settings.
 - Consolidated administration into a single sidebar. Saved links use navigation inside the link header, with a disclosure when space is limited.
 - Added breadcrumbs and an account menu to the administration toolbar, and aligned headers, forms, and panels to shared content edges.
