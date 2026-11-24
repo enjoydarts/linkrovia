@@ -12,6 +12,12 @@ If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine]
 
 [How Cloudflare provisions resources for the deploy button](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
 
+### GitHub authorization errors
+
+Check that the GitHub user you signed in with has authorized the Cloudflare Workers & Pages app and that the app is installed on the account or organization that will own the copy. GitHub lists these under **Authorized GitHub Apps** and **Installed GitHub Apps**, respectively. [Cloudflare GitHub integration](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/github-integration/#install-and-authorize-the-app)
+
+If the error returns immediately after authorization and there is no build log, give Cloudflare the attempt time and the destination repository and Worker names so they can investigate. To continue installing with a repository you manage, follow [Install with Workers Builds](#install-with-workers-builds).
+
 ## Install with Workers Builds
 
 1. Create a GitHub copy of [Linkrovia](https://github.com/enjoydarts/linkrovia) that you can manage. Your copy will be connected to Cloudflare for deployments and will receive your installation's Worker and database settings.

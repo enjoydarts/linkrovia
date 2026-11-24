@@ -4,6 +4,8 @@ This changelog tracks changes during active development. See the [deployment gui
 
 ## Unreleased
 
+- Integrated saved-link navigation into the page header and matched its active state to analytics navigation.
+
 ## v0.1.0 - 2026-11-24
 
 First public release.

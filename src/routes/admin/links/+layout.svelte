@@ -1,17 +1,9 @@
 <script lang="ts">
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
-  import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import Copy from '@lucide/svelte/icons/copy';
-  import FlaskConical from '@lucide/svelte/icons/flask-conical';
-  import Link2 from '@lucide/svelte/icons/link-2';
   import Plus from '@lucide/svelte/icons/plus';
-  import QrCode from '@lucide/svelte/icons/qr-code';
-  import Route from '@lucide/svelte/icons/route';
-  import Shield from '@lucide/svelte/icons/shield';
-  import Tags from '@lucide/svelte/icons/tags';
-  import Target from '@lucide/svelte/icons/target';
   import { analyticsMessages } from '$lib/components/analytics/messages';
   import { linkMessages } from '$lib/i18n/links';
   import { linkSectionLabels } from '../breadcrumbs';
@@ -23,35 +15,18 @@
   let labels = $derived(detailNavigation[data.locale]);
   let clipboard = $derived(listMessages[data.locale]);
   let analytics = $derived(analyticsMessages(data.locale));
-  let sectionNames = $derived(linkSectionLabels(data.locale));
   let detailId = $derived(page.params.id);
   let isNew = $derived(page.url.pathname === '/admin/links/new');
   let linkPath = $derived(
     detailId ? `/admin/links/${encodeURIComponent(detailId)}` : '',
   );
 
-  const sectionIcons = [
-    { suffix: '', icon: Link2 },
-    { suffix: '/rules', icon: Route },
-    { suffix: '/analytics', icon: ChartNoAxesCombined },
-    { suffix: '/conversions', icon: Target },
-    { suffix: '/protection', icon: Shield },
-    { suffix: '/qr', icon: QrCode },
-    { suffix: '/utm', icon: Tags },
-    { suffix: '/simulate', icon: FlaskConical },
-  ];
-  let sectionsList = $derived(
-    sectionIcons.map(({ suffix, icon }) => ({
-      suffix,
-      icon,
-      label: sectionNames[suffix],
-    })),
-  );
-  let active = $derived(sectionsList.find(({ suffix }) => isCurrent(suffix)));
+  let sectionsList = $derived(Object.entries(linkSectionLabels(data.locale)));
+  let active = $derived(sectionsList.find(([suffix]) => isCurrent(suffix)));
   let sectionTitle = $derived(
-    active?.suffix === '/analytics'
+    active?.[0] === '/analytics'
       ? analytics.linkTitle
-      : (active?.label ?? m.edit),
+      : (active?.[1] ?? m.edit),
   );
   let sections = $state<HTMLDetailsElement>();
   let copied = $state<{ url: string; ok: boolean } | null>(null);
@@ -83,56 +58,51 @@
   }
 </script>
 
-{#snippet navigation()}
-  <nav aria-label={m.links}>
-    <ul>
-      {#each sectionsList as entry (entry.suffix)}
-        <li>
-          <a
-            href={linkPath + entry.suffix}
-            aria-current={isCurrent(entry.suffix) ? 'page' : undefined}
-          >
-            <entry.icon size={16} strokeWidth={1.8} aria-hidden="true" />
-            <span>{entry.label}</span>
-          </a>
-        </li>
-      {/each}
-    </ul>
+{#snippet navigation(mobile = false)}
+  <nav class:context-nav={!mobile} aria-label={m.links}>
+    {#each sectionsList as [suffix, label] (suffix)}
+      <a
+        href={linkPath + suffix}
+        aria-current={isCurrent(suffix) ? 'page' : undefined}
+      >
+        {label}
+      </a>
+    {/each}
   </nav>
 {/snippet}
 
 {#if detailId}
   <div class="link-workspace admin-page">
-    <header class="workspace-intro"><h1>{sectionTitle}</h1></header>
-    <div class="context-panel record-bar">
-      {#if data.linkContext}
-        {@const shortUrl = data.linkContext.shortUrl}
-        <div class="record-main">
-          <div class="record-key">
-            <span class="record-icon">
-              <Link2 size={22} aria-hidden="true" />
-            </span>
+    <header class="context-header link-header">
+      <div class="link-heading">
+        <div class="heading-copy">
+          <h1>{sectionTitle}</h1>
+          {#if data.linkContext}
+            {@const shortUrl = data.linkContext.shortUrl}
             <div class="record-identity">
-              {#if data.linkContext.title}<span class="record-name">
-                  {data.linkContext.title}
-                </span>{/if}
+              {#if data.linkContext.title}
+                <span class="record-name">{data.linkContext.title}</span>
+              {/if}
               <a class="record-url" href={shortUrl}>{shortUrl}</a>
             </div>
-          </div>
+          {/if}
+        </div>
+        {#if data.linkContext}
+          {@const shortUrl = data.linkContext.shortUrl}
           <button
-            class="admin-button"
+            class="admin-button copy-button"
             type="button"
             onclick={() => copyUrl(shortUrl)}
           >
             <Copy size={16} aria-hidden="true" />
             {clipboard.copy}
           </button>
-        </div>
-        {#if copied?.url === shortUrl}
-          <p class="copy-status" role="status">
-            {copied.ok ? clipboard.copied : clipboard.copyError}
-          </p>
         {/if}
+      </div>
+      {#if copied && copied.url === data.linkContext?.shortUrl}
+        <p class="copy-status" role="status">
+          {copied.ok ? clipboard.copied : clipboard.copyError}
+        </p>
       {/if}
       <div class="link-sections">
         {@render navigation()}
@@ -141,20 +111,20 @@
         <summary>
           <span class="section-summary">
             <span>{labels.sections}</span>
-            {#if active}<span class="section-current">{active.label}</span>{/if}
+            {#if active}<span class="section-current">{active[1]}</span>{/if}
           </span>
           <ChevronDown size={16} aria-hidden="true" />
         </summary>
-        {@render navigation()}
+        {@render navigation(true)}
       </details>
-    </div>
+    </header>
     <div class="link-task">
       {@render children()}
     </div>
   </div>
 {:else}
-  <div class="link-workspace">
-    <header class="workspace-intro index-header">
+  <div class="link-workspace admin-page">
+    <header class="workspace-intro">
       <h1>{isNew ? m.create : m.links}</h1>
       {#if !isNew}
         <a href="/admin/links/new" class="admin-button admin-button-primary">
@@ -168,51 +138,40 @@
 
 <style>
   .link-workspace {
-    display: grid;
-    gap: clamp(0.85rem, 2vw, 1.5rem);
     min-width: 0;
     container-type: inline-size;
   }
-  .index-header {
-    margin: 0;
+  .link-header {
+    padding-block-end: 0;
   }
-  .record-bar {
-    display: grid;
-    gap: 0.5rem;
-  }
-  .record-main,
-  .record-key {
+  .link-heading {
     display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    min-width: 0;
-  }
-  .record-main {
+    align-items: end;
+    gap: 0.75rem 1.5rem;
     justify-content: space-between;
     flex-wrap: wrap;
+    padding-block-end: 0.75rem;
   }
-  .record-key {
-    flex: 1 1 18rem;
-  }
-  .record-icon {
+  .heading-copy {
     display: grid;
-    flex: 0 0 2.6rem;
-    min-height: 2.6rem;
-    place-items: center;
-    color: var(--ui-link);
-    background: var(--ui-accent-surface);
-    border-radius: var(--ui-radius-sm);
+    gap: 0.4rem;
+    flex: 1 1 18rem;
+    min-width: 0;
+  }
+  .copy-button {
+    flex: none;
   }
   .record-identity {
-    display: grid;
-    gap: 0.2rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.8rem;
     min-width: 0;
     overflow-wrap: anywhere;
   }
   .record-name {
-    font-size: clamp(1rem, 2vw, 1.3rem);
-    font-weight: 730;
-    letter-spacing: -0.025em;
+    font-size: 0.875rem;
+    font-weight: 650;
   }
   .record-url {
     color: var(--ui-link);
@@ -223,41 +182,13 @@
   .record-url:hover {
     text-decoration: underline;
   }
-  .copy-status {
-    color: var(--ui-text-muted);
+  .link-header .copy-status {
+    margin-block: 0 0.65rem;
     font-size: 0.83rem;
   }
-  .link-sections {
-    margin-block-start: 0.55rem;
-    border-block-start: 1px solid var(--ui-border);
-  }
-  .link-sections ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 1.3rem;
-  }
-  nav a {
-    display: flex;
-    min-height: 2.75rem;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--ui-text-muted);
-    font-size: 0.875rem;
-    font-weight: 570;
-    overflow-wrap: anywhere;
-  }
-  nav a :global(svg) {
-    flex: none;
-  }
-  nav a:hover,
-  nav a[aria-current='page'] {
-    color: var(--ui-link);
-  }
-  .link-sections a {
-    border-block-end: 2px solid transparent;
-  }
-  .link-sections a[aria-current='page'] {
-    border-block-end-color: var(--ui-primary);
+  .link-sections :global(.context-nav) {
+    margin-block-end: 0;
+    border-block-end: 0;
   }
   .link-task {
     display: grid;
@@ -273,7 +204,6 @@
     }
     .mobile-sections {
       display: block;
-      margin-block-start: 0.55rem;
       border-block-start: 1px solid var(--ui-border);
     }
     .mobile-sections summary {
@@ -293,6 +223,9 @@
     .mobile-sections summary :global(svg) {
       flex: none;
     }
+    .mobile-sections[open] summary :global(svg) {
+      transform: rotate(180deg);
+    }
     .section-summary {
       display: flex;
       flex-wrap: wrap;
@@ -305,23 +238,32 @@
       font-weight: 500;
     }
     .mobile-sections nav {
-      padding-block: 0.25rem;
-    }
-    .mobile-sections ul {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.2rem;
+      gap: 0.2rem 0.5rem;
+      padding-block: 0.25rem 0.5rem;
     }
     .mobile-sections a {
+      display: flex;
+      min-height: 2.75rem;
+      align-items: center;
       padding-inline: 0.45rem;
       border-radius: var(--ui-radius-sm);
+      color: var(--ui-text-muted);
+      font-size: 0.875rem;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+    .mobile-sections a:hover,
+    .mobile-sections a[aria-current='page'] {
+      color: var(--ui-link);
     }
     .mobile-sections a[aria-current='page'] {
       background: var(--ui-accent-surface);
     }
   }
   @container (max-width: 26rem) {
-    .mobile-sections ul {
+    .mobile-sections nav {
       grid-template-columns: minmax(0, 1fr);
     }
   }
