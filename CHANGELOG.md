@@ -4,7 +4,10 @@ This changelog records Linkrovia releases. See the [deployment guide](docs/deplo
 
 ## Unreleased
 
+## v1.1.0 - 2026-11-24
+
 - Add German, Korean, and Portuguese to the public pages, setup, admin interface, and CSV exports.
+- Resolve both `pt-BR` and `pt-PT` browser preferences to the Portuguese catalog.
 - Keep each language’s translations in one JSON file.
 
 ## v1.0.0 - 2026-11-24
