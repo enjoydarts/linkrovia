@@ -136,14 +136,14 @@
           name="name"
           maxlength="80"
           required
-          class="admin-control w-full sm:max-w-sm"
+          class="admin-control w-full"
         />
       </div>
       <div class="space-y-1">
         <label for="key-expiry" class="block font-medium">
           {messages.expiry}
         </label>
-        <select id="key-expiry" name="expiry" class="admin-control">
+        <select id="key-expiry" name="expiry" class="admin-control w-full">
           {#each data.expiryOptions as expiry (expiry)}
             <option value={expiry}>{messages[expiry]}</option>
           {/each}

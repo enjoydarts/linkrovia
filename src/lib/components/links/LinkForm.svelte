@@ -128,11 +128,7 @@
   </p>
 {/snippet}
 
-<form
-  method="POST"
-  action={formAction}
-  class="context-panel link-form max-w-4xl"
->
+<form method="POST" action={formAction} class="context-panel link-form">
   <input type="hidden" name="csrfToken" value={csrfToken} />
   {#if link}<input
       type="hidden"

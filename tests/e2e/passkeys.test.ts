@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { fixtureSetupToken } from '../fixtures/setup.mjs';
 
 async function signOut(page: Page) {
+  await page.getByLabel('Account menu', { exact: true }).click();
   const [response] = await Promise.all([
     page.waitForResponse(
       (response) =>
@@ -73,7 +74,9 @@ test('registers and signs in with a discoverable passkey', async ({
       .locator('form[action="/login/passkey"] button[type="submit"]')
       .click();
     await expect(page).toHaveURL('/admin');
-    await expect(page.locator('form[action="/logout"]')).toBeVisible();
+    await expect(
+      page.getByLabel('Account menu', { exact: true }),
+    ).toBeVisible();
 
     await test.step('opens private operations diagnostics from settings', async () => {
       await page.goto('/admin/settings');

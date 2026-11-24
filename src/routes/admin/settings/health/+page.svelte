@@ -1,13 +1,11 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
-  import { preferenceMessages } from '$lib/i18n/preferences';
   import '../../admin-context.css';
   import type { PageProps } from './$types';
   import { healthMessages } from './messages';
 
   let { data }: PageProps = $props();
   let m = $derived(healthMessages(data.locale));
-  let preferences = $derived(preferenceMessages(data.locale));
   let format = $derived(
     new Intl.DateTimeFormat(data.locale, {
       dateStyle: 'medium',
@@ -33,12 +31,6 @@
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 <div class="space-y-6">
   <header class="context-header space-y-2">
-    <a
-      href="/admin/settings"
-      class="inline-flex items-center gap-2 text-sm font-medium text-link hover:underline"
-    >
-      <span aria-hidden="true">←</span>{preferences.settings}
-    </a>
     <h1 class="text-3xl font-semibold tracking-tight">{m.title}</h1>
     <p>{m.intro}</p>
   </header>

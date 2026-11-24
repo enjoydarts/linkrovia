@@ -111,7 +111,7 @@
     <h1>{m.settings}</h1>
     <a href="#personal-preferences" class="admin-button">{m.personal}</a>
   </header>
-  <div class="grid items-start gap-5 md:grid-cols-2">
+  <div class="grid items-start gap-5 lg:grid-cols-2">
     {#each directories as directory (directory.label)}
       <section class="context-panel space-y-3" aria-label={directory.label}>
         <h2 class="text-lg font-semibold">{directory.label}</h2>
@@ -137,7 +137,7 @@
         label={zone.replaceAll('_', ' ').replaceAll('/', ' · ')}
       ></option>{/each}
   </datalist>
-  <div class="grid items-start gap-5 xl:grid-cols-2">
+  <div class={['grid items-start gap-5', data.isOwner && 'lg:grid-cols-2']}>
     <form
       id="personal-preferences"
       aria-labelledby="personal-preferences-heading"

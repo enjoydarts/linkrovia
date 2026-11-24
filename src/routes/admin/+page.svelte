@@ -256,9 +256,6 @@
 </div>
 
 <style>
-  .overview {
-    max-width: 1200px;
-  }
   .overview-header {
     display: flex;
     align-items: stretch;

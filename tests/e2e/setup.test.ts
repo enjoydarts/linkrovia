@@ -219,8 +219,18 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         linkTabs.getByRole('link', { name: 'Analytics' }),
       ).toHaveAttribute('aria-current', 'page');
       await expect(
-        page.getByText('A fixture link', { exact: true }),
+        page.getByRole('main').getByText('A fixture link', { exact: true }),
       ).toBeVisible();
+      const breadcrumbs = page.getByRole('navigation', { name: 'Breadcrumb' });
+      await expect(
+        breadcrumbs.getByRole('link', { name: 'Links', exact: true }),
+      ).toHaveAttribute('href', '/admin/links');
+      await expect(
+        breadcrumbs.getByRole('link', { name: 'A fixture link' }),
+      ).toHaveAttribute('href', new URL(linkPage).pathname);
+      await expect(breadcrumbs.locator('[aria-current="page"]')).toHaveText(
+        'Analytics',
+      );
       await linkTabs.locator('a[href$="/qr"]').click();
       await expect(page).toHaveURL(`${linkPage}/qr`);
       await linkTabs.getByRole('link', { name: 'Analytics' }).click();
@@ -250,6 +260,9 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         .getByRole('link', { name: 'Conversions', exact: true })
         .click();
       await expect(page).toHaveURL(`${linkPage}/conversions`);
+      await expect(breadcrumbs.locator('[aria-current="page"]')).toHaveText(
+        'Conversions',
+      );
       await expect(linkSections).not.toHaveAttribute('open');
       await expect(linkMenu).toHaveText(/Link sections\s*Conversions/);
       await linkMenu.press('Enter');
@@ -333,7 +346,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         page.getByRole('heading', { name: 'Conversions' }),
       ).toBeVisible();
       await expect(
-        page.getByText('A fixture link', { exact: true }),
+        page.getByRole('main').getByText('A fixture link', { exact: true }),
       ).toBeVisible();
       await expect(
         linkTabs.getByRole('link', { name: 'Conversions', exact: true }),
@@ -1449,7 +1462,15 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   });
   expect(invalidLogout.status()).toBe(403);
 
-  await page.locator('form[action="/logout"] button').click();
+  const account = page.getByLabel('Account menu', { exact: true });
+  const signOut = page.getByRole('button', { name: 'Sign out', exact: true });
+  await account.press('Enter');
+  await expect(signOut).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(signOut).toBeHidden();
+  await expect(account).toBeFocused();
+  await account.click();
+  await signOut.click();
   await expect(page).toHaveURL('/login');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.goto('/admin');

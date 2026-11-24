@@ -28,7 +28,7 @@
     values={form && 'values' in form ? form.values : undefined}
   />
   {#if data.link}
-    <details class="context-panel max-w-3xl">
+    <details class="context-panel">
       <summary class="cursor-pointer font-medium text-negative">
         {x.deleteHelp}
       </summary>

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
-  import { preferenceMessages } from '$lib/i18n/preferences';
   import '../../admin-context.css';
   import { resolve } from '$app/paths';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
@@ -20,13 +19,6 @@
 
 <div class="space-y-6">
   <header class="context-header space-y-2">
-    <a
-      href="/admin/settings"
-      class="inline-flex items-center gap-2 text-sm font-medium text-link hover:underline"
-    >
-      <span aria-hidden="true">←</span>{preferenceMessages(data.locale)
-        .settings}
-    </a>
     <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
     <p>{messages.intro}</p>
   </header>
@@ -121,7 +113,7 @@
             spellcheck="false"
             required
             aria-describedby="site-key-hint"
-            class="admin-control w-full font-mono sm:max-w-sm"
+            class="admin-control w-full font-mono"
           />
           <p id="site-key-hint" class="text-sm">{messages.siteKeyHint}</p>
         </div>

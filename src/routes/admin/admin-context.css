@@ -1,4 +1,15 @@
-/* Shared structure for related administration screens. */
+/* Sections fill their page or the column assigned by the page grid. */
+:is(
+  .context-header,
+  .workspace-intro,
+  .context-nav,
+  .context-panel,
+  .workspace-panel
+) {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
 :is(.context-header, .workspace-intro) {
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--ui-border);

@@ -26,7 +26,7 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<section class="max-w-3xl space-y-5">
+<section class="space-y-5">
   <p class="text-sm text-muted">{m.help}</p>
   <p class="text-sm text-muted">{m.safe}</p>
   {#snippet destinationEditor(target: (typeof targets)[number])}

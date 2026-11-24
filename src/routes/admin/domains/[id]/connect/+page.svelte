@@ -154,7 +154,6 @@
 <svelte:head><title>{m.wizardTitle} · {brand.name}</title></svelte:head>
 <div class="space-y-7">
   <header class="context-header space-y-3">
-    <a href="/admin/domains" class="text-link underline">← {m.backToDomains}</a>
     <h1 class="text-3xl font-semibold tracking-tight">{m.wizardTitle}</h1>
     <p>{m.wizardIntro}</p>
     <dl class="context-panel grid gap-4 text-sm sm:grid-cols-2">

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import Copy from '@lucide/svelte/icons/copy';
@@ -15,10 +14,7 @@
   import Target from '@lucide/svelte/icons/target';
   import { analyticsMessages } from '$lib/components/analytics/messages';
   import { linkMessages } from '$lib/i18n/links';
-  import { protectionMessages } from '$lib/i18n/protection';
-  import { ruleMessages } from './[id]/rules/messages';
-  import { simulationMessages } from './[id]/simulate/messages';
-  import { linkUtmMessages } from './[id]/utm/messages';
+  import { linkSectionLabels } from '../breadcrumbs';
   import { detailNavigation, listMessages } from './messages';
   import type { LayoutProps } from './$types';
 
@@ -27,30 +23,30 @@
   let labels = $derived(detailNavigation[data.locale]);
   let clipboard = $derived(listMessages[data.locale]);
   let analytics = $derived(analyticsMessages(data.locale));
-  let protection = $derived(protectionMessages(data.locale));
-  let rules = $derived(ruleMessages(data.locale));
-  let simulation = $derived(simulationMessages(data.locale));
-  let utm = $derived(linkUtmMessages(data.locale));
+  let sectionNames = $derived(linkSectionLabels(data.locale));
   let detailId = $derived(page.params.id);
   let isNew = $derived(page.url.pathname === '/admin/links/new');
   let linkPath = $derived(
     detailId ? `/admin/links/${encodeURIComponent(detailId)}` : '',
   );
 
-  let sectionsList = $derived([
-    { suffix: '', label: m.edit, icon: Link2 },
-    { suffix: '/rules', label: rules.title, icon: Route },
-    {
-      suffix: '/analytics',
-      label: analytics.title,
-      icon: ChartNoAxesCombined,
-    },
-    { suffix: '/conversions', label: analytics.conversions, icon: Target },
-    { suffix: '/protection', label: protection.title, icon: Shield },
-    { suffix: '/qr', label: protection.qr, icon: QrCode },
-    { suffix: '/utm', label: utm.title, icon: Tags },
-    { suffix: '/simulate', label: simulation.title, icon: FlaskConical },
-  ]);
+  const sectionIcons = [
+    { suffix: '', icon: Link2 },
+    { suffix: '/rules', icon: Route },
+    { suffix: '/analytics', icon: ChartNoAxesCombined },
+    { suffix: '/conversions', icon: Target },
+    { suffix: '/protection', icon: Shield },
+    { suffix: '/qr', icon: QrCode },
+    { suffix: '/utm', icon: Tags },
+    { suffix: '/simulate', icon: FlaskConical },
+  ];
+  let sectionsList = $derived(
+    sectionIcons.map(({ suffix, icon }) => ({
+      suffix,
+      icon,
+      label: sectionNames[suffix],
+    })),
+  );
   let active = $derived(sectionsList.find(({ suffix }) => isCurrent(suffix)));
   let sectionTitle = $derived(
     active?.suffix === '/analytics'
@@ -107,11 +103,7 @@
 
 {#if detailId}
   <div class="link-workspace">
-    <header class="record-bar">
-      <a class="back-link" href="/admin/links">
-        <ArrowLeft size={16} aria-hidden="true" />
-        {m.back}
-      </a>
+    <header class="context-panel record-bar">
       {#if data.linkContext}
         {@const shortUrl = data.linkContext.shortUrl}
         <div class="record-main">
@@ -163,14 +155,7 @@
 {:else}
   <div class="link-workspace">
     <header class="workspace-intro index-header">
-      <div>
-        {#if isNew}
-          <a href="/admin/links" class="back-link">
-            <ArrowLeft size={16} aria-hidden="true" />{m.back}
-          </a>
-        {/if}
-        <h1>{isNew ? m.create : m.links}</h1>
-      </div>
+      <h1>{isNew ? m.create : m.links}</h1>
       {#if !isNew}
         <a href="/admin/links/new" class="admin-button admin-button-primary">
           <Plus size={17} aria-hidden="true" />{m.create}
@@ -191,26 +176,9 @@
   .index-header {
     margin: 0;
   }
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.38rem;
-    min-height: 2.5rem;
-    color: var(--ui-link);
-    font-size: 0.875rem;
-    font-weight: 650;
-    text-underline-offset: 0.2em;
-  }
-  .back-link:hover {
-    text-decoration: underline;
-  }
   .record-bar {
     display: grid;
     gap: 0.5rem;
-    padding: clamp(0.9rem, 2.1vw, 1.35rem);
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-surface);
   }
   .record-main,
   .record-key {

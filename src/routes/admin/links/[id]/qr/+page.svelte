@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<div class="max-w-4xl space-y-6">
+<div class="space-y-6">
   <header class="space-y-2">
     <h2 class="text-xl font-semibold tracking-tight">{m.title}</h2>
     <p class="text-muted">{m.description}</p>

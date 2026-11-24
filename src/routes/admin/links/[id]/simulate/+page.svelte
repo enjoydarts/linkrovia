@@ -44,7 +44,7 @@
             autocomplete="off"
             aria-invalid={invalid || undefined}
             aria-describedby={invalid ? `simulate-${name}-error` : undefined}
-            class="admin-control"
+            class="admin-control w-full"
           />
           {#if invalid}
             <p id="simulate-{name}-error" class="text-sm text-negative">

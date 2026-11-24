@@ -25,7 +25,7 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<section class="max-w-4xl space-y-5">
+<section class="space-y-5">
   {#if data.link.redirectType === 301 || data.link.redirectType === 308}
     <p>{m.temporaryRedirect}</p>
   {/if}
