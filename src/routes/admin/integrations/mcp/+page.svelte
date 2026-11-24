@@ -2,13 +2,12 @@
   import { brand } from '$lib/brand';
   import Clipboard from '@lucide/svelte/icons/clipboard';
   import { onMount } from 'svelte';
-  import type { Locale } from '$lib/i18n/locale';
+  import { uiMessages } from '$lib/i18n/locale';
   import type { PageProps } from './$types';
   import { mcpClientConfigurations } from './clients';
-  import { mcpMessages } from './messages';
 
   let { data }: PageProps = $props();
-  let copy = $derived(mcpMessages[data.locale]);
+  let copy = $derived(uiMessages(data.locale).mcp);
   let clients = $derived(
     mcpClientConfigurations(data.endpoint, copy.tokenPrompt),
   );
@@ -17,36 +16,7 @@
   onMount(() => {
     clipboardReady = typeof navigator.clipboard?.writeText === 'function';
   });
-  const clipboard = {
-    en: [
-      'Copy configuration',
-      'Configuration copied.',
-      'Select and copy the configuration manually.',
-    ],
-    ja: [
-      '設定をコピー',
-      '設定をコピーしました。',
-      '設定のテキストを選択してコピーしてください。',
-    ],
-    'zh-CN': ['复制配置', '已复制配置。', '请选择配置文本并手动复制。'],
-    'zh-TW': ['複製設定', '已複製設定。', '請選取設定文字並手動複製。'],
-    es: [
-      'Copiar configuración',
-      'Configuración copiada.',
-      'Selecciona y copia la configuración manualmente.',
-    ],
-    it: [
-      'Copia configurazione',
-      'Configurazione copiata.',
-      'Seleziona e copia la configurazione manualmente.',
-    ],
-    fr: [
-      'Copier la configuration',
-      'Configuration copiée.',
-      'Sélectionnez et copiez la configuration manuellement.',
-    ],
-  } satisfies Record<Locale, readonly [string, string, string]>;
-  let clipboardText = $derived(clipboard[data.locale]);
+  let clipboardText = $derived(uiMessages(data.locale).mcpClipboard);
 
   async function copyConfiguration(id: string, configuration: string) {
     try {
@@ -163,11 +133,16 @@
                     onclick={() =>
                       copyConfiguration(client.id, client.configuration)}
                   >
-                    <Clipboard size={15} aria-hidden="true" />{clipboardText[0]}
+                    <Clipboard
+                      size={15}
+                      aria-hidden="true"
+                    />{clipboardText.copy}
                   </button>{/if}
                 {#if copyFeedback?.id === client.id}
                   <p class="text-sm text-muted" role="status">
-                    {clipboardText[copyFeedback.copied ? 1 : 2]}
+                    {copyFeedback.copied
+                      ? clipboardText.copied
+                      : clipboardText.manual}
                   </p>
                 {/if}
               </div>

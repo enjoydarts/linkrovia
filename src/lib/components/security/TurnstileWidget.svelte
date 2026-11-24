@@ -59,7 +59,7 @@
 </script>
 
 <script lang="ts">
-  import type { Locale } from '$lib/i18n/locale';
+  import { uiMessages, type Locale } from '$lib/i18n/locale';
   import type { TurnstileAction } from '$lib/server/security/turnstile';
 
   let {
@@ -74,54 +74,9 @@
     resetKey?: number;
   } = $props();
 
-  const copies = {
-    en: [
-      'Verification is unavailable. Try again.',
-      'Verification expired. Try again.',
-      'Try verification again',
-      'Enable JavaScript to complete verification.',
-    ],
-    ja: [
-      '認証を利用できません。もう一度お試しください。',
-      '認証の有効期限が切れました。もう一度お試しください。',
-      '認証をやり直す',
-      '認証を完了するには JavaScript を有効にしてください。',
-    ],
-    'zh-CN': [
-      '暂时无法完成验证，请重试。',
-      '验证已过期，请重试。',
-      '重新验证',
-      '请启用 JavaScript 以完成验证。',
-    ],
-    'zh-TW': [
-      '暫時無法完成驗證，請重試。',
-      '驗證已過期，請重試。',
-      '重新驗證',
-      '請啟用 JavaScript 以完成驗證。',
-    ],
-    es: [
-      'No se pudo completar la verificación. Inténtalo de nuevo.',
-      'La verificación ha caducado. Inténtalo de nuevo.',
-      'Volver a verificar',
-      'Activa JavaScript para completar la verificación.',
-    ],
-    it: [
-      'Verifica non disponibile. Riprova.',
-      'La verifica è scaduta. Riprova.',
-      'Ripeti la verifica',
-      'Abilita JavaScript per completare la verifica.',
-    ],
-    fr: [
-      'La vérification est indisponible. Réessayez.',
-      'La vérification a expiré. Réessayez.',
-      'Réessayer la vérification',
-      'Activez JavaScript pour terminer la vérification.',
-    ],
-  } satisfies Record<Locale, [string, string, string, string]>;
-
   let issue = $state<'expired' | 'unavailable' | undefined>();
   let retries = $state(0);
-  let copy = $derived(copies[locale]);
+  let copy = $derived(uiMessages(locale).turnstile);
 
   function attachWidget(
     key: string,
@@ -180,14 +135,14 @@
 {/key}
 {#if issue}
   <p role="status" class="mt-2 text-sm">
-    {issue === 'expired' ? copy[1] : copy[0]}
+    {copy[issue]}
   </p>
   <button
     type="button"
     class="mt-2 rounded-md border px-3 py-2 text-sm"
     onclick={() => (retries += 1)}
   >
-    {copy[2]}
+    {copy.retry}
   </button>
 {/if}
-<noscript>{copy[3]}</noscript>
+<noscript>{copy.javascript}</noscript>

@@ -1,10 +1,13 @@
-import en from '../../../messages/en.json';
-import ja from '../../../messages/ja.json';
-import zhCN from '../../../messages/zh-CN.json';
-import zhTW from '../../../messages/zh-TW.json';
-import es from '../../../messages/es.json';
-import it from '../../../messages/it.json';
-import fr from '../../../messages/fr.json';
+import en from '../../../messages/en.json' with { type: 'json' };
+import ja from '../../../messages/ja.json' with { type: 'json' };
+import zhCN from '../../../messages/zh-CN.json' with { type: 'json' };
+import zhTW from '../../../messages/zh-TW.json' with { type: 'json' };
+import es from '../../../messages/es.json' with { type: 'json' };
+import it from '../../../messages/it.json' with { type: 'json' };
+import fr from '../../../messages/fr.json' with { type: 'json' };
+import de from '../../../messages/de.json' with { type: 'json' };
+import ko from '../../../messages/ko.json' with { type: 'json' };
+import pt from '../../../messages/pt.json' with { type: 'json' };
 import { brand } from '../brand';
 
 export const locales = [
@@ -15,6 +18,9 @@ export const locales = [
   'es',
   'it',
   'fr',
+  'de',
+  'ko',
+  'pt',
 ] as const;
 export type Locale = (typeof locales)[number];
 
@@ -26,26 +32,33 @@ const catalogs = {
   es,
   it,
   fr,
+  de,
+  ko,
+  pt,
 } satisfies Record<Locale, typeof en>;
 
-export const localeNames: Record<Locale, string> = {
-  en: 'English',
-  ja: '日本語',
-  'zh-CN': '简体中文',
-  'zh-TW': '繁體中文',
-  es: 'Español',
-  it: 'Italiano',
-  fr: 'Français',
-};
+type Catalog = typeof en;
+
+export function uiMessages(locale: Locale): Catalog {
+  return catalogs[locale];
+}
+
+export function localizedSection<Key extends keyof Catalog>(section: Key) {
+  return Object.fromEntries(
+    locales.map((locale) => [locale, uiMessages(locale)[section]]),
+  ) as Record<Locale, Catalog[Key]>;
+}
+
+export const localeNames = localizedSection('languageName');
 
 export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && Object.hasOwn(catalogs, value);
 }
 
-export function messagesFor(locale: Locale): typeof en {
-  const messages = { ...en, ...catalogs[locale] };
+export function messagesFor(locale: Locale): Catalog['shared'] {
+  const messages = { ...en.shared, ...uiMessages(locale).shared };
   if (brand.name !== 'Linkrovia') {
-    for (const key of Object.keys(messages) as (keyof typeof en)[]) {
+    for (const key of Object.keys(messages) as (keyof Catalog['shared'])[]) {
       messages[key] = messages[key].replaceAll('Linkrovia', () => brand.name);
     }
   }

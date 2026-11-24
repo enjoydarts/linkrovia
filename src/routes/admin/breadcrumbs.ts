@@ -14,16 +14,6 @@ import { linkUtmMessages } from './links/[id]/utm/messages';
 import { healthMessages } from './settings/health/messages';
 import { utmMessages } from './utm/messages';
 
-export const breadcrumbLabel = {
-  en: 'Breadcrumb',
-  ja: 'パンくずリスト',
-  'zh-CN': '面包屑导航',
-  'zh-TW': '麵包屑導覽',
-  es: 'Ruta de navegación',
-  it: 'Percorso di navigazione',
-  fr: 'Fil d’Ariane',
-} satisfies Record<Locale, string>;
-
 export function linkSectionLabels(locale: Locale): Record<string, string> {
   const analytics = analyticsMessages(locale);
   const protection = protectionMessages(locale);

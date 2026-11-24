@@ -6,7 +6,7 @@
   import ArrowRight from '@lucide/svelte/icons/arrow-right';
   import { healthMessages } from './health/messages';
   import { brand } from '$lib/brand';
-  import { messagesFor } from '$lib/i18n/locale';
+  import { messagesFor, uiMessages } from '$lib/i18n/locale';
   import '../admin-context.css';
   import { locales, localeNames } from '$lib/i18n/locale';
   import { preferenceMessages } from '$lib/i18n/preferences';
@@ -16,29 +16,10 @@
   let m = $derived(preferenceMessages(data.locale));
   let userZone = $derived(data.userZone);
   let defaultZone = $derived(data.defaultZone);
-  const scopeLabels = {
-    en: ['Personal preferences', 'Instance defaults'],
-    ja: ['個人の設定', '導入先全体の既定値'],
-    'zh-CN': ['个人偏好', '实例默认设置'],
-    'zh-TW': ['個人偏好', '執行個體預設設定'],
-    es: ['Preferencias personales', 'Valores predeterminados de la instancia'],
-    it: ['Preferenze personali', 'Impostazioni predefinite dell’istanza'],
-    fr: ['Préférences personnelles', 'Valeurs par défaut de l’instance'],
-  } as const;
-  let scopes = $derived(scopeLabels[data.locale]);
-  const directoryLabels = {
-    en: ['Access and integrations', 'Instance operations'],
-    ja: ['アクセスと連携', 'インスタンスの運用'],
-    'zh-CN': ['访问与集成', '实例运维'],
-    'zh-TW': ['存取與整合', '執行個體維運'],
-    es: ['Acceso e integraciones', 'Operaciones de la instancia'],
-    it: ['Accesso e integrazioni', 'Operazioni dell’istanza'],
-    fr: ['Accès et intégrations', 'Exploitation de l’instance'],
-  } as const;
-  let [access, operations] = $derived(directoryLabels[data.locale]);
+  let settingsGroups = $derived(uiMessages(data.locale).settingsGroups);
   let directories = $derived([
     {
-      label: access,
+      label: settingsGroups.access,
       entries: [
         { href: '/admin/api-keys', label: apiKeyMessages(data.locale).title },
         ...(data.isOwner
@@ -57,7 +38,7 @@
       ],
     },
     {
-      label: operations,
+      label: settingsGroups.operations,
       entries: [
         { href: '/admin/domains', label: domainMessages(data.locale).domains },
         ...(data.isOwner
@@ -125,7 +106,7 @@
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
       <div class="admin-section-header">
         <h2 id="personal-preferences-heading">
-          {scopes[0]}
+          {settingsGroups.personal}
         </h2>
         <p class="text-sm text-muted">{m.intro}</p>
       </div>
@@ -196,7 +177,7 @@
       >
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
         <div class="admin-section-header">
-          <h2 id="instance-defaults-heading">{scopes[1]}</h2>
+          <h2 id="instance-defaults-heading">{settingsGroups.defaults}</h2>
         </div>
         <div class="space-y-2">
           <label for="default-timezone" class="block font-medium">

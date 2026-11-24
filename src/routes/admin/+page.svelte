@@ -4,75 +4,14 @@
   import ReportChart from '$lib/components/analytics/ReportChart.svelte';
   import { analyticsMessages } from '$lib/components/analytics/messages';
   import Plus from '@lucide/svelte/icons/plus';
-  import { messagesFor } from '$lib/i18n/locale';
+  import { messagesFor, uiMessages } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
   let messages = $derived(messagesFor(data.locale));
   let links = $derived(linkMessages(data.locale));
   let analytics = $derived(analyticsMessages(data.locale));
-  const dashboardLabels = {
-    en: [
-      'Last 14 days',
-      'Popular links',
-      'Analytics unavailable',
-      'Analytics data may be delayed',
-      'View analytics',
-    ],
-    ja: [
-      '過去14日間',
-      '人気のリンク',
-      '解析データを取得できません',
-      '解析データの反映には時間がかかる場合があります',
-      'アクセス解析を見る',
-    ],
-    'zh-CN': [
-      '过去 14 天',
-      '热门链接',
-      '无法获取分析数据',
-      '分析数据可能延迟',
-      '查看数据分析',
-    ],
-    'zh-TW': [
-      '過去 14 天',
-      '熱門連結',
-      '無法取得分析資料',
-      '分析資料可能延遲',
-      '查看數據分析',
-    ],
-    es: [
-      'Últimos 14 días',
-      'Enlaces populares',
-      'Analítica no disponible',
-      'Los datos pueden tardar en aparecer',
-      'Ver analítica',
-    ],
-    it: [
-      'Ultimi 14 giorni',
-      'Link più popolari',
-      'Analisi non disponibili',
-      'I dati potrebbero essere aggiornati in ritardo',
-      'Visualizza analisi',
-    ],
-    fr: [
-      '14 derniers jours',
-      'Liens populaires',
-      'Analyses indisponibles',
-      'Les données peuvent apparaître avec un délai',
-      'Voir les analyses',
-    ],
-  } as const;
-  let labels = $derived(dashboardLabels[data.locale]);
-  const comparisonLabels = {
-    en: ['Previous 14 days', 'Comparison unavailable'],
-    ja: ['前の14日間', '比較データを取得できません'],
-    'zh-CN': ['前 14 天', '无法获取比较数据'],
-    'zh-TW': ['前 14 天', '無法取得比較資料'],
-    es: ['14 días anteriores', 'Comparación no disponible'],
-    it: ['14 giorni precedenti', 'Confronto non disponibile'],
-    fr: ['14 jours précédents', 'Comparaison indisponible'],
-  } as const;
-  let comparison = $derived(comparisonLabels[data.locale]);
+  let labels = $derived(uiMessages(data.locale).adminDashboard);
 </script>
 
 <svelte:head>
@@ -92,7 +31,7 @@
     >
       <div class="metric-value">
         <div class="admin-section-header">
-          <h2 id="overview-clicks">{analytics.clicks} · {labels[0]}</h2>
+          <h2 id="overview-clicks">{analytics.clicks} · {labels.last14Days}</h2>
         </div>
         <strong>
           {data.report.totalClicks?.toLocaleString(data.locale) ?? '—'}
@@ -101,10 +40,10 @@
       <div class="metric-period">
         <span>{data.report.meta.from} – {data.report.meta.to}</span>
         <span>
-          {comparison[0]}: {#if data.previous}{data.previous.total.toLocaleString(
+          {labels.previous14Days}: {#if data.previous}{data.previous.total.toLocaleString(
               data.locale,
             )}{#if data.previous.estimated}
-              · {analytics.estimated}{/if}{:else}{comparison[1]}{/if}
+              · {analytics.estimated}{/if}{:else}{labels.comparisonUnavailable}{/if}
         </span>
       </div>
     </section>
@@ -120,7 +59,7 @@
         <div class="admin-section-header section-heading">
           <h2 id="analytics-heading">{analytics.title}</h2>
           <a href="/admin/analytics">
-            {labels[4]} <span aria-hidden="true">→</span>
+            {labels.viewAnalytics} <span aria-hidden="true">→</span>
           </a>
         </div>
         {#if data.report}
@@ -141,7 +80,7 @@
           <div class="chart-footer">
             <p>
               {data.report.meta.source === 'analytics-engine'
-                ? labels[3]
+                ? labels.delayed
                 : analytics.sample}{#if data.report.meta.estimated}
                 · {analytics.estimated}{/if}
             </p>
@@ -169,7 +108,8 @@
           </div>
         {:else}
           <p class="empty" role="status">
-            {labels[2]} · <a href="/admin/analytics">{labels[4]}</a>
+            {labels.unavailable} ·
+            <a href="/admin/analytics">{labels.viewAnalytics}</a>
           </p>
         {/if}
       </section>
@@ -207,9 +147,9 @@
           aria-labelledby="popular-heading"
         >
           <div class="admin-section-header section-heading">
-            <h2 id="popular-heading">{labels[1]}</h2>
+            <h2 id="popular-heading">{labels.popularLinks}</h2>
             <a href="/admin/analytics">
-              {labels[4]} <span aria-hidden="true">→</span>
+              {labels.viewAnalytics} <span aria-hidden="true">→</span>
             </a>
           </div>
           {#if data.popularLinks.length}
@@ -239,7 +179,7 @@
       <div class="admin-section-header section-heading">
         <h2 id="breakdown-heading">{analytics.breakdown}</h2>
         <a href="/admin/analytics">
-          {labels[4]} <span aria-hidden="true">→</span>
+          {labels.viewAnalytics} <span aria-hidden="true">→</span>
         </a>
       </div>
       <div class="breakdowns">
@@ -262,7 +202,7 @@
                   </p>{/if}
               {:else}<p class="breakdown-note">{analytics.empty}</p>{/if}
             {:else}<p class="breakdown-note" role="status">
-                {labels[2]}
+                {labels.unavailable}
               </p>{/if}
           </section>
         {/each}

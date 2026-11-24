@@ -1,7 +1,7 @@
 <script lang="ts">
   import AnalyticsActivationNotice from './AnalyticsActivationNotice.svelte';
   import type { Snippet } from 'svelte';
-  import type { Locale } from '$lib/i18n/locale';
+  import { uiMessages, type Locale } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import {
@@ -133,16 +133,7 @@
     for (const key of ['ruleId', 'source', 'filter', 'key']) params.delete(key);
     return `${base}?${params.toString()}`;
   }
-  const trafficLabels = {
-    en: ['Bots', 'Previews', 'Clear filter', 'All domains'],
-    ja: ['ボット', 'プレビュー', '絞り込みを解除', 'すべてのドメイン'],
-    'zh-CN': ['机器人', '预览', '清除筛选', '所有域名'],
-    'zh-TW': ['機器人', '預覽', '清除篩選', '所有網域'],
-    es: ['Robots', 'Vistas previas', 'Quitar filtro', 'Todos los dominios'],
-    it: ['Bot', 'Anteprime', 'Rimuovi filtro', 'Tutti i domini'],
-    fr: ['Robots', 'Aperçus', 'Effacer le filtre', 'Tous les domaines'],
-  } satisfies Record<Locale, string[]>;
-  let traffic = $derived(trafficLabels[locale]);
+  let traffic = $derived(uiMessages(locale).analyticsTraffic);
 </script>
 
 {#snippet tableDisclosure(label: string, startOpen: boolean, table: Snippet)}
@@ -235,7 +226,7 @@
     {#if !linkScoped && domains.length}
       <label>
         {m.domain}<select class="admin-control" name="domainId">
-          <option value="">{traffic[3]}</option>
+          <option value="">{traffic.allDomains}</option>
           {#each domains as domain (domain.id)}
             <option value={domain.id} selected={filters.domainId === domain.id}>
               {domain.hostname}
@@ -304,7 +295,8 @@
     {/if}
     {#if filters.filter && filters.key}
       <p class="filter-links">
-        <span>{filters.key}</span> <a href={filterUrl()}>{traffic[2]}</a>
+        <span>{filters.key}</span>
+        <a href={filterUrl()}>{traffic.clearFilter}</a>
       </p>
     {/if}
     {#if report.totalClicks === 0 && report.meta.gaps.length === 0}<p
@@ -351,8 +343,8 @@
       <h2>{m.breakdown}</h2>
       {#if report.dimension === 'traffic'}
         <p class="filter-links">
-          <a href={filterUrl('traffic', 'bot')}>{traffic[0]}</a>
-          <a href={filterUrl('traffic', 'preview')}>{traffic[1]}</a>
+          <a href={filterUrl('traffic', 'bot')}>{traffic.bots}</a>
+          <a href={filterUrl('traffic', 'preview')}>{traffic.previews}</a>
         </p>
       {/if}
       {#if showBreakdownChart}

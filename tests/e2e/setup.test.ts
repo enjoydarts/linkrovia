@@ -1175,7 +1175,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     }
   });
 
-  await test.step('persists the French language preference', async () => {
+  await test.step('persists language preferences and localizes analytics CSV', async () => {
     await page.goto('/admin/settings', { waitUntil: 'networkidle' });
     const personal = page.locator('form[action="?/personal"]');
     await expect(personal.locator('[name=locale] option[value=fr]')).toHaveText(
@@ -1269,6 +1269,24 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(startChoice).toHaveValue('');
 
     await page.goto('/admin/settings', { waitUntil: 'networkidle' });
+    for (const [locale, language, clicks] of [
+      ['de', 'Deutsch', 'Klicks'],
+      ['ko', '한국어', '클릭 수'],
+      ['pt', 'Português', 'Cliques'],
+    ] as const) {
+      const picker = personal.locator('[name=locale]');
+      await expect(picker.locator(`option[value=${locale}]`)).toHaveText(
+        language,
+      );
+      await picker.selectOption(locale);
+      await personal.locator('button[type=submit]').click();
+      await expect(page.locator('html')).toHaveAttribute('lang', locale);
+      await page.reload();
+      await expect(picker).toHaveValue(locale);
+      const csv = await context.request.get('/admin/analytics/export?range=7d');
+      expect(csv.status()).toBe(200);
+      expect((await csv.text()).split('\r\n')[0]).toContain(`"${clicks}"`);
+    }
     await personal.locator('[name=locale]').selectOption('en');
     await personal.locator('[name=timezone]').fill('');
     await personal.locator('button[type=submit]').click();
@@ -1290,11 +1308,15 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         locale,
       );
     }
-    await saveDefaultLocale('fr');
-    const guest = await request.get('/login', {
-      headers: { 'accept-language': 'nl' },
-    });
-    expect(await guest.text()).toMatch(/<html[^>]*\blang="fr"/);
+    for (const locale of ['fr', 'de', 'ko', 'pt']) {
+      await saveDefaultLocale(locale);
+      const guest = await request.get('/login', {
+        headers: { 'accept-language': 'nl' },
+      });
+      expect(await guest.text()).toMatch(
+        new RegExp(`<html[^>]*\\blang="${locale}"`),
+      );
+    }
     await saveDefaultLocale('en');
   });
 

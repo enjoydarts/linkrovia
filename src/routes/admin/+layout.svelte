@@ -17,11 +17,11 @@
   import X from '@lucide/svelte/icons/x';
   import { csvMessages } from './import/messages';
   import Brand from '$lib/components/Brand.svelte';
-  import { messagesFor } from '$lib/i18n/locale';
+  import { messagesFor, uiMessages } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
   import { preferenceMessages } from '$lib/i18n/preferences';
   import type { LayoutProps } from './$types';
-  import { adminBreadcrumbs, breadcrumbLabel } from './breadcrumbs';
+  import { adminBreadcrumbs } from './breadcrumbs';
   import './admin-context.css';
 
   let { data, children }: LayoutProps = $props();
@@ -73,15 +73,7 @@
       icon: KeyRound,
     },
   ]);
-  const groupLabels = {
-    en: ['Workspace', 'Link tools', 'Instance'],
-    ja: ['ワークスペース', 'リンクツール', 'インスタンス'],
-    'zh-CN': ['工作区', '链接工具', '实例'],
-    'zh-TW': ['工作區', '連結工具', '執行個體'],
-    es: ['Espacio de trabajo', 'Herramientas de enlaces', 'Instancia'],
-    it: ['Area di lavoro', 'Strumenti per link', 'Istanza'],
-    fr: ['Espace de travail', 'Outils de liens', 'Instance'],
-  } as const;
+  let navigationCopy = $derived(uiMessages(data.locale).navigation);
   const groupKeys = ['workspace', 'tools', 'instance'] as const;
   type GroupKey = (typeof groupKeys)[number];
   function groupFor(href: string): GroupKey {
@@ -95,9 +87,9 @@
     return 'instance';
   }
   let groups = $derived(
-    groupKeys.map((key, index) => ({
+    groupKeys.map((key) => ({
       key,
-      label: groupLabels[data.locale][index],
+      label: navigationCopy.groups[key],
       items: nav.filter((item) => groupFor(item.href) === key),
     })),
   );
@@ -110,33 +102,6 @@
     ),
   );
   let drawer: HTMLDialogElement;
-  const accountLabels = {
-    en: 'Account menu',
-    ja: 'アカウントメニュー',
-    'zh-CN': '账户菜单',
-    'zh-TW': '帳號選單',
-    es: 'Menú de la cuenta',
-    it: 'Menu dell’account',
-    fr: 'Menu du compte',
-  };
-  const menuLabels = {
-    en: 'Open navigation',
-    ja: 'ナビゲーションを開く',
-    'zh-CN': '打开导航',
-    'zh-TW': '開啟導覽',
-    es: 'Abrir navegación',
-    it: 'Apri navigazione',
-    fr: 'Ouvrir la navigation',
-  };
-  const closeLabels = {
-    en: 'Close navigation',
-    ja: 'ナビゲーションを閉じる',
-    'zh-CN': '关闭导航',
-    'zh-TW': '關閉導覽',
-    es: 'Cerrar navegación',
-    it: 'Chiudi navigazione',
-    fr: 'Fermer la navigation',
-  };
   function active(href: string, path: string) {
     if (href === '/admin') return href === path;
     if (href === '/admin/settings') {
@@ -191,7 +156,7 @@
         <button
           class="drawer-close"
           type="submit"
-          aria-label={closeLabels[data.locale]}
+          aria-label={navigationCopy.close}
         >
           <X size={22} />
         </button>
@@ -205,7 +170,7 @@
         <button
           class="menu-button"
           type="button"
-          aria-label={menuLabels[data.locale]}
+          aria-label={navigationCopy.open}
           aria-haspopup="dialog"
           aria-controls="admin-navigation"
           commandfor="admin-navigation"
@@ -217,7 +182,7 @@
         >
           <Menu size={23} />
         </button>
-        <nav class="breadcrumbs" aria-label={breadcrumbLabel[data.locale]}>
+        <nav class="breadcrumbs" aria-label={navigationCopy.breadcrumb}>
           <ol>
             {#each breadcrumbs as crumb, index (index)}
               <li class:current={index === breadcrumbs.length - 1}>
@@ -246,7 +211,7 @@
           <button
             class="account-trigger"
             type="button"
-            aria-label={accountLabels[data.locale]}
+            aria-label={navigationCopy.account}
             popovertarget="admin-account"
           >
             <span class="account-mark" aria-hidden="true">

@@ -1,13 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import en from '../../messages/en.json';
-import fr from '../../messages/fr.json';
-import { preferredLocale, resolveLocale } from '../../src/lib/i18n/locale';
+import en from '../../messages/en.json' with { type: 'json' };
+import {
+  locales,
+  preferredLocale,
+  resolveLocale,
+} from '../../src/lib/i18n/locale';
 import { parseDefaultLocale } from '../../src/lib/server/db/preferences';
 import {
   interpretLocalDateTime,
   resolveTimeZone,
   timeZones,
 } from '../../src/lib/timezone/timezone';
+
+function catalogShape(value: unknown): unknown {
+  if (typeof value === 'string') {
+    expect(value.trim()).not.toBe('');
+    return 'text';
+  }
+  if (Array.isArray(value)) return value.map(catalogShape);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, catalogShape(child)]),
+    );
+  }
+  return value;
+}
 
 describe('locale preferences', () => {
   it('prefers the user, then the cookie, then weighted languages', () => {
@@ -16,7 +33,7 @@ describe('locale preferences', () => {
     expect(
       resolveLocale(undefined, undefined, 'es;q=0.4,zh-Hant-HK;q=0.9'),
     ).toBe('zh-TW');
-    expect(resolveLocale(undefined, undefined, 'ja;q=0,de;q=1')).toBe('en');
+    expect(resolveLocale(undefined, undefined, 'ja;q=0,nl;q=1')).toBe('en');
   });
 
   it('uses the matching regional catalog', () => {
@@ -35,8 +52,34 @@ describe('locale preferences', () => {
     expect(parseDefaultLocale('"fr"')).toBe('fr');
   });
 
-  it('has the same shared message keys in French and English', () => {
-    expect(Object.keys(fr).sort()).toEqual(Object.keys(en).sort());
+  it.each([
+    ['de-AT', 'de'],
+    ['DE-de', 'de'],
+    ['ko-KR', 'ko'],
+    ['pt-BR', 'pt'],
+    ['pt-PT', 'pt'],
+  ])('resolves %s to %s in locale preferences', (language, locale) => {
+    expect(resolveLocale(undefined, undefined, `en;q=0.5,${language}`)).toBe(
+      locale,
+    );
+    expect(resolveLocale(locale, 'en', 'fr')).toBe(locale);
+    expect(resolveLocale(undefined, locale, 'fr')).toBe(locale);
+    expect(parseDefaultLocale(JSON.stringify(locale))).toBe(locale);
+  });
+
+  it('has one complete catalog with the same message structure for every locale', () => {
+    const catalogs = import.meta.glob('../../messages/*.json', {
+      eager: true,
+      import: 'default',
+    });
+    expect(Object.keys(catalogs).sort()).toEqual(
+      locales.map((locale) => `../../messages/${locale}.json`).sort(),
+    );
+    const englishShape = catalogShape(en);
+    for (const locale of locales) {
+      const catalog = catalogs[`../../messages/${locale}.json`];
+      expect(catalogShape(catalog), locale).toEqual(englishShape);
+    }
   });
 });
 

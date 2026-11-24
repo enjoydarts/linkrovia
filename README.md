@@ -32,7 +32,7 @@ You can finish setup and start using short links before [enabling click analytic
 - **Measure results.** Click collection starts with your first redirect after Analytics Engine is enabled. Explore reports by link, domain, and traffic source. Define conversion goals and send events from your server.
 - **Automate and migrate.** Import links from CSV, export portable configuration backups, and use scoped API keys for REST or MCP. The admin dashboard includes examples for Codex, Claude Code, GitHub Copilot, VS Code, Cursor, and Gemini CLI.
 
-The dashboard supports English, Japanese, Simplified Chinese, Traditional Chinese, Spanish, Italian, and French, with light and dark themes and user-selectable time zones.
+The dashboard supports English, Japanese, Simplified Chinese, Traditional Chinese, Spanish, Italian, French, German, Korean, and Portuguese, with light and dark themes and user-selectable time zones.
 
 ## Get started
 

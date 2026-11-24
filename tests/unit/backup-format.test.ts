@@ -142,7 +142,7 @@ describe('backup format', () => {
     [
       'unsupported locale',
       (d) => {
-        d.appSettings.defaultLocale = 'de';
+        d.appSettings.defaultLocale = 'not-a-locale';
       },
     ],
     [

@@ -1,16 +1,16 @@
 # Translation maintenance
 
-The admin interface currently ships in English (`en`), Japanese (`ja`), Simplified Chinese (`zh-CN`), Traditional Chinese (`zh-TW`), Spanish (`es`), Italian (`it`), and French (`fr`). English is the fallback catalog. Keep all seven locales aligned when changing user-visible text.
+The admin interface ships in English (`en`), Japanese (`ja`), Simplified Chinese (`zh-CN`), Traditional Chinese (`zh-TW`), Spanish (`es`), Italian (`it`), French (`fr`), German (`de`), Korean (`ko`), and Portuguese (`pt`). English is the fallback catalog. Keep all supported locales aligned when changing user-visible text.
 
 ## Add or change a message
 
-1. Find the owning feature's message source. The shared catalog is in `messages/{locale}.json`; feature-specific typed dictionaries live near their component, for example in `src/routes/admin/links/messages.ts` or `src/lib/components/analytics/messages.ts`.
+1. Find the feature's section in `messages/en.json`. Each language has one JSON file under `messages/` with the same section names and message keys. Shared labels live under `shared`.
 2. Write the English source string and update the matching entry for every locale. Preserve the meaning and intent instead of translating word for word. Keep product and provider names as proper names.
 3. Preserve interpolation tokens, HTML entities, and keyboard or screen-reader context. Do not translate API fields, URL paths, scopes, status codes, database values, or identifiers that users must copy exactly.
-4. Use the existing `Locale` type and `satisfies Record<Locale, ...>` pattern for typed feature dictionaries. Do not add a locale-specific fallback that hides a missing translation.
+4. Read feature text through `uiMessages(locale)` and shared labels through `messagesFor(locale)`. TypeScript helpers can format messages or choose which message to show. Store the translated text in the JSON catalogs.
 5. Format and run the repository checks before submitting the change.
 
-`messagesFor` resolves missing catalog entries to English at runtime. This is a safety fallback, not a reason to leave a locale incomplete. Locale selection resolves a user's saved preference first, then the language cookie, browser language, and English. Regional browser tags such as `fr-CA` resolve to the supported base language `fr`; Simplified and Traditional Chinese remain separate catalogs.
+`messagesFor` resolves missing catalog entries to English at runtime. Translate every entry for each supported locale. Locale selection uses the user's saved preference, language cookie, browser language, instance default, then English. Regional browser tags such as `fr-CA`, `de-AT`, and `ko-KR` match their base languages. `pt-BR` and `pt-PT` share the Portuguese catalog. Simplified and Traditional Chinese use separate catalogs.
 
 ## Writing accessible UI text
 

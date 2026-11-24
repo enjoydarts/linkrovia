@@ -40,25 +40,33 @@ test('serves all supported locales without a URL prefix', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
 });
 
-test('negotiates French from a regional browser language', async ({
-  browser,
-  baseURL,
-}) => {
-  const context = await browser.newContext({ locale: 'fr-CA', baseURL });
-  try {
-    const page = await context.newPage();
-    await page.goto('/');
-    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      landingCopy.fr.headline.join(' '),
-    );
-    await page.goto('/login');
-    await expect(page).toHaveURL(/\/(?:login|setup)$/);
-    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-  } finally {
-    await context.close();
-  }
-});
+for (const [regional, locale] of [
+  ['fr-CA', 'fr'],
+  ['de-AT', 'de'],
+  ['ko-KR', 'ko'],
+  ['pt-BR', 'pt'],
+  ['pt-PT', 'pt'],
+] as const) {
+  test(`resolves browser language ${regional} to ${locale}`, async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({ locale: regional, baseURL });
+    try {
+      const page = await context.newPage();
+      await page.goto('/');
+      await expect(page.locator('html')).toHaveAttribute('lang', locale);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        landingCopy[locale].headline.join(' '),
+      );
+      await page.goto('/login');
+      await expect(page).toHaveURL(/\/(?:login|setup)$/);
+      await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    } finally {
+      await context.close();
+    }
+  });
+}
 
 test('renders the branded landing in all locales, two themes, and two widths', async ({
   page,
