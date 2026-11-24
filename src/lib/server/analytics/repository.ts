@@ -65,6 +65,8 @@ export interface BreakdownResult {
 }
 
 export const breakdownLimit = 25;
+// Read one extra group to detect truncation before combining sources.
+export const combinedBreakdownLimit = 1001;
 
 export const clickRollupDimensions = [
   'total',

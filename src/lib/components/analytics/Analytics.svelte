@@ -270,13 +270,14 @@
       {m.timezone}: {report.meta
         .timezone}{#if !hourly && report.meta.dateBasis === 'UTC' && report.meta.timezone !== 'UTC'}
         · UTC{/if}{#if report.meta.source === 'daily-rollup'}
-        · {archive.dailySource}{:else if report.meta.source !== 'analytics-engine'}
+        · {archive.dailySource}{:else if report.meta.source === 'archive-and-live'}
+        · {archive.combinedSource}{:else if report.meta.source !== 'analytics-engine'}
         · {m.sample}{/if}{#if report.meta.estimated}
         · {m.estimated}{/if}{#if report.meta.gaps.length}
         · {m.incomplete}{/if}
     </p>
     {#if hourly}<p class="meta">{periods.hourlyHint}</p>{/if}
-    {#if report.meta.source === 'daily-rollup' && filters.domainId}
+    {#if (report.meta.source === 'daily-rollup' || report.meta.source === 'archive-and-live') && filters.domainId}
       <p class="meta">{archive.domainScope}</p>
     {/if}
     {#if filters.filter && filters.key}

@@ -301,6 +301,7 @@ export function analyticsMessages(
 const archiveMessages = {
   en: [
     'Saved daily totals · UTC dates',
+    'Saved and recent clicks · UTC dates',
     'No data',
     'This date range supports one breakdown filter at a time. Select the same breakdown as the filter, or clear the filters.',
     'Clear breakdown filters',
@@ -308,6 +309,7 @@ const archiveMessages = {
   ],
   ja: [
     '保存済みの日次集計 · UTC 日付',
+    '保存済みと直近のクリック · UTC 日付',
     'データなし',
     'この期間に適用できる内訳の絞り込みは1種類です。絞り込みと同じ内訳を選ぶか、絞り込みを解除してください。',
     '内訳の絞り込みを解除',
@@ -315,6 +317,7 @@ const archiveMessages = {
   ],
   'zh-CN': [
     '已保存的每日汇总 · UTC 日期',
+    '已保存及近期点击 · UTC 日期',
     '无数据',
     '此日期范围一次只能使用一种明细筛选。请选择与筛选相同的明细类别，或清除筛选。',
     '清除明细筛选',
@@ -322,6 +325,7 @@ const archiveMessages = {
   ],
   'zh-TW': [
     '已儲存的每日彙總 · UTC 日期',
+    '已儲存與近期點擊 · UTC 日期',
     '無資料',
     '這個日期範圍一次只能使用一種明細篩選。請選擇與篩選相同的明細類別，或清除篩選。',
     '清除明細篩選',
@@ -329,6 +333,7 @@ const archiveMessages = {
   ],
   es: [
     'Totales diarios guardados · Fechas UTC',
+    'Clics guardados y recientes · Fechas UTC',
     'Sin datos',
     'Este intervalo admite un filtro de desglose a la vez. Selecciona el desglose del filtro o borra los filtros.',
     'Borrar filtros de desglose',
@@ -336,6 +341,7 @@ const archiveMessages = {
   ],
   it: [
     'Totali giornalieri salvati · Date UTC',
+    'Clic salvati e recenti · Date UTC',
     'Dati non disponibili',
     'Questo intervallo supporta un filtro di dettaglio alla volta. Seleziona il dettaglio del filtro o rimuovi i filtri.',
     'Rimuovi i filtri di dettaglio',
@@ -343,6 +349,7 @@ const archiveMessages = {
   ],
   fr: [
     'Totaux quotidiens enregistrés · Dates UTC',
+    'Clics enregistrés et récents · Dates UTC',
     'Données indisponibles',
     'Cette période accepte un filtre de détail à la fois. Choisissez le détail du filtre ou effacez les filtres.',
     'Effacer les filtres de détail',
@@ -351,10 +358,17 @@ const archiveMessages = {
 } as const satisfies Record<Locale, readonly string[]>;
 
 export function analyticsArchiveMessages(locale: Locale) {
-  const [dailySource, missing, unsupportedFilters, clearFilters, domainScope] =
-    archiveMessages[locale];
+  const [
+    dailySource,
+    combinedSource,
+    missing,
+    unsupportedFilters,
+    clearFilters,
+    domainScope,
+  ] = archiveMessages[locale];
   return {
     dailySource,
+    combinedSource,
     missing,
     unsupportedFilters,
     clearFilters,

@@ -904,7 +904,14 @@ components:
             source:
               {
                 type: string,
-                enum: [analytics-engine, daily-rollup, mock, fixture],
+                enum:
+                  [
+                    analytics-engine,
+                    daily-rollup,
+                    archive-and-live,
+                    mock,
+                    fixture,
+                  ],
               }
             estimated: { type: boolean }
             completeThrough: { type: [string, 'null'], format: date }

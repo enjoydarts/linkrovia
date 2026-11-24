@@ -35,11 +35,16 @@ describe('link slugs', () => {
     expect(isValidSlug(slug)).toBe(false);
   });
 
-  it('generates valid eight-character slugs', () => {
+  it('generates valid six-character alphanumeric slugs', () => {
     const values = Array.from({ length: 32 }, generateSlug);
-    expect(values.every((slug) => slug.length === 8 && isValidSlug(slug))).toBe(
-      true,
-    );
+    expect(
+      values.every(
+        (slug) =>
+          slug.length === 6 &&
+          /^[A-Za-z0-9]{6}$/.test(slug) &&
+          isValidSlug(slug),
+      ),
+    ).toBe(true);
     expect(new Set(values).size).toBe(values.length);
   });
 });

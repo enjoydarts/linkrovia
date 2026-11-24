@@ -3,6 +3,7 @@ import { csvCell } from '../../csv';
 import { analyticsCsvHeaders } from '../../i18n/analytics-csv';
 import type { Locale } from '../../i18n/locale';
 import { isTimeZone } from '../../timezone/timezone';
+import { clickRollupRetentionSeconds } from './click-rollup';
 import {
   CloudflareAnalyticsRepository,
   type ClickAnalyticsEnv,
@@ -10,7 +11,14 @@ import {
 import { hourSeconds, utcHourLabel, utcHourStart } from './date-buckets';
 import { MockAnalyticsRepository } from './mock';
 import { loadArchivedClickReport } from './stored-report';
-import type { AnalyticsDimension, StatsQuery, TrendResult } from './repository';
+import {
+  breakdownLimit,
+  combinedBreakdownLimit,
+  compareKeys,
+  type AnalyticsDimension,
+  type StatsQuery,
+  type TrendResult,
+} from './repository';
 
 const analyticsDimensions = [
   'country',
@@ -208,6 +216,7 @@ export function parseAnalyticsQuery(
     archived,
     dimension,
     bom: bom === '1',
+    now,
     from: from.toString(),
     to: to.toString(),
   };
@@ -217,7 +226,7 @@ export type AnalyticsQuery = ReturnType<typeof parseAnalyticsQuery>;
 
 export type AnalyticsReport = {
   meta: Pick<TrendResult['meta'], 'timezone' | 'estimated' | 'dateBasis'> & {
-    source: TrendResult['meta']['source'] | 'daily-rollup';
+    source: TrendResult['meta']['source'] | 'daily-rollup' | 'archive-and-live';
     granularity: ReportGranularity;
     from: string;
     to: string;
@@ -259,9 +268,104 @@ function groupReport(
   };
 }
 
+const daySeconds = 24 * hourSeconds;
+
+function firstRetainedUtcDay(now: number) {
+  const utcToday = Temporal.Instant.fromEpochMilliseconds(now * 1000)
+    .toZonedDateTimeISO('UTC')
+    .toPlainDate();
+  const calendarBound =
+    Date.parse(utcToday.subtract({ months: 3 }).add({ days: 1 }).toString()) /
+    1000;
+  const rollingBound =
+    Math.ceil((now - clickRollupRetentionSeconds) / daySeconds) * daySeconds;
+  return Math.max(calendarBound, rollingBound);
+}
+
+async function appendLiveTail(
+  env: ClickAnalyticsEnv,
+  archive: AnalyticsReport,
+  query: StatsQuery,
+  retentionStart: number,
+) {
+  if (archive.breakdown.length >= combinedBreakdownLimit) return archive;
+  const lastSaved = archive.series.findLast(({ clicks }) => clicks !== null);
+  const nextDay = lastSaved
+    ? Date.parse(lastSaved.date) / 1000 + daySeconds
+    : query.from;
+  const from = Math.max(nextDay, retentionStart);
+  if (from >= query.to) return archive;
+
+  const liveQuery = { ...query, from, timezone: 'UTC' };
+  try {
+    const repository = new CloudflareAnalyticsRepository(
+      env.ANALYTICS_SQL,
+      env.LINKROVIA_CLICKS_DATASET,
+    );
+    const [trend, live] = await Promise.all([
+      repository.getClickTrend(liveQuery),
+      repository.getBreakdown(
+        liveQuery,
+        archive.dimension,
+        combinedBreakdownLimit,
+      ),
+    ]);
+    if (live.breakdown.length >= combinedBreakdownLimit) return archive;
+
+    const fromDay = new Date(from * 1000).toISOString().slice(0, 10);
+    const toDay = new Date((query.to - 1) * 1000).toISOString().slice(0, 10);
+    const coveredByLive = (date: string) => date >= fromDay && date <= toDay;
+    const byDate = new Map(
+      trend.series.map(({ date, clicks }) => [date, clicks]),
+    );
+    const series = archive.series.map((row) =>
+      coveredByLive(row.date)
+        ? { date: row.date, clicks: byDate.get(row.date) ?? 0 }
+        : row,
+    );
+    const counts = new Map(
+      archive.breakdown.map(({ key, clicks }) => [key, clicks]),
+    );
+    for (const { key, clicks } of live.breakdown)
+      counts.set(key, (counts.get(key) ?? 0) + clicks);
+
+    return {
+      ...archive,
+      meta: {
+        ...archive.meta,
+        source: 'archive-and-live' as const,
+        estimated:
+          archive.meta.estimated || trend.meta.estimated || live.estimated,
+        gaps: archive.meta.gaps.filter((date) => !coveredByLive(date)),
+      },
+      totalClicks: series.reduce(
+        (total, { clicks }) => total + (clicks ?? 0),
+        0,
+      ),
+      series,
+      breakdown: [...counts.entries()]
+        .map(([key, clicks]) => ({ key, clicks }))
+        .sort((a, b) => b.clicks - a.clicks || compareKeys(a.key, b.key)),
+    };
+  } catch {
+    // Keep the known archive available, including gaps for the unread live tail.
+    console.warn('Analytics SQL could not supplement the saved click report');
+    return archive;
+  }
+}
+
 export async function loadAnalyticsReport(
   env: ClickAnalyticsEnv & { DB?: D1Database },
-  { query, dimension, from, to, archived, granularity, range }: AnalyticsQuery,
+  {
+    query,
+    dimension,
+    from,
+    to,
+    archived,
+    granularity,
+    range,
+    now,
+  }: AnalyticsQuery,
   { development }: { development: boolean },
 ): Promise<AnalyticsReport> {
   if (archived) {
@@ -274,14 +378,31 @@ export async function loadAnalyticsReport(
           .bind(to)
           .first<string>('first_day')) ?? to;
     }
-    const report = await loadArchivedClickReport(env.DB, {
-      query,
-      dimension,
-      from,
-      to,
-    });
-    if (!report) throw new AnalyticsInputError('unsupported_archive_filters');
-    return groupReport(report, granularity);
+    const retentionStart = firstRetainedUtcDay(now);
+    const liveEnd = Math.min(query.to, now);
+    const useLive =
+      !development &&
+      !!env.ANALYTICS_SQL &&
+      range !== 'all' &&
+      retentionStart < liveEnd;
+    const saved = await loadArchivedClickReport(
+      env.DB,
+      { query, dimension, from, to },
+      useLive ? combinedBreakdownLimit : breakdownLimit,
+    );
+    if (!saved) throw new AnalyticsInputError('unsupported_archive_filters');
+    const report = useLive
+      ? await appendLiveTail(
+          env,
+          saved,
+          { ...query, to: liveEnd },
+          retentionStart,
+        )
+      : saved;
+    return groupReport(
+      { ...report, breakdown: report.breakdown.slice(0, breakdownLimit) },
+      granularity,
+    );
   }
   const repository = development
     ? new MockAnalyticsRepository()

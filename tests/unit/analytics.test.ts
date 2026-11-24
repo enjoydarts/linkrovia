@@ -172,7 +172,7 @@ describe('Cloudflare analytics', () => {
   });
 
   it('bounds results with ordered SQL and permits an explicit preview filter', async () => {
-    const binding = fakeBinding([{ dimension_key: 'preview', clicks: 2 }]);
+    const binding = fakeBinding([{ blob10: 'preview', clicks: 2 }]);
     const result = await new CloudflareAnalyticsRepository(
       binding,
     ).getBreakdown(
@@ -186,19 +186,38 @@ describe('Cloudflare analytics', () => {
       'traffic',
     );
 
-    expect(binding.requests[0].query).toContain(
-      'ORDER BY clicks DESC, dimension_key ASC LIMIT 25',
+    expect(binding.requests[0].query).toBe(
+      `SELECT blob10, COUNT(*) AS clicks
+FROM events.analyticsEngine.linkrovia_clicks WHERE timestamp >= $from AND timestamp < $to AND blob10 = $key
+GROUP BY blob10 ORDER BY clicks DESC, blob10 ASC LIMIT 25`,
     );
-    expect(binding.requests[0].query).toContain('blob10 = $key');
-    expect(binding.requests[0].query).not.toContain('NOT IN');
     expect(result).toEqual({
       breakdown: [{ key: 'preview', clicks: 2 }],
       estimated: true,
     });
   });
 
+  it('uses the physical Analytics Engine columns for device reports', async () => {
+    const binding = fakeBinding([
+      { blob5: 'mobile', blob6: 'ios', blob7: 'safari', clicks: '3' },
+    ]);
+    const repository = new CloudflareAnalyticsRepository(binding);
+    expect(
+      await repository.getDevices({
+        from: today,
+        to: today + day,
+        timezone: 'UTC',
+      }),
+    ).toEqual([{ device: 'mobile', os: 'ios', browser: 'safari', clicks: 3 }]);
+    expect(binding.requests[0].query).toBe(
+      `SELECT blob5, blob6, blob7, COUNT(*) AS clicks
+FROM events.analyticsEngine.linkrovia_clicks WHERE timestamp >= $from AND timestamp < $to AND blob10 NOT IN ('bot', 'preview')
+GROUP BY blob5, blob6, blob7 ORDER BY clicks DESC, blob5 ASC, blob6 ASC, blob7 ASC LIMIT 25`,
+    );
+  });
+
   it('rejects invalid click counts returned by the binding', async () => {
-    const binding = fakeBinding([{ dimension_key: 'Tokyo', clicks: -1 }]);
+    const binding = fakeBinding([{ blob3: 'Tokyo', clicks: -1 }]);
     await expect(
       new CloudflareAnalyticsRepository(binding).getBreakdown(
         {

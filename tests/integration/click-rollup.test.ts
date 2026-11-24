@@ -236,6 +236,86 @@ describe('Daily click rollup', () => {
 });
 
 describe('Archived click report', () => {
+  it('adds retained clicks after the latest saved day without filling older gaps or re-reading saved clicks', async () => {
+    await db.batch([
+      db.prepare(
+        "INSERT INTO rollup_jobs (day_utc, status, completed_at) VALUES ('2026-07-16', 'completed', 1), ('2026-11-21', 'completed', 2)",
+      ),
+      db.prepare(
+        "INSERT INTO analytics_rollups (day_utc, link_id, dimension, dimension_value, click_count) VALUES ('2026-07-16', 'link-a', 'total', 'all', 9), ('2026-07-16', 'link-a', 'country', 'JP', 9), ('2026-11-21', 'link-a', 'total', 'all', 2), ('2026-11-21', 'link-a', 'country', 'JP', 2)",
+      ),
+    ]);
+    const query = parseAnalyticsQuery(
+      new URLSearchParams('from=2026-07-16&to=2026-11-22&tz=Asia%2FTokyo'),
+      'UTC',
+      { allowArchived: true, now },
+    );
+    const live: AnalyticsSQLBinding = {
+      query: vi.fn(async ({ query, params }) => {
+        expect(params).toMatchObject({
+          from: '2026-11-22T00:00:00.000Z',
+          to: '2026-11-22T03:00:00.000Z',
+        });
+        const data = query.includes('GROUP BY date')
+          ? [{ date: '2026-11-22', clicks: 5 }]
+          : [
+              { blob2: 'JP', clicks: 3 },
+              { blob2: 'US', clicks: 2 },
+            ];
+        return {
+          data,
+          rows: data.length,
+          statistics: { elapsed_ms: 0, rows_read: 0, bytes_read: 0 },
+        };
+      }) as AnalyticsSQLBinding['query'],
+    };
+    const report = await loadAnalyticsReport(
+      { DB: db, ANALYTICS_SQL: live },
+      query,
+      {
+        development: false,
+      },
+    );
+    expect(live.query).toHaveBeenCalledTimes(2);
+    expect(report.meta).toMatchObject({
+      source: 'archive-and-live',
+      timezone: 'UTC',
+      dateBasis: 'UTC',
+      completeThrough: '2026-07-16',
+      estimated: true,
+    });
+    expect(report.meta.gaps).toContain('2026-07-17');
+    expect(report.meta.gaps).not.toContain('2026-11-22');
+    expect(report.series.slice(-2)).toEqual([
+      { date: '2026-11-21', clicks: 2 },
+      { date: '2026-11-22', clicks: 5 },
+    ]);
+    expect(report.totalClicks).toBe(16);
+    expect(report.breakdown).toEqual([
+      { key: 'JP', clicks: 14 },
+      { key: 'US', clicks: 2 },
+    ]);
+    expect(await analyticsCsv(report, false).text()).toContain(
+      '"daily","2026-11-22","","","5","UTC","UTC","true","archive-and-live","day"',
+    );
+
+    const fallback = await loadAnalyticsReport(
+      {
+        DB: db,
+        ANALYTICS_SQL: {
+          query: async () => {
+            throw new Error('analytics unavailable');
+          },
+        },
+      },
+      query,
+      { development: false },
+    );
+    expect(fallback.meta.source).toBe('daily-rollup');
+    expect(fallback.meta.gaps).toContain('2026-11-22');
+    expect(fallback.totalClicks).toBe(11);
+  });
+
   it('shows known zeroes and unknown days separately, uses UTC, and reads one D1 snapshot', async () => {
     await db.batch([
       db.prepare(

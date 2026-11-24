@@ -1,5 +1,6 @@
 import {
   breakdownLimit,
+  combinedBreakdownLimit,
   type AnalyticsDimension,
   type StatsQuery,
 } from './repository';
@@ -58,6 +59,8 @@ export async function loadArchivedClickReport(
     query,
     dimension,
   }: Pick<AnalyticsQuery, 'from' | 'to' | 'query' | 'dimension'>,
+  groupLimit:
+    typeof breakdownLimit | typeof combinedBreakdownLimit = breakdownLimit,
 ): Promise<AnalyticsReport | null> {
   const scope = archiveScope(query, dimension);
   if (!scope) return null;
@@ -87,13 +90,7 @@ export async function loadArchivedClickReport(
       ${scope.excludeNonhuman ? "AND a.dimension_value NOT IN ('bot', 'preview')" : ''}
       GROUP BY ${breakdownKey} ORDER BY clicks DESC, key ASC LIMIT ?`,
       )
-      .bind(
-        from,
-        to,
-        scope.breakdownDimension,
-        ...scope.bindings,
-        breakdownLimit,
-      ),
+      .bind(from, to, scope.breakdownDimension, ...scope.bindings, groupLimit),
   ]);
 
   const days = new Map(

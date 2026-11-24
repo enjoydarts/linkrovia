@@ -3,6 +3,7 @@ import {
   breakdownLimit,
   clickRollupDimensions,
   clickRollupMaxRows,
+  combinedBreakdownLimit,
   compareKeys,
   type AnalyticsDimension,
   type AnalyticsRepository,
@@ -129,6 +130,16 @@ export class CloudflareAnalyticsRepository
     this.dataset = `events.analyticsEngine.${identifier}`;
   }
 
+  async checkAvailability({ from, to }: Pick<StatsQuery, 'from' | 'to'>) {
+    await this.binding.query({
+      query: `SELECT index1 FROM ${this.dataset} WHERE timestamp >= $from AND timestamp < $to LIMIT 1`,
+      params: {
+        from: new Date(from * 1000).toISOString(),
+        to: new Date(to * 1000).toISOString(),
+      },
+    });
+  }
+
   async getDailyClickRollup({ from, to }: Pick<StatsQuery, 'from' | 'to'>) {
     const rows: ClickRollupRow[] = [];
     for (const dimension of clickRollupDimensions) {
@@ -201,22 +212,25 @@ GROUP BY date ORDER BY date ASC`,
   async getBreakdown(
     query: StatsQuery,
     dimension: AnalyticsDimension,
+    limit:
+      typeof breakdownLimit | typeof combinedBreakdownLimit = breakdownLimit,
   ): Promise<BreakdownResult> {
     const column = dimensionColumn(dimension);
     const { where, params } = whereClause(query);
+    // Analytics SQL rejects dimension aliases in these ordered WAE queries.
     const { data } = await this.binding.query({
-      query: `SELECT ${column} AS dimension_key, COUNT(*) AS clicks
+      query: `SELECT ${column}, COUNT(*) AS clicks
 FROM ${this.dataset} WHERE ${where}
-GROUP BY ${column} ORDER BY clicks DESC, dimension_key ASC LIMIT ${breakdownLimit}`,
+GROUP BY ${column} ORDER BY clicks DESC, ${column} ASC LIMIT ${limit}`,
       params,
     });
     const breakdown = data
-      .map(({ dimension_key, clicks }) => ({
-        key: stringFrom(dimension_key),
+      .map(({ [column]: key, clicks }) => ({
+        key: stringFrom(key),
         clicks: clicksFrom(clicks),
       }))
       .sort((a, b) => b.clicks - a.clicks || compareKeys(a.key, b.key))
-      .slice(0, breakdownLimit);
+      .slice(0, limit);
     return { breakdown, estimated: breakdown.length > 0 };
   }
 
@@ -233,14 +247,14 @@ GROUP BY ${column} ORDER BY clicks DESC, dimension_key ASC LIMIT ${breakdownLimi
   async getDevices(query: StatsQuery) {
     const { where, params } = whereClause(query);
     const { data } = await this.binding.query({
-      query: `SELECT blob5 AS device, blob6 AS os, blob7 AS browser, COUNT(*) AS clicks
+      query: `SELECT blob5, blob6, blob7, COUNT(*) AS clicks
 FROM ${this.dataset} WHERE ${where}
-GROUP BY blob5, blob6, blob7 ORDER BY clicks DESC, device ASC, os ASC, browser ASC LIMIT ${breakdownLimit}`,
+GROUP BY blob5, blob6, blob7 ORDER BY clicks DESC, blob5 ASC, blob6 ASC, blob7 ASC LIMIT ${breakdownLimit}`,
       params,
     });
     return data
       .slice(0, breakdownLimit)
-      .map(({ device, os, browser, clicks }) => ({
+      .map(({ blob5: device, blob6: os, blob7: browser, clicks }) => ({
         device: deviceFrom(device),
         os: stringFrom(os),
         browser: stringFrom(browser),

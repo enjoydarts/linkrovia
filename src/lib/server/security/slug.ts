@@ -11,9 +11,14 @@ const reservedSlugs = new Set([
   'setup',
 ]);
 
-// Keep a 64-character alphabet so the random bytes map without modulo bias.
-const alphabet =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+const generatedSlugLength = 6;
+const generatedAlphabet =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const generatedAlphabetSize = generatedAlphabet.length;
+// Reject the incomplete final bucket before taking a remainder. This keeps
+// every alphanumeric character equally likely instead of introducing modulo bias.
+const generatedRandomLimit =
+  Math.floor(256 / generatedAlphabetSize) * generatedAlphabetSize;
 
 export function isValidSlug(value: unknown): value is string {
   return (
@@ -24,8 +29,14 @@ export function isValidSlug(value: unknown): value is string {
 }
 
 export function generateSlug(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(8));
   let slug = '';
-  for (const byte of bytes) slug += alphabet[byte & 63];
+  while (slug.length < generatedSlugLength) {
+    const bytes = crypto.getRandomValues(new Uint8Array(8));
+    for (const byte of bytes) {
+      if (byte >= generatedRandomLimit) continue;
+      slug += generatedAlphabet[byte % generatedAlphabetSize];
+      if (slug.length === generatedSlugLength) break;
+    }
+  }
   return slug;
 }
