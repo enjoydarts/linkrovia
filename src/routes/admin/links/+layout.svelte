@@ -61,7 +61,13 @@
   let copied = $state<{ url: string; ok: boolean } | null>(null);
 
   afterNavigate(({ from, to }) => {
-    if (!sections?.open || from?.url.pathname === to?.url.pathname) return;
+    if (
+      !from ||
+      !to ||
+      from.url.pathname === to.url.pathname ||
+      !sections?.open
+    )
+      return;
     const focusWithin = sections.contains(document.activeElement);
     sections.open = false;
     if (focusWithin) sections.querySelector('summary')?.focus();

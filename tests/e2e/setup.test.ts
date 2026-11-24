@@ -229,9 +229,22 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await page.setViewportSize({ width: 320, height: 844 });
       const linkSections = page.locator('details.mobile-sections');
       const linkMenu = linkSections.locator('summary');
-      await expect(linkMenu).toHaveText(/Link sections\s*Analytics/);
-      await linkMenu.focus();
-      await page.keyboard.press('Enter');
+      const scripts = Promise.withResolvers<void>();
+      await page.route('**/*', async (route) => {
+        if (route.request().resourceType() === 'script') await scripts.promise;
+        await route.continue();
+      });
+      try {
+        await page.goto(`${linkPage}/analytics`, { waitUntil: 'commit' });
+        await expect(linkMenu).toHaveText(/Link sections\s*Analytics/);
+        await linkMenu.press('Enter');
+        await expect(linkSections).toHaveAttribute('open', '');
+      } finally {
+        scripts.resolve();
+        await page.unrouteAll({ behavior: 'wait' });
+      }
+      await page.waitForLoadState('networkidle');
+      await expect(linkSections).toHaveAttribute('open', '');
       await expect(linkTabs.locator('a[aria-current]')).toHaveCount(1);
       await linkTabs
         .getByRole('link', { name: 'Conversions', exact: true })
