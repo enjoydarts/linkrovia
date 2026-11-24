@@ -2,7 +2,11 @@
 
 Linkrovia runs on one Cloudflare Worker with a D1 database. The Worker serves the app and runs the scheduled analytics jobs. Linkrovia is in development. Workers Builds deployment and custom-domain setup through owner passkey registration have been verified on a deployed Worker. End-to-end installation with the Deploy to Cloudflare button on a new Workers Free account is pending verification.
 
-If Cloudflare reports `10089` during deployment, open [Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine), enable it for the account, and retry the build. The retry skips D1 migrations that already ran. Linkrovia records clicks as soon as the Worker serves short links, and [Cloudflare creates the dataset on its first write](https://developers.cloudflare.com/analytics/analytics-engine/get-started/).
+## Before you deploy
+
+Open [Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine), select the Cloudflare account that will host Linkrovia, and enable the service if prompted. This is a one-time account setup step. Linkrovia starts recording clicks as soon as the Worker serves short links, and [Cloudflare creates the dataset on its first write](https://developers.cloudflare.com/analytics/analytics-engine/get-started/).
+
+If a build stops with Cloudflare error `10089`, enable Analytics Engine in the destination account and select **Retry build** for the failed run. The retry uses the existing Worker and database and skips D1 migrations that already ran.
 
 ## Install with Deploy to Cloudflare
 

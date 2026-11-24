@@ -13,6 +13,8 @@ Linkrovia is an open-source URL shortener for Cloudflare Workers. Use your own d
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia)
 [![CI](https://github.com/enjoydarts/linkrovia/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/enjoydarts/linkrovia/actions/workflows/ci.yml)
 
+On a new Cloudflare account, [enable Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine) once before deploying.
+
 ## See it in action
 
 **Find and manage your links.** Search by title or short path, open filters for domain, status, and tag, and copy a URL from the results. A saved link keeps its short URL and copy action visible while you work through configuration, performance, and sharing.
