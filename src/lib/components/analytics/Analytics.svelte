@@ -140,107 +140,109 @@
   let traffic = $derived(trafficLabels[locale]);
 </script>
 
-<nav class="presets" aria-label={periods.range}>
-  {#each Object.entries(periods.presets) as [range, label] (range)}
-    <a
-      href={presetUrl(range)}
-      aria-current={filters.range === range ? 'true' : undefined}
-    >
-      {label}
-    </a>
-  {/each}
-  {#if fixedRange}<a href={customDatesUrl()}>{periods.customDates}</a>{/if}
-</nav>
-<input
-  id="report-filters-toggle"
-  class="filter-toggle-control"
-  type="checkbox"
-  aria-controls="report-filters"
-/>
-<label for="report-filters-toggle" class="filter-toggle">
-  <SlidersHorizontal size={16} aria-hidden="true" />
-  {linkMessages(locale).filter}
-</label>
-<form id="report-filters" method="GET" class="filters">
-  {#if fixedRange}
-    <input type="hidden" name="range" value={filters.range} />
-  {:else}
-    <label>
-      {m.from}<input
-        class="admin-control"
-        type="date"
-        name="from"
-        value={filters.from}
-        required
-      />
-    </label>
-    <label>
-      {m.to}<input
-        class="admin-control"
-        type="date"
-        name="to"
-        value={filters.to}
-        required
-      />
-    </label>
-    <label>
-      {periods.group}<select class="admin-control" name="granularity">
-        {#each Object.entries(periods.granularities) as [value, label] (value)}
-          <option {value} selected={granularity === value}>{label}</option>
-        {/each}
-      </select>
-    </label>
-  {/if}
-  <label>
-    {m.dimension}<select class="admin-control" name="dimension">
-      {#each dimensions as dim (dim)}<option
-          value={dim}
-          selected={filters.dimension === dim}
-        >
-          {m[dim]}
-        </option>{/each}
-    </select>
-  </label>
-  <label>
-    {m.source}<select class="admin-control" name="source">
-      <option value="">{m.all}</option><option
-        value="link"
-        selected={filters.source === 'link'}
+<div class="report-controls">
+  <nav class="presets" aria-label={periods.range}>
+    {#each Object.entries(periods.presets) as [range, label] (range)}
+      <a
+        href={presetUrl(range)}
+        aria-current={filters.range === range ? 'true' : undefined}
       >
-        {m.link}
-      </option><option value="qr" selected={filters.source === 'qr'}>
-        {m.qr}
-      </option>
-    </select>
+        {label}
+      </a>
+    {/each}
+    {#if fixedRange}<a href={customDatesUrl()}>{periods.customDates}</a>{/if}
+  </nav>
+  <input
+    id="report-filters-toggle"
+    class="filter-toggle-control"
+    type="checkbox"
+    aria-controls="report-filters"
+  />
+  <label for="report-filters-toggle" class="filter-toggle">
+    <SlidersHorizontal size={16} aria-hidden="true" />
+    {linkMessages(locale).filter}
   </label>
-  {#if !linkScoped && domains.length}
+  <form id="report-filters" method="GET" class="filters">
+    {#if fixedRange}
+      <input type="hidden" name="range" value={filters.range} />
+    {:else}
+      <label>
+        {m.from}<input
+          class="admin-control"
+          type="date"
+          name="from"
+          value={filters.from}
+          required
+        />
+      </label>
+      <label>
+        {m.to}<input
+          class="admin-control"
+          type="date"
+          name="to"
+          value={filters.to}
+          required
+        />
+      </label>
+      <label>
+        {periods.group}<select class="admin-control" name="granularity">
+          {#each Object.entries(periods.granularities) as [value, label] (value)}
+            <option {value} selected={granularity === value}>{label}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
     <label>
-      {m.domain}<select class="admin-control" name="domainId">
-        <option value="">{traffic[3]}</option>
-        {#each domains as domain (domain.id)}
-          <option value={domain.id} selected={filters.domainId === domain.id}>
-            {domain.hostname}
-          </option>
-        {/each}
+      {m.dimension}<select class="admin-control" name="dimension">
+        {#each dimensions as dim (dim)}<option
+            value={dim}
+            selected={filters.dimension === dim}
+          >
+            {m[dim]}
+          </option>{/each}
       </select>
     </label>
-  {:else if filters.domainId}
-    <input type="hidden" name="domainId" value={filters.domainId} />
-  {/if}
-  {#if filters.ruleId}<input
-      type="hidden"
-      name="ruleId"
-      value={filters.ruleId}
-    />{/if}
-  <input type="hidden" name="tz" value={filters.tz} />
-  {#if filters.filter && filters.key}
-    <input type="hidden" name="filter" value={filters.filter} />
-    <input type="hidden" name="key" value={filters.key} />
-  {/if}
-  <button type="submit" class="admin-button admin-button-primary">
-    {m.apply}
-  </button>
-</form>
+    <label>
+      {m.source}<select class="admin-control" name="source">
+        <option value="">{m.all}</option><option
+          value="link"
+          selected={filters.source === 'link'}
+        >
+          {m.link}
+        </option><option value="qr" selected={filters.source === 'qr'}>
+          {m.qr}
+        </option>
+      </select>
+    </label>
+    {#if !linkScoped && domains.length}
+      <label>
+        {m.domain}<select class="admin-control" name="domainId">
+          <option value="">{traffic[3]}</option>
+          {#each domains as domain (domain.id)}
+            <option value={domain.id} selected={filters.domainId === domain.id}>
+              {domain.hostname}
+            </option>
+          {/each}
+        </select>
+      </label>
+    {:else if filters.domainId}
+      <input type="hidden" name="domainId" value={filters.domainId} />
+    {/if}
+    {#if filters.ruleId}<input
+        type="hidden"
+        name="ruleId"
+        value={filters.ruleId}
+      />{/if}
+    <input type="hidden" name="tz" value={filters.tz} />
+    {#if filters.filter && filters.key}
+      <input type="hidden" name="filter" value={filters.filter} />
+      <input type="hidden" name="key" value={filters.key} />
+    {/if}
+    <button type="submit" class="admin-button admin-button-primary">
+      {m.apply}
+    </button>
+  </form>
+</div>
 {#if failed}
   <p class="notice" role="alert">
     {failed === 'unsupported_archive_filters'
@@ -378,14 +380,14 @@
   }
   .report-charts {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr));
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
     align-items: start;
-    gap: 0.75rem;
-    margin-top: 0.75rem;
+    gap: 1rem;
+    margin-top: 1rem;
   }
   section {
     min-width: 0;
-    padding: 1rem;
+    padding: clamp(1.1rem, 2.5vw, 1.6rem);
     background: var(--ui-surface);
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-md);
@@ -401,11 +403,17 @@
     color: var(--ui-link);
     text-decoration: underline;
   }
+  .report-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+  }
   .presets {
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
-    margin-bottom: 0.625rem;
   }
   .presets a {
     display: inline-flex;
@@ -422,6 +430,7 @@
     font-weight: 650;
   }
   .filters {
+    grid-column: 1 / -1;
     display: flex;
     flex-wrap: wrap;
     align-items: end;
@@ -431,9 +440,33 @@
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-sm);
   }
-  .filter-toggle,
   .filter-toggle-control {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+  }
+  .filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-surface);
+    color: var(--ui-link);
+    cursor: pointer;
+  }
+  .filter-toggle-control:focus-visible + .filter-toggle {
+    outline: 2px solid var(--ui-focus);
+    outline-offset: 3px;
+  }
+  .filter-toggle-control:not(:checked) ~ .filters {
     display: none;
+  }
+  .filters {
+    margin-top: 0.625rem;
   }
   label {
     display: grid;
@@ -451,8 +484,8 @@
     outline-offset: 2px;
   }
   .report-summary {
-    margin-top: 0.75rem;
-    padding: 0.875rem 1rem;
+    margin-top: 1rem;
+    padding: 1.25rem 1.5rem;
     background: var(--ui-surface);
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-md);
@@ -474,7 +507,8 @@
     font-weight: 650;
   }
   .count {
-    font-size: 2rem;
+    font-size: clamp(2.5rem, 4vw, 3.5rem);
+    letter-spacing: -0.05em;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
   }
@@ -524,6 +558,11 @@
     width: 1%;
     text-align: end;
     font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 850px) {
+    .report-charts {
+      grid-template-columns: 1fr;
+    }
   }
   @media (max-width: 600px) {
     .filter-toggle-control {

@@ -341,6 +341,7 @@ export function linkMessages(locale: Locale): LinkMessages {
 const extra = {
   en: {
     utcPreview: 'UTC preview',
+    options: 'Schedule, tags, and redirect type',
     permanentCache:
       'Browsers may cache this redirect after you change its destination. Use 302 or 307 for a temporary redirect.',
     gap: 'This local time does not exist because the clock moves forward. Choose another time.',
@@ -357,6 +358,7 @@ const extra = {
   },
   ja: {
     utcPreview: 'UTC プレビュー',
+    options: '公開期間・タグ・転送方式',
     permanentCache:
       '転送先を変更しても、ブラウザーに以前の転送先が残ることがあります。一時的な転送には 302 または 307 を選んでください。',
     gap: '時計が進むため、この現地時刻は存在しません。別の時刻を選んでください。',
@@ -374,6 +376,7 @@ const extra = {
   },
   'zh-CN': {
     utcPreview: 'UTC 预览',
+    options: '定时、标签和重定向类型',
     permanentCache:
       '更改目标后，浏览器可能仍会使用已缓存的重定向。临时重定向请选择 302 或 307。',
     gap: '由于时钟拨快，此本地时间不存在。请选择其他时间。',
@@ -389,6 +392,7 @@ const extra = {
   },
   'zh-TW': {
     utcPreview: 'UTC 預覽',
+    options: '排程、標籤與重新導向類型',
     permanentCache:
       '變更目的地後，瀏覽器可能仍會使用已快取的重新導向。暫時重新導向請選擇 302 或 307。',
     gap: '由於時鐘調快，此本地時間不存在。請選擇其他時間。',
@@ -404,6 +408,7 @@ const extra = {
   },
   es: {
     utcPreview: 'Vista previa en UTC',
+    options: 'Programación, etiquetas y redirección',
     permanentCache:
       'Los navegadores pueden conservar esta redirección aunque cambies el destino. Usa 302 o 307 para una redirección temporal.',
     gap: 'Esta hora local no existe por el adelanto del reloj. Elige otra hora.',
@@ -420,6 +425,7 @@ const extra = {
   },
   it: {
     utcPreview: 'Anteprima in UTC',
+    options: 'Pianificazione, tag e reindirizzamento',
     permanentCache:
       'I browser possono conservare questo reindirizzamento dopo una modifica della destinazione. Usa 302 o 307 per un reindirizzamento temporaneo.',
     gap: 'Questa ora locale non esiste per lo spostamento in avanti dell’orologio. Scegli un’altra ora.',
@@ -436,6 +442,7 @@ const extra = {
   },
   fr: {
     utcPreview: 'Aperçu en UTC',
+    options: 'Planification, tags et redirection',
     permanentCache:
       'Les navigateurs peuvent conserver cette redirection après un changement de destination. Utilisez 302 ou 307 pour une redirection temporaire.',
     gap: 'Cette heure locale n’existe pas, car l’horloge avance. Choisissez une autre heure.',

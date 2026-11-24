@@ -198,181 +198,192 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<div class="space-y-8 max-w-3xl">
+<div class="space-y-7">
   <header class="context-header space-y-2">
     <h1>{m.title}</h1>
     <p>{m.intro}</p>
   </header>
-  <section class="context-panel space-y-4" aria-labelledby="export-heading">
-    <h2 id="export-heading" class="text-xl font-semibold">{m.export}</h2>
-    <p>{m.exportHelp}</p>
-    <button
-      class="admin-button"
-      type="button"
-      disabled={busy}
-      onclick={() => download()}
-    >
-      {m.download}
-    </button>
-  </section>
-  <section class="context-panel space-y-5" aria-labelledby="restore-heading">
-    <h2 id="restore-heading" class="text-xl font-semibold">{m.restore}</h2>
-    <p>{m.restoreHelp}</p>
-    <p>{m.limits}</p>
-    <div>
-      <label for="backup-file" class="block font-semibold">
-        {m.file}
-      </label><input
-        id="backup-file"
-        class="admin-control mt-2 block w-full min-w-0"
-        type="file"
-        accept="application/json,.json"
+  {#if busy}<p role="status">{m.working}</p>{/if}
+  {#if issue}<p role="alert">{issue}</p>{/if}
+  {#if completed}<p role="status">{m.completed}</p>{/if}
+  <div
+    class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.65fr)]"
+  >
+    <section class="context-panel space-y-4" aria-labelledby="export-heading">
+      <h2 id="export-heading" class="text-xl font-semibold">{m.export}</h2>
+      <p>{m.exportHelp}</p>
+      <button
+        class="admin-button admin-button-primary"
+        type="button"
         disabled={busy}
-        onchange={(event) => {
-          file = event.currentTarget.files?.[0] ?? null;
-          reset();
-        }}
-      />
-    </div>
-    <fieldset disabled={busy} class="space-y-2">
-      <legend class="font-semibold">{m.mode}</legend>
-      <label class="block">
-        <input
-          type="radio"
-          name="mode"
-          value="merge"
-          checked={mode === 'merge'}
-          onchange={() => {
-            mode = 'merge';
+        onclick={() => download()}
+      >
+        {m.download}
+      </button>
+    </section>
+    <section class="context-panel space-y-5" aria-labelledby="restore-heading">
+      <h2 id="restore-heading" class="text-xl font-semibold">{m.restore}</h2>
+      <p>{m.restoreHelp}</p>
+      <p id="backup-limits" class="text-sm text-muted">{m.limits}</p>
+      <div>
+        <label for="backup-file" class="block font-semibold">
+          {m.file}
+        </label><input
+          aria-describedby="backup-limits"
+          id="backup-file"
+          class="admin-control mt-2 block w-full min-w-0"
+          type="file"
+          accept="application/json,.json"
+          disabled={busy}
+          onchange={(event) => {
+            file = event.currentTarget.files?.[0] ?? null;
             reset();
           }}
         />
-        {m.merge}
-      </label>
-      <label class="block">
-        <input
-          type="radio"
-          name="mode"
-          value="replace"
-          checked={mode === 'replace'}
-          onchange={() => {
-            mode = 'replace';
-            reset();
-          }}
-        />
-        {m.replace}
-      </label>
-    </fieldset>
-    {#if mode === 'merge'}<fieldset disabled={busy} class="space-y-2">
-        <legend class="font-semibold">{m.conflict}</legend>
-        <label class="block">
-          <input
-            type="radio"
-            name="conflict"
-            value="skip"
-            checked={conflict === 'skip'}
-            onchange={() => {
-              conflict = 'skip';
-              reset();
-            }}
-          />
-          {m.skip}
-        </label>
-        <label class="block">
-          <input
-            type="radio"
-            name="conflict"
-            value="overwrite"
-            checked={conflict === 'overwrite'}
-            onchange={() => {
-              conflict = 'overwrite';
-              reset();
-            }}
-          />
-          {m.overwrite}
-        </label>
-      </fieldset>{/if}
-    <p>{m.matching}</p>
-    {#if mode === 'replace' || conflict === 'overwrite'}<p>
-        {m.domainPolicy}
-      </p>{/if}
-    <p>{m.warnings}</p>
-    <details class="space-y-3">
-      <summary class="cursor-pointer font-medium text-link">
-        {m.domainsToConnect}
-      </summary>
-      <p>{m.domainSteps}</p>
-      <p class="flex flex-wrap gap-4">
-        <a
-          class="text-link underline"
-          href="https://dash.cloudflare.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {m.domainDashboard} ↗
-        </a>
-        <a class="text-link underline" href="/admin/domains">
-          {m.domainManage}
-        </a>
-        <a
-          class="text-link underline"
-          href="https://developers.cloudflare.com/workers/configuration/routing/custom-domains/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {m.domainDocs} ↗
-        </a>
-      </p>
-    </details>
-    <button
-      class="admin-button admin-button-primary"
-      type="button"
-      disabled={busy || !file}
-      onclick={validate}
-    >
-      {m.validate}
-    </button>
-    {#if preview}
-      <div class="space-y-4" aria-live="polite">
-        <h3 class="text-lg font-semibold">{m.preview}</h3>
-        <dl class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {#each countKeys as key (key)}<div>
-              <dt>{m[key]}</dt>
-              <dd class="font-semibold">{preview.preview[key]}</dd>
-            </div>{/each}
-        </dl>
-        {#if mode === 'replace'}<p>{m.preBackupHelp}</p>
-          <button
-            class="admin-button"
-            type="button"
-            disabled={busy}
-            onclick={() => download(true)}
-          >
-            {m.preBackup}
-          </button>
+      </div>
+      <div class="grid items-start gap-4 sm:grid-cols-2">
+        <fieldset disabled={busy} class="space-y-2">
+          <legend class="font-semibold">{m.mode}</legend>
           <label class="block">
             <input
-              type="checkbox"
-              bind:checked={confirmed}
-              disabled={busy || !receipt}
+              type="radio"
+              name="mode"
+              value="merge"
+              checked={mode === 'merge'}
+              onchange={() => {
+                mode = 'merge';
+                reset();
+              }}
             />
-            {m.confirm}
-          </label>{/if}
-        <button
-          class={[
-            'admin-button',
-            mode === 'replace' ? 'admin-button-danger' : 'admin-button-primary',
-          ]}
-          type="button"
-          disabled={busy || (mode === 'replace' && (!receipt || !confirmed))}
-          onclick={restore}
-        >
-          {m.restoreNow}
-        </button>
+            {m.merge}
+          </label>
+          <label class="block">
+            <input
+              type="radio"
+              name="mode"
+              value="replace"
+              checked={mode === 'replace'}
+              onchange={() => {
+                mode = 'replace';
+                reset();
+              }}
+            />
+            {m.replace}
+          </label>
+        </fieldset>
+        {#if mode === 'merge'}<fieldset disabled={busy} class="space-y-2">
+            <legend class="font-semibold">{m.conflict}</legend>
+            <label class="block">
+              <input
+                type="radio"
+                name="conflict"
+                value="skip"
+                checked={conflict === 'skip'}
+                onchange={() => {
+                  conflict = 'skip';
+                  reset();
+                }}
+              />
+              {m.skip}
+            </label>
+            <label class="block">
+              <input
+                type="radio"
+                name="conflict"
+                value="overwrite"
+                checked={conflict === 'overwrite'}
+                onchange={() => {
+                  conflict = 'overwrite';
+                  reset();
+                }}
+              />
+              {m.overwrite}
+            </label>
+          </fieldset>{/if}
       </div>
-    {/if}
-    {#if busy}<p role="status">{m.working}</p>{/if}
-    {#if issue}<p role="alert">{issue}</p>{/if}
-    {#if completed}<p role="status">{m.completed}</p>{/if}
-  </section>
+      <p class="text-sm text-muted">{m.matching}</p>
+      {#if mode === 'replace' || conflict === 'overwrite'}<p>
+          {m.domainPolicy}
+        </p>{/if}
+      <p class="rounded-md border border-line bg-canvas p-3 text-sm">
+        {m.warnings}
+      </p>
+      <details class="space-y-3">
+        <summary class="cursor-pointer font-medium text-link">
+          {m.domainsToConnect}
+        </summary>
+        <p>{m.domainSteps}</p>
+        <p class="flex flex-wrap gap-4">
+          <a
+            class="text-link underline"
+            href="https://dash.cloudflare.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {m.domainDashboard} ↗
+          </a>
+          <a class="text-link underline" href="/admin/domains">
+            {m.domainManage}
+          </a>
+          <a
+            class="text-link underline"
+            href="https://developers.cloudflare.com/workers/configuration/routing/custom-domains/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {m.domainDocs} ↗
+          </a>
+        </p>
+      </details>
+      <button
+        class="admin-button admin-button-primary"
+        type="button"
+        disabled={busy || !file}
+        onclick={validate}
+      >
+        {m.validate}
+      </button>
+      {#if preview}
+        <div class="space-y-4 border-t border-line pt-5" aria-live="polite">
+          <h3 class="text-lg font-semibold">{m.preview}</h3>
+          <dl class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {#each countKeys as key (key)}<div>
+                <dt>{m[key]}</dt>
+                <dd class="font-semibold">{preview.preview[key]}</dd>
+              </div>{/each}
+          </dl>
+          {#if mode === 'replace'}<p>{m.preBackupHelp}</p>
+            <button
+              class="admin-button"
+              type="button"
+              disabled={busy}
+              onclick={() => download(true)}
+            >
+              {m.preBackup}
+            </button>
+            <label class="block">
+              <input
+                type="checkbox"
+                bind:checked={confirmed}
+                disabled={busy || !receipt}
+              />
+              {m.confirm}
+            </label>{/if}
+          <button
+            class={[
+              'admin-button',
+              mode === 'replace'
+                ? 'admin-button-danger'
+                : 'admin-button-primary',
+            ]}
+            type="button"
+            disabled={busy || (mode === 'replace' && (!receipt || !confirmed))}
+            onclick={restore}
+          >
+            {m.restoreNow}
+          </button>
+        </div>
+      {/if}
+    </section>
+  </div>
 </div>

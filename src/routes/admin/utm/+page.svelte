@@ -85,15 +85,26 @@
     </p>
   {/if}
 
-  <div class="grid items-start gap-6 lg:grid-cols-2">
+  <div
+    class="grid items-start gap-5 xl:grid-cols-[minmax(16rem,1fr)_minmax(0,2fr)]"
+  >
     <section
       aria-labelledby="utm-templates-title"
-      class="context-panel min-w-0 space-y-5"
+      class="context-panel min-w-0 space-y-4"
     >
       <div class="space-y-3">
-        <h2 id="utm-templates-title" class="text-xl font-semibold">
-          {messages.templates}
-        </h2>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="utm-templates-title" class="text-xl font-semibold">
+            {messages.templates}
+          </h2>
+          <a
+            href={`${pageHref}#template-editor`}
+            class="admin-button"
+            data-sveltekit-reload={!!data.editing}
+          >
+            {messages.newTemplate}
+          </a>
+        </div>
         {#if !data.templates.length}
           <p class="text-sm">{messages.noTemplates}</p>
         {:else}
@@ -101,8 +112,8 @@
             {#each data.templates as template (template.id)}
               <li class="py-2">
                 <a
-                  class="inline-block max-w-full font-medium break-words underline underline-offset-4"
-                  href={`${pageHref}?edit=${encodeURIComponent(template.id)}`}
+                  class="inline-block max-w-full break-words font-medium text-link underline underline-offset-4"
+                  href={`${pageHref}?edit=${encodeURIComponent(template.id)}#template-editor`}
                   aria-current={data.editing?.id === template.id
                     ? 'page'
                     : undefined}
@@ -120,22 +131,17 @@
           </ul>
         {/if}
       </div>
+    </section>
 
-      <div class="space-y-3 border-t border-line pt-4">
-        <div class="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 class="text-lg font-medium">
-            {data.editing ? messages.editTemplate : messages.newTemplate}
-          </h3>
-          {#if data.editing}
-            <a
-              href={pageHref}
-              data-sveltekit-reload
-              class="text-sm underline underline-offset-4"
-            >
-              {messages.newTemplate}
-            </a>
-          {/if}
-        </div>
+    <div class="min-w-0 space-y-5">
+      <section
+        id="template-editor"
+        aria-labelledby="template-editor-title"
+        class="context-panel scroll-mt-24 min-w-0 space-y-4"
+      >
+        <h2 id="template-editor-title" class="text-xl font-semibold">
+          {data.editing ? messages.editTemplate : messages.newTemplate}
+        </h2>
 
         <form method="POST" action={`?/save${editQuery}`} class="space-y-4">
           <input type="hidden" name="csrfToken" value={data.csrfToken} />
@@ -200,74 +206,74 @@
             </button>
           </form>
         {/if}
-      </div>
-    </section>
+      </section>
 
-    <section
-      aria-labelledby="utm-preview-title"
-      class="context-panel min-w-0 space-y-4"
-    >
-      <h2 id="utm-preview-title" class="text-xl font-semibold">
-        {messages.preview}
-      </h2>
-      <form method="POST" action={`?/preview${editQuery}`} class="space-y-4">
-        <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <div class="space-y-1">
-          <label for="preview-url" class="block text-sm font-medium">
-            {messages.url}
-          </label>
-          <input
-            id="preview-url"
-            name="destinationUrl"
-            type="url"
-            defaultValue={previewInput?.destinationUrl ?? ''}
-            maxlength="8192"
-            required
-            class="admin-control w-full min-w-0"
-          />
-        </div>
-        {#if data.templates.length}
+      <section
+        aria-labelledby="utm-preview-title"
+        class="context-panel min-w-0 space-y-4"
+      >
+        <h2 id="utm-preview-title" class="text-xl font-semibold">
+          {messages.preview}
+        </h2>
+        <form method="POST" action={`?/preview${editQuery}`} class="space-y-4">
+          <input type="hidden" name="csrfToken" value={data.csrfToken} />
           <div class="space-y-1">
-            <label for="preview-template" class="block text-sm font-medium">
-              {messages.template}
+            <label for="preview-url" class="block text-sm font-medium">
+              {messages.url}
             </label>
-            <select
-              id="preview-template"
-              name="templateId"
+            <input
+              id="preview-url"
+              name="destinationUrl"
+              type="url"
+              defaultValue={previewInput?.destinationUrl ?? ''}
+              maxlength="8192"
+              required
               class="admin-control w-full min-w-0"
-              aria-describedby="utm-override-hint"
-            >
-              <option value="">{messages.noTemplate}</option>
-              {#each data.templates as template (template.id)}
-                <option
-                  value={template.id}
-                  selected={previewInput?.templateId === template.id}
-                >
-                  {template.name}
-                </option>
-              {/each}
-            </select>
-            <p id="utm-override-hint" class="text-sm">
-              {messages.overrideHint}
-            </p>
+            />
           </div>
-        {/if}
-        {@render utmFields('preview', previewInput?.values)}
-        <button type="submit" class="admin-button admin-button-primary">
-          {messages.previewAction}
-        </button>
-      </form>
+          {#if data.templates.length}
+            <div class="space-y-1">
+              <label for="preview-template" class="block text-sm font-medium">
+                {messages.template}
+              </label>
+              <select
+                id="preview-template"
+                name="templateId"
+                class="admin-control w-full min-w-0"
+                aria-describedby="utm-override-hint"
+              >
+                <option value="">{messages.noTemplate}</option>
+                {#each data.templates as template (template.id)}
+                  <option
+                    value={template.id}
+                    selected={previewInput?.templateId === template.id}
+                  >
+                    {template.name}
+                  </option>
+                {/each}
+              </select>
+              <p id="utm-override-hint" class="text-sm">
+                {messages.overrideHint}
+              </p>
+            </div>
+          {/if}
+          {@render utmFields('preview', previewInput?.values)}
+          <button type="submit" class="admin-button admin-button-primary">
+            {messages.previewAction}
+          </button>
+        </form>
 
-      {#if form?.preview}
-        <dl
-          class="space-y-2 rounded-md border border-line bg-canvas p-3 text-sm"
-        >
-          <dt class="font-medium">{messages.before}</dt>
-          <dd><code class="break-all">{form.preview.before}</code></dd>
-          <dt class="font-medium">{messages.after}</dt>
-          <dd><code class="break-all">{form.preview.after}</code></dd>
-        </dl>
-      {/if}
-    </section>
+        {#if form?.preview}
+          <dl
+            class="space-y-2 rounded-md border border-line bg-canvas p-3 text-sm"
+          >
+            <dt class="font-medium">{messages.before}</dt>
+            <dd><code class="break-all">{form.preview.before}</code></dd>
+            <dt class="font-medium">{messages.after}</dt>
+            <dd><code class="break-all">{form.preview.after}</code></dd>
+          </dl>
+        {/if}
+      </section>
+    </div>
   </div>
 </div>

@@ -55,7 +55,7 @@
         />{/if}
       {#if data.passwordAvailable}
         <details
-          open={!data.passkeyAvailable}
+          open={!data.passkeyAvailable || Boolean(errorMessage)}
           class="space-y-5"
           class:sole-method={!data.passkeyAvailable}
         >

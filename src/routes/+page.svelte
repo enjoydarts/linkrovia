@@ -55,6 +55,7 @@
   <div class="hero-wrap">
     <section class="hero landing-inner">
       <div class="hero-copy">
+        <p class="hero-kicker">LINKROVIA / OPEN SOURCE</p>
         <h1>{copy.headline[0]} <span>{copy.headline[1]}</span></h1>
         <p class="description">{messages['home.description']}</p>
         {#if data.canSignIn}
@@ -103,8 +104,9 @@
   <div class="landing-content">
     <div class="landing-inner">
       <div class="features">
-        {#each features as feature (feature.title)}
+        {#each features as feature, index (feature.title)}
           <article>
+            <span class="feature-number">0{index + 1}</span>
             <div class="feature-icon">
               <feature.icon size={20} aria-hidden="true" />
             </div>
@@ -188,6 +190,14 @@
   .guide-link:hover {
     color: var(--ui-link);
   }
+  .hero-kicker {
+    margin-bottom: 1.5rem;
+    color: var(--ui-link);
+    font-family: var(--ui-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
   .hero-wrap {
     overflow: hidden;
     border-block: 1px solid var(--ui-border);
@@ -198,7 +208,7 @@
     );
   }
   .hero {
-    min-height: 34rem;
+    min-height: 39rem;
     display: grid;
     grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
     align-items: center;
@@ -248,6 +258,7 @@
     overflow: hidden;
     border: 1px solid var(--brand-ink-border);
     border-radius: var(--ui-radius-lg);
+    transform: rotate(-2deg);
     background: var(--brand-ink);
     color: var(--brand-on-ink);
     box-shadow: var(--ui-shadow);
@@ -368,7 +379,15 @@
     border-block: 1px solid var(--ui-border);
   }
   .features article {
-    padding: 1.35rem clamp(1rem, 2vw, 2rem);
+    display: grid;
+    align-content: start;
+    padding: 1.75rem clamp(1rem, 2vw, 2rem) 2rem;
+  }
+  .feature-number {
+    margin-bottom: 2rem;
+    color: var(--ui-text-muted);
+    font-family: var(--ui-mono);
+    font-size: 0.75rem;
   }
   .features article:first-child {
     padding-inline-start: 0;

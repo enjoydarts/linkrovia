@@ -286,10 +286,15 @@
 
 <style>
   section {
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
+    padding: clamp(1.1rem, 2.5vw, 1.6rem);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-surface);
   }
   h2 {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
+    letter-spacing: -0.025em;
     font-weight: 650;
     margin-bottom: 0.75rem;
   }
@@ -309,7 +314,7 @@
     padding: 1rem;
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-sm);
-    background: var(--ui-surface);
+    background: var(--ui-background);
   }
   .notice {
     margin: 1rem 0;

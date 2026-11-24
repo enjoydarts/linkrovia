@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { healthMessages } from '../health/messages';
   import { brand } from '$lib/brand';
   import { preferenceMessages } from '$lib/i18n/preferences';
   import '../../admin-context.css';
@@ -19,23 +18,21 @@
   <title>{messages.title} · {brand.name}</title>
 </svelte:head>
 
-<div class="max-w-2xl space-y-6">
+<div class="space-y-6">
   <header class="context-header space-y-2">
-    <nav
-      class="context-nav"
-      aria-label={preferenceMessages(data.locale).settings}
+    <a
+      href="/admin/settings"
+      class="inline-flex items-center gap-2 text-sm font-medium text-link hover:underline"
     >
-      <a href="/admin/settings">
-        {preferenceMessages(data.locale).personal}
-      </a><span aria-current="page">{messages.title}</span>
-      <a href="/admin/settings/health">{healthMessages(data.locale).title}</a>
-    </nav>
+      <span aria-hidden="true">←</span>{preferenceMessages(data.locale)
+        .settings}
+    </a>
     <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
     <p>{messages.intro}</p>
   </header>
 
-  <dl class="context-panel space-y-2 rounded-md border border-line p-4 text-sm">
-    <div class="flex flex-wrap gap-x-3">
+  <dl class="context-panel grid gap-4 text-sm sm:grid-cols-2">
+    <div class="min-w-0 space-y-1">
       <dt class="font-medium">{messages.status}</dt>
       <dd>
         {data.enabled
@@ -45,9 +42,9 @@
           : messages.disabled}
       </dd>
     </div>
-    <div class="flex flex-wrap gap-x-3">
+    <div class="min-w-0 space-y-1">
       <dt class="font-medium">{messages.hostname}</dt>
-      <dd><code>{data.hostname}</code></dd>
+      <dd class="break-all"><code>{data.hostname}</code></dd>
     </div>
   </dl>
 
@@ -85,55 +82,59 @@
       </div>
     </form>
   {:else}
-    <ol class="list-decimal space-y-4 pl-5">
-      <li class="space-y-1">
-        <a
-          class="font-medium underline underline-offset-4"
-          href="https://dash.cloudflare.com/?to=/:account/turnstile"
-        >
-          {messages.manageWidget}
-        </a>
-        <p>{messages.widgetSetup}</p>
-      </li>
-      <li class="space-y-1">
-        <a
-          class="font-medium underline underline-offset-4"
-          href="https://dash.cloudflare.com/?to=/:account/workers-and-pages"
-        >
-          {messages.manageWorker}
-        </a>
-        <p>{messages.secretSetup}</p>
-      </li>
-    </ol>
+    <div class="grid items-start gap-5 lg:grid-cols-2">
+      <ol class="context-panel list-decimal space-y-4 marker:font-semibold">
+        <li class="ml-5 space-y-1">
+          <a
+            class="font-medium underline underline-offset-4"
+            href="https://dash.cloudflare.com/?to=/:account/turnstile"
+          >
+            {messages.manageWidget}
+          </a>
+          <p>{messages.widgetSetup}</p>
+        </li>
+        <li class="ml-5 space-y-1">
+          <a
+            class="font-medium underline underline-offset-4"
+            href="https://dash.cloudflare.com/?to=/:account/workers-and-pages"
+          >
+            {messages.manageWorker}
+          </a>
+          <p>{messages.secretSetup}</p>
+        </li>
+      </ol>
 
-    <form method="POST" action="?/prepare" class="context-panel space-y-3">
-      <input type="hidden" name="csrfToken" value={data.csrfToken} />
-      <div class="space-y-1">
-        <label for="site-key" class="block font-medium">
-          {messages.siteKey}
-        </label>
-        <input
-          id="site-key"
-          name="siteKey"
-          value={data.siteKey}
-          maxlength="32"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          required
-          aria-describedby="site-key-hint"
-          class="admin-control w-full font-mono sm:max-w-sm"
-        />
-        <p id="site-key-hint" class="text-sm">{messages.siteKeyHint}</p>
-      </div>
-      <button type="submit" class="admin-button admin-button-primary">
-        {messages.prepare}
-      </button>
-    </form>
+      <form method="POST" action="?/prepare" class="context-panel space-y-3">
+        <input type="hidden" name="csrfToken" value={data.csrfToken} />
+        <h2 class="text-lg font-semibold">{messages.prepare}</h2>
+        <div class="space-y-1">
+          <label for="site-key" class="block font-medium">
+            {messages.siteKey}
+          </label>
+          <input
+            id="site-key"
+            name="siteKey"
+            value={data.siteKey}
+            maxlength="32"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            required
+            aria-describedby="site-key-hint"
+            class="admin-control w-full font-mono sm:max-w-sm"
+          />
+          <p id="site-key-hint" class="text-sm">{messages.siteKeyHint}</p>
+        </div>
+        <button type="submit" class="admin-button admin-button-primary">
+          {messages.prepare}
+        </button>
+      </form>
+    </div>
   {/if}
 
   {#if data.enabled}
-    <div class="space-y-3 border-t border-line pt-4">
+    <details class="context-panel space-y-3">
+      <summary class="cursor-pointer font-semibold">{messages.disable}</summary>
       <p class="text-sm">{messages.rotate}</p>
       <form method="POST" action="?/disable">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
@@ -141,6 +142,6 @@
           {messages.disable}
         </button>
       </form>
-    </div>
+    </details>
   {/if}
 </div>

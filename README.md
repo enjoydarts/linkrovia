@@ -15,11 +15,11 @@ Linkrovia is an open-source URL shortener for Cloudflare Workers. Use your own d
 
 ## See it in action
 
-**Find and manage your links.** Search by title or short path, filter by domain, status, or tag, and open a link's analytics or copy its URL from the same list.
+**Find and manage your links.** Search by title or short path, open filters for domain, status, and tag, and copy a URL from the results. A saved link keeps its short URL and copy action visible while you work through configuration, performance, and sharing.
 
 ![Linkrovia link list showing branded short URLs, destination URLs, tags, and link status](docs/screenshots/links.png)
 
-**See which links are working.** Use the analytics dashboard for trends and traffic breakdowns. Open any link for its own charts, conversion results, and CSV exports. The screenshot uses sample analytics.
+**See which links are working.** Choose a date range to view the trend and traffic breakdown. Open the report filters to refine the results or a saved link to explore its own clicks, conversions, and CSV exports. The screenshot uses sample analytics.
 
 ![Linkrovia analytics dashboard showing a click trend chart and traffic breakdowns with sample data](docs/screenshots/analytics.png)
 

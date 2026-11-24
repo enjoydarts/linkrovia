@@ -1,10 +1,14 @@
 <script lang="ts">
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import { brand } from '$lib/brand';
   import { linkUtmMessages } from './messages';
   import type { PageProps } from './$types';
 
   let { data, form }: PageProps = $props();
   let m = $derived(linkUtmMessages(data.locale));
+  let selectedTarget = $derived(
+    form?.draft?.target ?? form?.target ?? 'default',
+  );
   let targets = $derived([
     {
       id: 'default',
@@ -25,17 +29,22 @@
 <section class="max-w-3xl space-y-5">
   <p class="text-sm text-muted">{m.help}</p>
   <p class="text-sm text-muted">{m.safe}</p>
-  {#each targets as target (target.id)}
+  {#snippet destinationEditor(target: (typeof targets)[number])}
     {@const draft = form?.draft?.target === target.id ? form.draft : null}
+    <summary>
+      <span class="destination-summary">
+        <strong id={`utm-destination-${target.id}`}>
+          {target.id === 'default' ? m.default : `${m.rule} ${target.position}`}
+        </strong>
+        <span>{target.destination}</span>
+      </span>
+      <ChevronDown size={17} aria-hidden="true" />
+    </summary>
     <form
       method="POST"
       aria-labelledby={`utm-destination-${target.id}`}
-      class="space-y-4 rounded-xl border border-line bg-surface p-5"
+      class="utm-fields space-y-4"
     >
-      <h2 id={`utm-destination-${target.id}`} class="font-semibold">
-        {target.id === 'default' ? m.default : `${m.rule} ${target.position}`}
-      </h2>
-      <p class="break-all text-sm text-muted">{target.destination}</p>
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
       <input
         type="hidden"
@@ -102,5 +111,65 @@
         </dl>
       {/if}
     </form>
-  {/each}
+  {/snippet}
+
+  <div class="destination-list">
+    {#each targets as target (target.id)}
+      {#if target.id === selectedTarget}
+        <details name="utm-target" open>
+          {@render destinationEditor(target)}
+        </details>
+      {:else}
+        <details name="utm-target">
+          {@render destinationEditor(target)}
+        </details>
+      {/if}
+    {/each}
+  </div>
 </section>
+
+<style>
+  .destination-list {
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-surface);
+    overflow: clip;
+  }
+  .destination-list details + details {
+    border-top: 1px solid var(--ui-border);
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    list-style: none;
+    color: var(--ui-link);
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary :global(svg) {
+    flex: none;
+  }
+  .destination-summary {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .destination-summary span {
+    color: var(--ui-text-muted);
+    font-size: 0.8rem;
+  }
+  .utm-fields {
+    padding: 1rem;
+    border-top: 1px solid var(--ui-border);
+  }
+  .utm-fields :global(.admin-control) {
+    width: 100%;
+  }
+</style>

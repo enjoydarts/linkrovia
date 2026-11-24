@@ -16,7 +16,7 @@
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 
-<div class="max-w-2xl space-y-5">
+<div class="simulation-workspace">
   <form
     method="POST"
     aria-describedby="simulation-help"
@@ -59,12 +59,12 @@
     </button>
   </form>
 
-  {#if result}
-    <section
-      aria-labelledby="simulation-result"
-      class="space-y-4 rounded-xl border border-line bg-surface p-5"
-    >
-      <h2 id="simulation-result" class="text-xl font-semibold">{m.result}</h2>
+  <section
+    aria-labelledby="simulation-result"
+    class="space-y-4 rounded-xl border border-line bg-surface p-5"
+  >
+    <h2 id="simulation-result" class="text-xl font-semibold">{m.result}</h2>
+    {#if result}
       <dl class="space-y-3 text-sm">
         <div>
           <dt class="font-medium">{m.redirectStatus}</dt>
@@ -91,6 +91,21 @@
           </div>
         {/if}
       </dl>
-    </section>
-  {/if}
+    {:else}
+      <p class="text-sm text-muted">{m.help}</p>
+    {/if}
+  </section>
 </div>
+
+<style>
+  .simulation-workspace {
+    display: grid;
+    align-items: start;
+    gap: 1.25rem;
+  }
+  @media (min-width: 900px) {
+    .simulation-workspace {
+      grid-template-columns: minmax(0, 1.15fr) minmax(17rem, 0.85fr);
+    }
+  }
+</style>

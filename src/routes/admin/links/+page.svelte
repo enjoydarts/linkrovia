@@ -11,14 +11,20 @@
   import { brand } from '$lib/brand';
   import { analyticsMessages } from '$lib/components/analytics/messages';
   import { linkMessages } from '$lib/i18n/links';
-  import { listMessages } from './messages';
+  import { detailNavigation, listMessages } from './messages';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();
   let m = $derived(linkMessages(data.locale));
   let copy = $derived(listMessages[data.locale]);
   let analytics = $derived(analyticsMessages(data.locale));
-  let hasFilters = $derived(Object.values(data.filters).some(Boolean));
+  let hasFilters = $derived(
+    Object.values(data.filters).some(Boolean) || data.sort !== 'created_desc',
+  );
+  let hasAdvancedFilters = $derived(
+    Boolean(data.filters.domain || data.filters.status || data.filters.tag) ||
+      data.sort !== 'created_desc',
+  );
   let canCopy = $state(false);
   let copyResult = $state<{ id: string; url: string; success: boolean } | null>(
     null,
@@ -77,6 +83,7 @@
       id="list-filters-toggle"
       type="checkbox"
       aria-controls="list-filters"
+      checked={hasAdvancedFilters}
     />
     <label for="list-filters-toggle" class="admin-button filter-toggle">
       <SlidersHorizontal size={16} aria-hidden="true" />
@@ -142,7 +149,10 @@
         {m.filter}
       </button>
     </div>
-    {#if hasFilters}<a class="clear-filters" href="/admin/links">
+    {#if hasFilters && data.links.length}<a
+        class="clear-filters"
+        href="/admin/links"
+      >
         {copy.clear}
       </a>{/if}
   </form>
@@ -157,8 +167,10 @@
   {#if data.links.length === 0}
     <div class="empty">
       <Link2 size={24} aria-hidden="true" />
-      <p>{m.empty}</p>
-      {#if !hasFilters}
+      <p>{hasFilters ? detailNavigation[data.locale].noMatches : m.empty}</p>
+      {#if hasFilters}
+        <a class="workspace-link" href="/admin/links">{copy.clear}</a>
+      {:else}
         <a class="workspace-link" href="/admin/links/new">
           {m.create}
           <ArrowRight size={16} aria-hidden="true" />
@@ -266,21 +278,25 @@
 
 <style>
   .link-library {
+    min-width: 0;
+    --row-columns: minmax(0, 1.45fr) minmax(0, 1fr) 6.5rem 6rem;
+  }
+  .link-rows,
+  .empty {
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-lg);
     background: var(--ui-surface);
-    --row-columns: minmax(0, 1.45fr) minmax(0, 1fr) 7rem 6rem;
   }
   .toolbar {
     display: grid;
-    grid-template-columns: minmax(11rem, 1fr) minmax(0, 2.3fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
     gap: 0.7rem;
-    padding: clamp(0.75rem, 2vw, 1.2rem);
-    border-bottom: 1px solid var(--ui-border);
-  }
-  .toolbar:has(.clear-filters) {
-    grid-template-columns: minmax(11rem, 1fr) minmax(0, 2.3fr) auto auto;
+    margin-bottom: 0.65rem;
+    padding: clamp(0.65rem, 1.8vw, 1rem);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-surface);
   }
   .search-box {
     display: flex;
@@ -307,24 +323,43 @@
       minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.85fr)
       minmax(0, 1.2fr);
     gap: 0.67rem;
-    grid-column: 2;
-    grid-row: 1;
+    grid-column: 1 / -1;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--ui-border);
   }
   .filters label {
     min-width: 0;
   }
   .apply {
-    grid-column: 3;
+    grid-column: 2;
     grid-row: 1;
   }
-  .filter-control,
-  .filter-toggle,
+  .filter-control {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+  }
+  .filter-toggle {
+    grid-column: 3;
+    grid-row: 1;
+    cursor: pointer;
+  }
+  .filter-control:focus-visible + .filter-toggle {
+    outline: 2px solid var(--ui-focus);
+    outline-offset: 2px;
+  }
+  .filter-control:checked + .filter-toggle {
+    border-color: var(--ui-focus);
+    background: var(--ui-accent-surface);
+    color: var(--ui-link);
+  }
+  .filter-control:not(:checked) ~ .filters,
   .apply-compact {
     display: none;
   }
   .clear-filters {
-    grid-column: 4;
-    grid-row: 1;
+    grid-column: 1 / -1;
     justify-self: start;
     color: var(--ui-link);
     font-size: 0.82rem;
@@ -344,10 +379,18 @@
     color: var(--ui-text-muted);
     font-size: 0.78rem;
     font-weight: 640;
-    background: var(--ui-background);
+    background: transparent;
   }
-  .link-row {
+  .link-row + .link-row {
     border-top: 1px solid var(--ui-border);
+  }
+  .link-row:hover {
+    background: color-mix(
+      in srgb,
+      var(--ui-surface) 82%,
+      var(--ui-accent-surface)
+    );
+    border-radius: inherit;
   }
   .identity {
     display: flex;
@@ -489,54 +532,7 @@
     text-align: end;
   }
 
-  @media (max-width: 1090px) {
-    .link-library {
-      --row-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) auto auto;
-    }
-  }
-  @media (max-width: 1090px) {
-    .toolbar,
-    .toolbar:has(.clear-filters) {
-      grid-template-columns: minmax(0, 1fr) auto auto;
-    }
-    .apply {
-      grid-column: 2;
-    }
-    .filters {
-      grid-column: 1 / -1;
-      grid-row: auto;
-    }
-    .filter-control {
-      position: absolute;
-      display: block;
-      width: 1px;
-      height: 1px;
-      clip-path: inset(50%);
-    }
-    .filter-toggle {
-      display: inline-flex;
-      grid-column: 3;
-      grid-row: 1;
-      cursor: pointer;
-    }
-    .filter-control:focus-visible + .filter-toggle {
-      outline: 2px solid var(--ui-focus);
-      outline-offset: 2px;
-    }
-    .filter-control:checked + .filter-toggle {
-      border-color: var(--ui-focus);
-      background: var(--ui-accent-surface);
-      color: var(--ui-link);
-    }
-    .filter-control:not(:checked) ~ .filters {
-      display: none;
-    }
-    .clear-filters {
-      grid-column: 1 / -1;
-      grid-row: auto;
-    }
-  }
-  @media (max-width: 660px) {
+  @media (max-width: 900px) {
     .column-labels {
       display: none;
     }

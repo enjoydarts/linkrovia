@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { healthMessages } from '../health/messages';
   import { brand } from '$lib/brand';
   import { adminInviteMessages } from '$lib/i18n/admin-invites';
   import { messagesFor } from '$lib/i18n/locale';
@@ -31,23 +30,26 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<div class="max-w-2xl space-y-8">
+<div class="space-y-8">
   <header class="context-header space-y-2">
-    <nav class="context-nav" aria-label={preferences.settings}>
-      <a href="/admin/settings">{preferences.personal}</a>
-      <a href="/admin/settings/security">{messages['admin.security']}</a>
-      <span aria-current="page">{m.title}</span>
-      <a href="/admin/settings/health">{healthMessages(data.locale).title}</a>
-    </nav>
+    <a
+      href="/admin/settings"
+      class="inline-flex items-center gap-2 text-sm font-medium text-link hover:underline"
+    >
+      <span aria-hidden="true">←</span>{preferences.settings}
+    </a>
     <h1 class="text-3xl font-semibold tracking-tight">{m.title}</h1>
     <p>{m.intro}</p>
+    {#if data.available}
+      <a href="#invite-admin" class="admin-button admin-button-primary">
+        {m.invite}
+      </a>
+    {/if}
   </header>
 
   {#if form?.inviteUrl}
     {@const url = form.inviteUrl}
-    <section
-      class="context-panel space-y-3 rounded-lg border border-line bg-surface p-5"
-    >
+    <section class="context-panel space-y-3">
       <label for="invite-url" class="block font-medium">{m.link}</label>
       <p id="invite-help" class="text-sm text-muted">{m.share}</p>
       <input
@@ -72,9 +74,10 @@
 
   {#if data.available}
     <form
+      id="invite-admin"
       method="POST"
       action="?/invite"
-      class="context-panel space-y-3 rounded-lg border border-line bg-surface p-5"
+      class="context-panel scroll-mt-24 space-y-3"
     >
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
       <label for="email" class="block font-medium">
@@ -104,78 +107,83 @@
     <p role="alert">{messages['passkey.unavailable']}</p>
   {/if}
 
-  <section class="space-y-3">
-    <h2 class="text-xl font-semibold">{m.pending}</h2>
-    {#if data.invitations.length}
-      <ul class="divide-y divide-line rounded-lg border border-line">
-        {#each data.invitations as invitation (invitation.id)}
-          <li class="flex flex-wrap items-center justify-between gap-3 p-4">
-            <div class="min-w-0 break-all">
-              <p>{invitation.email}</p>
-              <p class="text-sm text-muted">
-                {m.expires}
-                <time
-                  datetime={new Date(
-                    invitation.expires_at * 1000,
-                  ).toISOString()}
+  <div class="grid items-start gap-5 lg:grid-cols-2">
+    <section class="context-panel space-y-3" aria-label={m.admins}>
+      <h2 class="text-xl font-semibold">{m.admins}</h2>
+      {#if data.admins.length}
+        <ul class="divide-y divide-line rounded-lg border border-line">
+          {#each data.admins as admin (admin.id)}
+            <li class="flex flex-wrap items-center justify-between gap-3 p-4">
+              <p class="min-w-0 break-all">{admin.email}</p>
+              {#if admin.disabled_at !== null}
+                <span class="text-muted">{m.disabled}</span>
+              {:else}
+                <form
+                  method="POST"
+                  action="?/disable"
+                  onsubmit={(event) => {
+                    if (!window.confirm(m.confirmDisable + '\n' + admin.email))
+                      event.preventDefault();
+                  }}
                 >
-                  {format.format(invitation.expires_at * 1000)}
-                </time>
-              </p>
-            </div>
-            <form method="POST" action="?/revoke">
-              <input type="hidden" name="csrfToken" value={data.csrfToken} />
-              <input type="hidden" name="id" value={invitation.id} />
-              <button
-                type="submit"
-                class="admin-button"
-                aria-label={m.revoke + ' · ' + invitation.email}
-              >
-                {m.revoke}
-              </button>
-            </form>
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <p class="text-muted">{m.noInvites}</p>
-    {/if}
-  </section>
-
-  <section class="space-y-3">
-    <h2 class="text-xl font-semibold">{m.admins}</h2>
-    {#if data.admins.length}
-      <ul class="divide-y divide-line rounded-lg border border-line">
-        {#each data.admins as admin (admin.id)}
-          <li class="flex flex-wrap items-center justify-between gap-3 p-4">
-            <p class="min-w-0 break-all">{admin.email}</p>
-            {#if admin.disabled_at !== null}
-              <span class="text-muted">{m.disabled}</span>
-            {:else}
-              <form
-                method="POST"
-                action="?/disable"
-                onsubmit={(event) => {
-                  if (!window.confirm(m.confirmDisable + '\n' + admin.email))
-                    event.preventDefault();
-                }}
-              >
+                  <input
+                    type="hidden"
+                    name="csrfToken"
+                    value={data.csrfToken}
+                  />
+                  <input type="hidden" name="id" value={admin.id} />
+                  <button
+                    type="submit"
+                    class="admin-button admin-button-danger"
+                    aria-label={m.disable + ' · ' + admin.email}
+                  >
+                    {m.disable}
+                  </button>
+                </form>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="text-muted">{m.noAdmins}</p>
+      {/if}
+    </section>
+    <section class="context-panel space-y-3" aria-label={m.pending}>
+      <h2 class="text-xl font-semibold">{m.pending}</h2>
+      {#if data.invitations.length}
+        <ul class="divide-y divide-line rounded-lg border border-line">
+          {#each data.invitations as invitation (invitation.id)}
+            <li class="flex flex-wrap items-center justify-between gap-3 p-4">
+              <div class="min-w-0 break-all">
+                <p>{invitation.email}</p>
+                <p class="text-sm text-muted">
+                  {m.expires}
+                  <time
+                    datetime={new Date(
+                      invitation.expires_at * 1000,
+                    ).toISOString()}
+                  >
+                    {format.format(invitation.expires_at * 1000)}
+                  </time>
+                </p>
+              </div>
+              <form method="POST" action="?/revoke">
                 <input type="hidden" name="csrfToken" value={data.csrfToken} />
-                <input type="hidden" name="id" value={admin.id} />
+                <input type="hidden" name="id" value={invitation.id} />
                 <button
                   type="submit"
-                  class="admin-button admin-button-danger"
-                  aria-label={m.disable + ' · ' + admin.email}
+                  class="admin-button"
+                  aria-label={m.revoke + ' · ' + invitation.email}
                 >
-                  {m.disable}
+                  {m.revoke}
                 </button>
               </form>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <p class="text-muted">{m.noAdmins}</p>
-    {/if}
-  </section>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="text-muted">{m.noInvites}</p>
+      {/if}
+    </section>
+  </div>
 </div>

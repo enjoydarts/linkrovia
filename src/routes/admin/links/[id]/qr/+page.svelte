@@ -16,8 +16,8 @@
   </header>
   <section class="rounded-xl border border-line bg-surface p-6">
     {#if data.url}
-      <div class="flex flex-wrap items-start gap-8">
-        <div class="rounded-lg bg-white p-3 shadow-sm">
+      <div class="qr-workspace">
+        <div class="qr-preview rounded-lg bg-white p-3 shadow-sm">
           <img
             src={`${base}/image/svg`}
             alt={m.preview}
@@ -26,7 +26,7 @@
             class="h-auto w-64 max-w-full"
           />
         </div>
-        <div class="min-w-0 flex-1 space-y-5">
+        <div class="qr-actions min-w-0 space-y-5">
           <div>
             <h2 class="text-sm font-medium">{m.url}</h2>
             <p class="mt-1 break-all text-sm text-muted">
@@ -57,3 +57,23 @@
     {/if}
   </section>
 </div>
+
+<style>
+  .qr-workspace {
+    display: grid;
+    gap: 2rem;
+    align-items: center;
+  }
+  .qr-preview {
+    width: fit-content;
+    max-width: 100%;
+  }
+  .qr-actions {
+    padding-block: 0.5rem;
+  }
+  @media (min-width: 680px) {
+    .qr-workspace {
+      grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+    }
+  }
+</style>

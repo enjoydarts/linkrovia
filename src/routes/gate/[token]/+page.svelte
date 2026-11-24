@@ -63,7 +63,7 @@
       {#if message}<p class="text-negative" role="alert">
           {message}
         </p>{/if}
-      <button type="submit" class="font-medium">{m.continue}</button>
+      <button type="submit" class="w-full font-medium">{m.continue}</button>
     </form>
   {/if}
 </AuthFrame>

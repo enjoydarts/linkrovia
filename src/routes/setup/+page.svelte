@@ -61,6 +61,20 @@
   title={messages['setup.title']}
   description={messages['setup.subtitle']}
 >
+  <nav class="setup-progress" aria-label={messages['setup.title']}>
+    <span class:current={data.step === 'token'}>
+      <b>01</b>
+      {messages['setup.step1']}
+    </span>
+    <span class:current={data.step === 'management'}>
+      <b>02</b>
+      {domainMessages.heading}
+    </span>
+    <span class:current={data.step === 'owner'}>
+      <b>03</b>
+      {messages['setup.step2']}
+    </span>
+  </nav>
   <div class="space-y-8">
     {#if data.step === 'token'}
       <section class="space-y-5">
@@ -180,16 +194,22 @@
             <p role="status">{connecting ? domainMessages.connecting : ''}</p>
           </form>
         {/if}
-        <form method="POST" action="?/useDeployment" class="space-y-3">
-          <p>{domainMessages.fallback}</p>
-          <p class="break-all font-medium">{data.hostname}</p>
-          <button
-            type="submit"
-            class="rounded-md border border-control bg-surface px-4 py-2 font-medium"
-          >
-            {domainMessages.useCurrent}
-          </button>
-        </form>
+        <details
+          class="deployment-option"
+          open={!data.customAvailable && !data.customSetupUrl}
+        >
+          <summary>{domainMessages.useCurrent}</summary>
+          <form method="POST" action="?/useDeployment" class="space-y-3">
+            <p>{domainMessages.fallback}</p>
+            <p class="break-all font-medium">{data.hostname}</p>
+            <button
+              type="submit"
+              class="rounded-md border border-control bg-surface px-4 py-2 font-medium"
+            >
+              {domainMessages.useCurrent}
+            </button>
+          </form>
+        </details>
       </section>
     {:else if data.step === 'owner'}
       <section class="space-y-5">
@@ -264,3 +284,36 @@
     {/if}
   </div>
 </AuthFrame>
+
+<style>
+  .setup-progress {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--ui-border);
+  }
+  .setup-progress span {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    color: var(--ui-text-muted);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+  .setup-progress b {
+    font-family: var(--ui-mono);
+    font-size: 0.75rem;
+  }
+  .setup-progress .current {
+    color: var(--ui-link);
+    font-weight: 700;
+  }
+  .deployment-option summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .deployment-option form {
+    margin-top: 0.75rem;
+  }
+</style>

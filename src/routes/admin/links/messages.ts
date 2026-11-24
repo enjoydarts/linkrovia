@@ -85,11 +85,62 @@ export const listMessages = {
 } satisfies Record<Locale, ListMessages>;
 
 export const detailNavigation = {
-  en: 'Link tools',
-  ja: 'リンクツール',
-  'zh-CN': '链接工具',
-  'zh-TW': '連結工具',
-  es: 'Herramientas del enlace',
-  it: 'Strumenti del link',
-  fr: 'Outils du lien',
-} satisfies Record<Locale, string>;
+  en: {
+    configuration: 'Configuration',
+    performance: 'Performance',
+    sharing: 'Sharing',
+    sections: 'Link sections',
+    noMatches: 'No links match these filters.',
+  },
+  ja: {
+    configuration: '転送と設定',
+    performance: '計測',
+    sharing: '共有',
+    sections: 'リンクの各種設定',
+    noMatches: '条件に一致するリンクがありません。',
+  },
+  'zh-CN': {
+    configuration: '配置',
+    performance: '表现',
+    sharing: '分享',
+    sections: '链接设置',
+    noMatches: '没有链接符合这些筛选条件。',
+  },
+  'zh-TW': {
+    configuration: '設定',
+    performance: '成效',
+    sharing: '分享',
+    sections: '連結設定',
+    noMatches: '沒有連結符合這些篩選條件。',
+  },
+  es: {
+    configuration: 'Configuración',
+    performance: 'Rendimiento',
+    sharing: 'Compartir',
+    sections: 'Secciones del enlace',
+    noMatches: 'Ningún enlace coincide con estos filtros.',
+  },
+  it: {
+    configuration: 'Configurazione',
+    performance: 'Prestazioni',
+    sharing: 'Condivisione',
+    sections: 'Sezioni del link',
+    noMatches: 'Nessun link corrisponde a questi filtri.',
+  },
+  fr: {
+    configuration: 'Configuration',
+    performance: 'Performances',
+    sharing: 'Partage',
+    sections: 'Sections du lien',
+    noMatches: 'Aucun lien ne correspond à ces filtres.',
+  },
+} satisfies Record<
+  Locale,
+  {
+    configuration: string;
+    performance: string;
+    sharing: string;
+    sections: string;
+    noMatches: string;
+  }
+>;

@@ -11,6 +11,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   baseURL,
 }, testInfo) => {
   test.setTimeout(90_000);
+  page.setDefaultTimeout(12_000);
   const email = 'owner@example.com';
   const password = 'a long development passphrase';
   const csvExpiry = '2099-12-31T00:15:00Z';
@@ -69,6 +70,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
 
   await test.step('create a short link on the deployment hostname', async () => {
     await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
+    await page.locator('.link-options > summary').click();
     const redirectStatus = page.locator('select[name=status]');
     const cacheWarning = page.getByText(/may cache this redirect/);
     await expect(cacheWarning).toBeHidden();
@@ -144,7 +146,6 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         name: 'Links',
         exact: true,
       });
-      await detailsTabs.getByText('Link tools', { exact: true }).click();
       await detailsTabs.getByRole('link', { name: 'Rule simulator' }).click();
       await expect(page).toHaveURL(`${linkPage}/simulate`);
       await page.getByLabel('Country code').fill('JP');
@@ -165,6 +166,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         page.getByRole('heading', { name: 'Analytics', exact: true }),
       ).toBeVisible();
       await expect(page.getByText('Sample data')).toBeVisible();
+      await page.locator('label[for="report-filters-toggle"]').click();
       await expect(
         page
           .getByRole('combobox', { name: 'Domain', exact: true })
@@ -195,6 +197,9 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       );
 
       await page.getByRole('link', { name: 'Last 7 days' }).click();
+      if (!(await page.locator('#report-filters-toggle').isChecked())) {
+        await page.locator('label[for="report-filters-toggle"]').click();
+      }
       await page.getByLabel('Group by').selectOption('week');
       await page.getByRole('button', { name: 'Apply', exact: true }).click();
       await expect(
@@ -216,7 +221,6 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await expect(
         page.getByText('A fixture link', { exact: true }),
       ).toBeVisible();
-      await linkTabs.getByText('Link tools', { exact: true }).click();
       await linkTabs.locator('a[href$="/qr"]').click();
       await expect(page).toHaveURL(`${linkPage}/qr`);
       await linkTabs.getByRole('link', { name: 'Analytics' }).click();
@@ -383,9 +387,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     const toolbar = page.getByRole('search', { name: 'Search links' });
     const expectSingleRow = async () => {
       const centers = await toolbar
-        .locator(
-          '#link-search, select, input[name=tag], .apply, .clear-filters',
-        )
+        .locator('#link-search, .apply, .filter-toggle')
         .evaluateAll((controls) =>
           controls.map((control) => {
             const rect = control.getBoundingClientRect();
@@ -396,6 +398,8 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     };
     await expectSingleRow();
     await toolbar.getByRole('searchbox').fill('fixture link');
+    await expect(toolbar.getByLabel('Sort by')).toBeHidden();
+    await toolbar.locator('label[for="list-filters-toggle"]').click();
     await toolbar.getByLabel('Sort by').selectOption('created_asc');
     await toolbar.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page).toHaveURL(/\/admin\/links\?q=fixture\+link/);
@@ -493,7 +497,11 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     } finally {
       await withoutJs.close();
     }
-    await page.getByRole('link', { name: 'CSV import' }).click();
+    await page
+      .locator('.rail')
+      .getByRole('link', { name: 'Link tools', exact: true })
+      .click();
+    await expect(page).toHaveURL('/admin/import');
     const csvFile = page.getByLabel('CSV file');
     await expect(csvFile).toBeEnabled();
     await csvFile.setInputFiles({
@@ -538,7 +546,6 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(page).toHaveURL(/\/admin\/links\/[a-f0-9-]{36}$/);
     const editUrl = page.url();
     const tabs = page.getByRole('navigation', { name: 'Links', exact: true });
-    await tabs.getByText('Link tools', { exact: true }).click();
     await expect(
       tabs.getByRole('link', { name: 'Link protection' }),
     ).toBeVisible();
@@ -553,7 +560,6 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     ).toBeVisible();
 
     await page.goto(editUrl);
-    await tabs.getByText('Link tools', { exact: true }).click();
     await expect(tabs.getByRole('link', { name: 'QR code' })).toBeVisible();
     await page.getByRole('link', { name: 'QR code' }).click();
     await page.getByRole('button', { name: 'Create QR code' }).click();
@@ -1094,8 +1100,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await personal.locator('button[type=submit]').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(
-      page.getByRole('link', { name: 'Liens', exact: true }),
-    ).toBeVisible();
+      page
+        .locator('.sidebar')
+        .getByRole('link', { name: 'Paramètres', exact: true }),
+    ).toHaveAttribute('aria-current', 'page');
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(personal.locator('[name=locale]')).toHaveValue('fr');
@@ -1149,6 +1157,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(expiry).toContainText('01:15');
 
     await page.goto('/admin/links/new');
+    await page.locator('.link-options > summary').click();
     const start = page.locator('#startsAt');
     const startChoice = page.locator('#startFold');
     await start.fill('2026-10-25T02:30:00');
@@ -1321,14 +1330,21 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       'https://example.net/japan',
     );
 
-    await tabs.getByText('Link tools', { exact: true }).click();
     await tabs.getByRole('link', { name: 'Campaign parameters' }).click();
     await expect(
       page.getByRole('heading', { level: 1, name: 'Campaign parameters' }),
     ).toBeVisible();
-    const featured = page
-      .getByRole('form')
-      .filter({ hasText: 'https://example.net/featured?fixed=1#section' });
+    const featuredTarget = page
+      .locator('details[name=utm-target] > summary')
+      .filter({ hasText: 'Targeting rule 1' });
+    await expect(featuredTarget).toContainText(
+      'https://example.net/featured?fixed=1#section',
+    );
+    await featuredTarget.click();
+    const featured = page.getByRole('form', {
+      name: 'Targeting rule 1',
+      exact: true,
+    });
     await featured.getByLabel('utm_source', { exact: true }).fill('newsletter');
     await featured.getByRole('button', { name: 'Preview URL' }).click();
     await expect(
@@ -1340,6 +1356,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await featured.getByRole('button', { name: 'Save settings' }).click();
     await expect(featured.getByRole('status')).toHaveText('Settings saved.');
 
+    await page
+      .locator('details[name=utm-target] > summary')
+      .filter({ hasText: 'Default destination' })
+      .click();
     const fallback = page.getByRole('form', { name: 'Default destination' });
     const fallbackSource = fallback.getByLabel('utm_source', { exact: true });
     await fallbackSource.fill('general');
@@ -1363,7 +1383,6 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       'https://example.org/default?fixed=1&utm_source=general#section',
     );
 
-    await tabs.getByText('Link tools', { exact: true }).click();
     await tabs.getByRole('link', { name: 'Rule simulator' }).click();
     await page.getByLabel('Country code').fill('JP');
     await page.getByLabel('Language tag').fill('ja');

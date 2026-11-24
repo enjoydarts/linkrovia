@@ -4,10 +4,12 @@ This changelog tracks changes during active development. See the [deployment gui
 
 ## Unreleased
 
+- Reworked the public and owner setup screens and redesigned the admin workspace, including grouped navigation, link configuration, reports, provisioning, and instance settings.
+- Put routine search, link creation, and saved-link actions first and made detailed filters and scheduling options available on demand.
 - Added an owner-only operations health screen for D1, Analytics SQL, click archive gaps, conversion backlog, and the deployed Worker version.
 - Extended long-range click reports with retained Analytics Engine data after the last saved UTC day.
 - Fixed Cloudflare Analytics SQL errors when loading click breakdowns.
-- Simplified workspace navigation and link editing, with collapsible redirect rules and a single link-tools menu.
+- Made redirect rules scannable with a summary and an editor for each rule.
 - Generate six-character alphanumeric short paths when the slug is left blank.
 - Unified administration headings, forms, actions, and tabs and aligned link search controls in a single responsive toolbar.
 - Show schedule choices only when a local time occurs twice, with the UTC time for each occurrence.

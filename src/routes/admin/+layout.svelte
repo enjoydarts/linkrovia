@@ -57,11 +57,15 @@
         ]
       : []),
     { href: '/admin/settings', label: preferences.settings, icon: Settings },
-    {
-      href: '/admin/settings/security',
-      label: messages['admin.security'],
-      icon: Shield,
-    },
+    ...(data.user.role === 'owner'
+      ? [
+          {
+            href: '/admin/settings/security',
+            label: messages['admin.security'],
+            icon: Shield,
+          },
+        ]
+      : []),
     {
       href: '/admin/api-keys',
       label: messages['admin.apiKeys'],
@@ -77,9 +81,40 @@
     it: ['Area di lavoro', 'Strumenti per link', 'Istanza'],
     fr: ['Espace de travail', 'Outils de liens', 'Instance'],
   } as const;
+  const groupKeys = ['workspace', 'tools', 'instance'] as const;
+  type GroupKey = (typeof groupKeys)[number];
+  function groupFor(href: string): GroupKey {
+    if (
+      href === '/admin' ||
+      href === '/admin/links' ||
+      href === '/admin/analytics'
+    )
+      return 'workspace';
+    if (href === '/admin/import' || href === '/admin/utm') return 'tools';
+    return 'instance';
+  }
+  let groups = $derived(
+    groupKeys.map((key, index) => ({
+      key,
+      label: groupLabels[data.locale][index],
+      items: nav.filter((item) => groupFor(item.href) === key),
+      icon:
+        key === 'workspace'
+          ? LayoutDashboard
+          : key === 'tools'
+            ? Route
+            : Settings,
+    })),
+  );
+  let currentGroup = $derived(
+    groupFor(
+      (nav.find((item) => active(item.href, page.url.pathname)) ?? nav[0]).href,
+    ),
+  );
   let currentItem = $derived(
     nav.find((item) => active(item.href, page.url.pathname)) ?? nav[0],
   );
+  let currentSection = $derived(groups.find(({ key }) => key === currentGroup));
   let drawer: HTMLDialogElement;
   const menuLabels = {
     en: 'Open navigation',
@@ -111,36 +146,49 @@
   }
 </script>
 
-{#snippet navigation()}
+{#snippet navigation(all = false)}
   <nav aria-label={messages['admin.title']} class="navigation">
-    {#each nav as item, index (item.href)}
-      {#if index === 0 || item.href === '/admin/import' || item.href === '/admin/domains'}
-        <p class="nav-group">
-          {groupLabels[data.locale][
-            index === 0 ? 0 : item.href === '/admin/import' ? 1 : 2
-          ]}
-        </p>
+    {#each groups as group (group.key)}
+      {#if all || group.key === currentGroup}
+        {#if all}<p class="nav-group">{group.label}</p>{/if}
+        {#each group.items as item (item.href)}
+          <a
+            href={item.href}
+            aria-current={active(item.href, page.url.pathname)
+              ? item.href === page.url.pathname
+                ? 'page'
+                : 'location'
+              : undefined}
+            onclick={() => drawer?.close()}
+          >
+            <span class="nav-icon">
+              <item.icon size={18} strokeWidth={1.8} aria-hidden="true" />
+            </span>
+            <span>{item.label}</span>
+          </a>
+        {/each}
       {/if}
-      <a
-        href={item.href}
-        aria-current={active(item.href, page.url.pathname)
-          ? item.href === page.url.pathname
-            ? 'page'
-            : 'location'
-          : undefined}
-        onclick={() => drawer?.close()}
-      >
-        <span class="nav-icon">
-          <item.icon size={18} strokeWidth={1.8} aria-hidden="true" />
-        </span>
-        <span>{item.label}</span>
-      </a>
     {/each}
   </nav>
 {/snippet}
 <div class="admin-shell">
+  <aside class="rail" aria-label={messages['admin.title']}>
+    <Brand href="/admin" iconOnly tone="dark" />
+    <div class="rail-divider"></div>
+    {#each groups as group (group.key)}
+      <a
+        href={group.items[0].href}
+        aria-label={group.label}
+        title={group.label}
+        aria-current={group.key === currentGroup ? 'true' : undefined}
+        class:rail-active={group.key === currentGroup}
+      >
+        <group.icon size={20} aria-hidden="true" />
+      </a>
+    {/each}
+  </aside>
   <aside class="sidebar">
-    <div class="brand-wrap"><Brand href="/admin" /></div>
+    <p class="sidebar-title">{currentSection?.label}</p>
     {@render navigation()}
   </aside>
   <dialog
@@ -161,7 +209,7 @@
         </button>
       </form>
     </div>
-    {@render navigation()}
+    {@render navigation(true)}
   </dialog>
   <div class="admin-content">
     <header class="topbar">
@@ -211,13 +259,48 @@
   .admin-shell {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-columns: 68px 220px minmax(0, 1fr);
     background: var(--ui-background);
     color: var(--ui-text);
   }
+  .rail {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 10px;
+    background: #101b32;
+    color: #c3d3dc;
+  }
+  .rail-divider {
+    width: 28px;
+    height: 1px;
+    margin: 12px 0 4px;
+    background: #34465a;
+  }
+  .rail > a {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: 12px;
+    color: inherit;
+  }
+  .rail > a:hover,
+  .rail > a.rail-active {
+    background: #28414d;
+    color: #6cf0df;
+  }
+  .rail > a:focus-visible {
+    outline: 3px solid #5eead4;
+    outline-offset: 2px;
+  }
   .sidebar,
   .drawer {
-    background: light-dark(var(--ui-surface), var(--brand-ink));
+    background: light-dark(#f9fbfc, #111d30);
     color: var(--ui-text);
   }
   .sidebar {
@@ -228,8 +311,16 @@
     overflow-y: auto;
     border-inline-end: 1px solid var(--ui-border);
   }
-  .brand-wrap {
-    padding: 0 10px 18px;
+  .sidebar-title {
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    margin: 0 0 1rem;
+    padding-inline: 0.7rem;
+    color: var(--ui-text);
+    font-size: 1rem;
+    font-weight: 720;
+    overflow-wrap: anywhere;
   }
   .navigation {
     display: flex;
@@ -237,7 +328,7 @@
     gap: 4px;
   }
   .nav-group {
-    margin: 20px 11px 7px;
+    margin: 22px 11px 8px;
     color: var(--ui-text-muted);
     font-size: 10px;
     font-weight: 700;
@@ -253,7 +344,7 @@
     min-height: 38px;
     padding: 6px 11px 6px 8px;
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: 10px;
     color: var(--ui-text-muted);
     font-size: 14px;
     font-weight: 530;
@@ -277,7 +368,8 @@
   .navigation a[aria-current] {
     background: light-dark(var(--ui-accent-surface), var(--brand-ink-panel));
     color: var(--ui-link);
-    font-weight: 640;
+    box-shadow: inset 3px 0 var(--ui-primary);
+    font-weight: 700;
   }
   .navigation a:focus-visible,
   .drawer-close:focus-visible {
@@ -288,14 +380,14 @@
     min-width: 0;
   }
   .topbar {
-    min-height: 64px;
+    min-height: 72px;
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 20px;
     padding: 10px 32px;
     border-bottom: 1px solid var(--ui-border);
-    background: var(--ui-surface);
+    background: light-dark(rgb(255 255 255 / 80%), rgb(18 32 54 / 88%));
   }
   .topbar-context {
     display: flex;
@@ -356,9 +448,9 @@
     text-decoration: underline;
   }
   .main-content {
-    max-width: 1280px;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: 36px 32px 72px;
+    padding: 44px clamp(28px, 4vw, 64px) 80px;
   }
   .menu-button {
     display: none;
@@ -394,7 +486,8 @@
     .admin-shell {
       display: block;
     }
-    .sidebar {
+    .sidebar,
+    .rail {
       display: none;
     }
     .topbar {

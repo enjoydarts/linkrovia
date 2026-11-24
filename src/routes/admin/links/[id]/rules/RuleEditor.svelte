@@ -236,6 +236,32 @@
     class="min-w-0 space-y-4"
     disabled={!interactive || pending || failure === 'stale_link'}
   >
+    <div class="flex flex-wrap gap-3">
+      <button
+        id="add-rule"
+        type="button"
+        class={buttonClass}
+        onclick={addRule}
+        disabled={rules.length >= data.limits.maxRules}
+      >
+        {m.addRule}
+      </button>
+      <button
+        type="submit"
+        disabled={payload === initialPayload}
+        class="admin-button admin-button-primary disabled:opacity-50"
+      >
+        {pending ? m.saving : m.save}
+      </button>
+    </div>
+
+    <dl class="rounded-xl border border-line bg-surface p-4 text-sm">
+      <dt class="font-semibold">{m.defaultDestination}</dt>
+      <dd class="mt-2 break-all text-muted">
+        <code>{data.destinationUrl}</code>
+      </dd>
+    </dl>
+
     {#if !rules.length}
       <p class="text-sm text-muted">{m.empty}</p>
     {/if}
@@ -451,32 +477,6 @@
         {/if}
       </fieldset>
     {/each}
-
-    <dl class="rounded-xl border border-line bg-surface p-4 text-sm">
-      <dt class="font-semibold">{m.defaultDestination}</dt>
-      <dd class="mt-2 break-all text-muted">
-        <code>{data.destinationUrl}</code>
-      </dd>
-    </dl>
-
-    <div class="flex flex-wrap gap-3">
-      <button
-        id="add-rule"
-        type="button"
-        class={buttonClass}
-        onclick={addRule}
-        disabled={rules.length >= data.limits.maxRules}
-      >
-        {m.addRule}
-      </button>
-      <button
-        type="submit"
-        disabled={payload === initialPayload}
-        class="admin-button admin-button-primary disabled:opacity-50"
-      >
-        {pending ? m.saving : m.save}
-      </button>
-    </div>
   </fieldset>
 </form>
 <noscript><p class="text-sm text-muted">{m.javascript}</p></noscript>

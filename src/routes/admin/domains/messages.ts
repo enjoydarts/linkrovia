@@ -409,13 +409,48 @@ const guidance: Partial<
 };
 
 const assignmentStatuses = {
-  en: { provisioning: 'Assigning', warning: 'Needs attention' },
-  ja: { provisioning: '割り当て中', warning: '要確認' },
-  'zh-CN': { provisioning: '正在分配', warning: '需要处理' },
-  'zh-TW': { provisioning: '指派中', warning: '需要處理' },
-  es: { provisioning: 'Asignando', warning: 'Requiere atención' },
-  it: { provisioning: 'Assegnazione in corso', warning: 'Richiede attenzione' },
-  fr: { provisioning: 'Attribution en cours', warning: 'Action requise' },
+  en: {
+    awaiting_authorization: 'Waiting for authorization',
+    awaiting_dns: 'Waiting for DNS',
+    provisioning: 'Assigning',
+    warning: 'Needs attention',
+  },
+  ja: {
+    awaiting_authorization: '承認待ち',
+    awaiting_dns: 'DNS の反映待ち',
+    provisioning: '割り当て中',
+    warning: '要確認',
+  },
+  'zh-CN': {
+    awaiting_authorization: '等待授权',
+    awaiting_dns: '等待 DNS 生效',
+    provisioning: '正在分配',
+    warning: '需要处理',
+  },
+  'zh-TW': {
+    awaiting_authorization: '等待授權',
+    awaiting_dns: '等待 DNS 生效',
+    provisioning: '指派中',
+    warning: '需要處理',
+  },
+  es: {
+    awaiting_authorization: 'Esperando autorización',
+    awaiting_dns: 'Esperando al DNS',
+    provisioning: 'Asignando',
+    warning: 'Requiere atención',
+  },
+  it: {
+    awaiting_authorization: 'In attesa di autorizzazione',
+    awaiting_dns: 'In attesa del DNS',
+    provisioning: 'Assegnazione in corso',
+    warning: 'Richiede attenzione',
+  },
+  fr: {
+    awaiting_authorization: 'En attente d’autorisation',
+    awaiting_dns: 'En attente du DNS',
+    provisioning: 'Attribution en cours',
+    warning: 'Action requise',
+  },
 } as const;
 
 export function domainMessages(locale: Locale): DomainMessages {

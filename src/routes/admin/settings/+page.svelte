@@ -1,5 +1,9 @@
 <script lang="ts">
   import { adminInviteMessages } from '$lib/i18n/admin-invites';
+  import { apiKeyMessages } from '../api-keys/messages';
+  import { backupMessages } from '../backup/messages';
+  import { domainMessages } from '../domains/messages';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
   import { healthMessages } from './health/messages';
   import { brand } from '$lib/brand';
   import { messagesFor } from '$lib/i18n/locale';
@@ -22,6 +26,55 @@
     fr: ['Préférences personnelles', 'Valeurs par défaut de l’instance'],
   } as const;
   let scopes = $derived(scopeLabels[data.locale]);
+  const directoryLabels = {
+    en: ['Access and integrations', 'Instance operations'],
+    ja: ['アクセスと連携', 'インスタンスの運用'],
+    'zh-CN': ['访问与集成', '实例运维'],
+    'zh-TW': ['存取與整合', '執行個體維運'],
+    es: ['Acceso e integraciones', 'Operaciones de la instancia'],
+    it: ['Accesso e integrazioni', 'Operazioni dell’istanza'],
+    fr: ['Accès et intégrations', 'Exploitation de l’instance'],
+  } as const;
+  let [access, operations] = $derived(directoryLabels[data.locale]);
+  let directories = $derived([
+    {
+      label: access,
+      entries: [
+        { href: '/admin/api-keys', label: apiKeyMessages(data.locale).title },
+        ...(data.isOwner
+          ? [
+              {
+                href: '/admin/settings/security',
+                label: messagesFor(data.locale)['admin.security'],
+              },
+              {
+                href: '/admin/settings/admins',
+                label: adminInviteMessages[data.locale].title,
+              },
+              { href: '/admin/integrations/mcp', label: 'MCP' },
+            ]
+          : []),
+      ],
+    },
+    {
+      label: operations,
+      entries: [
+        { href: '/admin/domains', label: domainMessages(data.locale).domains },
+        ...(data.isOwner
+          ? [
+              {
+                href: '/admin/settings/health',
+                label: healthMessages(data.locale).title,
+              },
+              {
+                href: '/admin/backup',
+                label: backupMessages(data.locale).title,
+              },
+            ]
+          : []),
+      ],
+    },
+  ]);
 
   function zoneExamples(zone: string) {
     if (!data.timeZones.includes(zone)) return [];
@@ -50,159 +103,172 @@
   }
 </script>
 
-<svelte:head><title>{m.personal} · {brand.name}</title></svelte:head>
-<div class="max-w-2xl space-y-8">
-  <header class="context-header space-y-2">
-    <nav class="context-nav" aria-label={m.settings}>
-      <span aria-current="page">{m.personal}</span><a
-        href="/admin/settings/security"
-      >
-        {messagesFor(data.locale)['admin.security']}
-      </a>
-      {#if data.isOwner}
-        <a href="/admin/settings/health">{healthMessages(data.locale).title}</a>
-        <a href="/admin/settings/admins">
-          {adminInviteMessages[data.locale].title}
-        </a>
-      {/if}
-    </nav>
-    <h1 class="text-3xl font-semibold tracking-tight">{m.personal}</h1>
-    <p>{m.intro}</p>
-    <p class="text-sm text-muted">
-      {m.effective}: {data.timeZone}
-    </p>
+<svelte:head><title>{m.settings} · {brand.name}</title></svelte:head>
+<div class="space-y-8">
+  <header
+    class="workspace-intro flex flex-wrap items-end justify-between gap-4"
+  >
+    <h1>{m.settings}</h1>
+    <a href="#personal-preferences" class="admin-button">{m.personal}</a>
   </header>
-  {#if data.saved === 'personal'}<p role="status">
-      {m.saved}
-    </p>{:else if data.saved === 'global'}<p role="status">
-      {m.globalSaved}
-    </p>{/if}
+  <div class="grid items-start gap-5 md:grid-cols-2">
+    {#each directories as directory (directory.label)}
+      <section class="context-panel space-y-3" aria-label={directory.label}>
+        <h2 class="text-lg font-semibold">{directory.label}</h2>
+        <ul class="divide-y divide-line">
+          {#each directory.entries as entry (entry.href)}
+            <li>
+              <a
+                href={entry.href}
+                class="flex items-center justify-between gap-4 py-3 font-medium text-link hover:underline"
+              >
+                <span>{entry.label}</span>
+                <ArrowRight size={16} aria-hidden="true" class="shrink-0" />
+              </a>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/each}
+  </div>
   <datalist id="time-zones">
     {#each data.timeZones as zone (zone)}<option
         value={zone}
         label={zone.replaceAll('_', ' ').replaceAll('/', ' · ')}
       ></option>{/each}
   </datalist>
-  <form
-    method="POST"
-    action="?/personal"
-    class="context-panel space-y-5 rounded-lg border border-line bg-surface p-5"
-  >
-    <input type="hidden" name="csrfToken" value={data.csrfToken} />
-    <h2 class="text-lg font-semibold">{scopes[0]}</h2>
-    <div class="space-y-2">
-      <label for="locale" class="block font-medium">{m.language}</label><select
-        id="locale"
-        name="locale"
-        class="admin-control w-full"
-      >
-        {#each locales as locale (locale)}<option
-            value={locale}
-            lang={locale}
-            selected={locale === data.locale}
-          >
-            {localeNames[locale]}
-          </option>{/each}
-      </select>
-    </div>
-    <div class="space-y-2">
-      <label for="timezone" class="block font-medium">{m.userZone}</label><input
-        id="timezone"
-        name="timezone"
-        type="text"
-        list="time-zones"
-        bind:value={userZone}
-        aria-describedby="user-zone-help user-zone-example"
-        autocomplete="off"
-        class="admin-control w-full"
-      />
-      <p id="user-zone-help" class="text-sm text-muted">
-        {m.userHelp}
-      </p>
-      <p
-        id="user-zone-example"
-        class="text-sm text-muted tabular-nums"
-        aria-live="polite"
-      >
-        {zoneExamples(userZone || data.defaultZone).join(' · ')}
-      </p>
-    </div>
-    <div class="space-y-2">
-      <label for="theme" class="block font-medium">{m.appearance}</label>
-      <select id="theme" name="theme" class="admin-control w-full">
-        {#each themes as theme (theme)}
-          <option value={theme} selected={theme === data.theme}>
-            {m[`${theme}Theme`]}
-          </option>
-        {/each}
-      </select>
-    </div>
-    {#if form?.section === 'personal'}<p role="alert" class="text-negative">
-        {m.invalid}
-      </p>{/if}
-    <button type="submit" class="admin-button admin-button-primary">
-      {m.save}
-    </button>
-  </form>
-  {#if data.isOwner}<form
+  <div class="grid items-start gap-5 xl:grid-cols-2">
+    <form
+      id="personal-preferences"
+      aria-labelledby="personal-preferences-heading"
       method="POST"
-      action="?/defaultZone"
-      class="context-panel space-y-5 rounded-lg border border-line bg-surface p-5"
+      action="?/personal"
+      class="context-panel scroll-mt-24 space-y-5"
     >
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
-      <h2 class="text-lg font-semibold">{scopes[1]}</h2>
-      <div class="space-y-2">
-        <label for="default-timezone" class="block font-medium">
-          {m.defaultZone}
-        </label><input
-          id="default-timezone"
-          name="timezone"
-          type="text"
-          required
-          list="time-zones"
-          bind:value={defaultZone}
-          aria-describedby="default-zone-help default-zone-example"
-          autocomplete="off"
-          class="admin-control w-full"
-        />
-        <p id="default-zone-help" class="text-sm text-muted">
-          {m.defaultHelp}
-        </p>
-        <p
-          id="default-zone-example"
-          class="text-sm text-muted tabular-nums"
-          aria-live="polite"
-        >
-          {zoneExamples(defaultZone).join(' · ')}
-        </p>
+      <div class="space-y-1">
+        <h2 id="personal-preferences-heading" class="text-lg font-semibold">
+          {scopes[0]}
+        </h2>
+        <p class="text-sm text-muted">{m.intro}</p>
+        <p class="text-sm text-muted">{m.effective}: {data.timeZone}</p>
+        {#if data.saved === 'personal'}<p role="status">{m.saved}</p>{/if}
       </div>
       <div class="space-y-2">
-        <label for="default-locale" class="block font-medium">
-          {m.defaultLanguage}
-        </label>
-        <select
-          id="default-locale"
-          name="defaultLocale"
-          aria-describedby="default-locale-help"
-          class="admin-control w-full"
-        >
+        <label for="locale" class="block font-medium">
+          {m.language}
+        </label><select id="locale" name="locale" class="admin-control w-full">
           {#each locales as locale (locale)}<option
               value={locale}
               lang={locale}
-              selected={locale === data.defaultLocale}
+              selected={locale === data.locale}
             >
               {localeNames[locale]}
             </option>{/each}
         </select>
-        <p id="default-locale-help" class="text-sm text-muted">
-          {m.defaultLanguageHelp}
+      </div>
+      <div class="space-y-2">
+        <label for="timezone" class="block font-medium">
+          {m.userZone}
+        </label><input
+          id="timezone"
+          name="timezone"
+          type="text"
+          list="time-zones"
+          bind:value={userZone}
+          aria-describedby="user-zone-help user-zone-example"
+          autocomplete="off"
+          class="admin-control w-full"
+        />
+        <p id="user-zone-help" class="text-sm text-muted">
+          {m.userHelp}
+        </p>
+        <p
+          id="user-zone-example"
+          class="text-sm text-muted tabular-nums"
+          aria-live="polite"
+        >
+          {zoneExamples(userZone || data.defaultZone).join(' · ')}
         </p>
       </div>
-      {#if form?.section === 'global'}<p role="alert" class="text-negative">
-          {m.invalidZone}
+      <div class="space-y-2">
+        <label for="theme" class="block font-medium">{m.appearance}</label>
+        <select id="theme" name="theme" class="admin-control w-full">
+          {#each themes as theme (theme)}
+            <option value={theme} selected={theme === data.theme}>
+              {m[`${theme}Theme`]}
+            </option>
+          {/each}
+        </select>
+      </div>
+      {#if form?.section === 'personal'}<p role="alert" class="text-negative">
+          {m.invalid}
         </p>{/if}
       <button type="submit" class="admin-button admin-button-primary">
         {m.save}
       </button>
-    </form>{/if}
+    </form>
+    {#if data.isOwner}<form
+        method="POST"
+        action="?/defaultZone"
+        class="context-panel space-y-5 rounded-lg border border-line bg-surface p-5"
+      >
+        <input type="hidden" name="csrfToken" value={data.csrfToken} />
+        <h2 class="text-lg font-semibold">{scopes[1]}</h2>
+        {#if data.saved === 'global'}<p role="status">{m.globalSaved}</p>{/if}
+        <div class="space-y-2">
+          <label for="default-timezone" class="block font-medium">
+            {m.defaultZone}
+          </label><input
+            id="default-timezone"
+            name="timezone"
+            type="text"
+            required
+            list="time-zones"
+            bind:value={defaultZone}
+            aria-describedby="default-zone-help default-zone-example"
+            autocomplete="off"
+            class="admin-control w-full"
+          />
+          <p id="default-zone-help" class="text-sm text-muted">
+            {m.defaultHelp}
+          </p>
+          <p
+            id="default-zone-example"
+            class="text-sm text-muted tabular-nums"
+            aria-live="polite"
+          >
+            {zoneExamples(defaultZone).join(' · ')}
+          </p>
+        </div>
+        <div class="space-y-2">
+          <label for="default-locale" class="block font-medium">
+            {m.defaultLanguage}
+          </label>
+          <select
+            id="default-locale"
+            name="defaultLocale"
+            aria-describedby="default-locale-help"
+            class="admin-control w-full"
+          >
+            {#each locales as locale (locale)}<option
+                value={locale}
+                lang={locale}
+                selected={locale === data.defaultLocale}
+              >
+                {localeNames[locale]}
+              </option>{/each}
+          </select>
+          <p id="default-locale-help" class="text-sm text-muted">
+            {m.defaultLanguageHelp}
+          </p>
+        </div>
+        {#if form?.section === 'global'}<p role="alert" class="text-negative">
+            {m.invalidZone}
+          </p>{/if}
+        <button type="submit" class="admin-button admin-button-primary">
+          {m.save}
+        </button>
+      </form>{/if}
+  </div>
 </div>

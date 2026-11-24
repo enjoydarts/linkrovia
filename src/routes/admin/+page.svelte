@@ -78,11 +78,33 @@
   <title>{messages['admin.title']} · {brand.name}</title>
 </svelte:head>
 <div class="overview">
-  <header class="workspace-intro overview-header">
-    <h1>{messages['admin.title']}</h1>
-    <a href="/admin/links/new" class="admin-button admin-button-primary">
-      <Plus size={17} aria-hidden="true" />{links.create}
-    </a>
+  <header class="overview-header">
+    <div class="hero-copy">
+      <h1>{messages['admin.title']}</h1>
+      <div class="hero-actions">
+        <a href="/admin/links/new" class="admin-button admin-button-primary">
+          <Plus size={17} aria-hidden="true" />{links.create}
+        </a>
+        <a href="/admin/links" class="hero-link">
+          {links.links} <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+    {#if data.report}
+      <div class="hero-metric">
+        <span>{analytics.clicks} · {labels[0]}</span>
+        <strong>
+          {data.report.totalClicks?.toLocaleString(data.locale) ?? '—'}
+        </strong>
+        <span>{data.report.meta.from} – {data.report.meta.to}</span>
+        <span>
+          {comparison[0]}: {#if data.previous}{data.previous.total.toLocaleString(
+              data.locale,
+            )}{#if data.previous.estimated}
+              · {analytics.estimated}{/if}{:else}{comparison[1]}{/if}
+        </span>
+      </div>
+    {/if}
   </header>
   <div class="dashboard-content">
     <section class="analytics card" aria-labelledby="analytics-heading">
@@ -93,26 +115,6 @@
         </a>
       </div>
       {#if data.report}
-        <div class="metric-header">
-          <div>
-            <p class="metric-label">{analytics.clicks}</p>
-            <p class="click-count">
-              {data.report.totalClicks?.toLocaleString(data.locale) ?? '—'}
-            </p>
-            <p class="comparison">
-              {comparison[0]}:
-              {#if data.previous}
-                {data.previous.total.toLocaleString(data.locale)}
-                ({data.previous.from} – {data.previous
-                  .to}){#if data.previous.estimated}
-                  · {analytics.estimated}{/if}
-              {:else}{comparison[1]}{/if}
-            </p>
-          </div>
-          <p class="period">
-            {labels[0]}<br />{data.report.meta.from} – {data.report.meta.to}
-          </p>
-        </div>
         <div class="chart-heading">
           <h3>{analytics.daily}</h3>
           <span>
@@ -187,41 +189,6 @@
         {:else}<p class="empty">{links.empty}</p>{/if}
       </section>
       {#if data.report}
-        <section class="card link-card" aria-labelledby="breakdown-heading">
-          <div class="section-heading">
-            <h2 id="breakdown-heading">{analytics.breakdown}</h2>
-            <a href="/admin/analytics">
-              {labels[4]} <span aria-hidden="true">→</span>
-            </a>
-          </div>
-          <div class="breakdowns">
-            {#each data.breakdowns as item (item.dimension)}
-              <section class="breakdown" aria-label={analytics[item.dimension]}>
-                <h3>{analytics[item.dimension]}</h3>
-                {#if item.result}
-                  {#if item.result.breakdown.length}
-                    <ul class="popular">
-                      {#each item.result.breakdown.slice(0, 3) as row (row.key)}
-                        <li>
-                          <span>{row.key || '—'}</span><strong>
-                            {row.clicks.toLocaleString(data.locale)}
-                          </strong>
-                        </li>
-                      {/each}
-                    </ul>
-                    {#if item.result.estimated}<p class="breakdown-note">
-                        {analytics.estimated}
-                      </p>{/if}
-                  {:else}<p class="breakdown-note">{analytics.empty}</p>{/if}
-                {:else}<p class="breakdown-note" role="status">
-                    {labels[2]}
-                  </p>{/if}
-              </section>
-            {/each}
-          </div>
-        </section>
-      {/if}
-      {#if data.report}
         <section class="card link-card" aria-labelledby="popular-heading">
           <div class="section-heading">
             <h2 id="popular-heading">{labels[1]}</h2>
@@ -248,6 +215,44 @@
       {/if}
     </div>
   </div>
+  {#if data.report}
+    <section
+      class="card link-card breakdown-card"
+      aria-labelledby="breakdown-heading"
+    >
+      <div class="section-heading">
+        <h2 id="breakdown-heading">{analytics.breakdown}</h2>
+        <a href="/admin/analytics">
+          {labels[4]} <span aria-hidden="true">→</span>
+        </a>
+      </div>
+      <div class="breakdowns">
+        {#each data.breakdowns as item (item.dimension)}
+          <section class="breakdown" aria-label={analytics[item.dimension]}>
+            <h3>{analytics[item.dimension]}</h3>
+            {#if item.result}
+              {#if item.result.breakdown.length}
+                <ul class="popular">
+                  {#each item.result.breakdown.slice(0, 3) as row (row.key)}
+                    <li>
+                      <span>{row.key || '—'}</span><strong>
+                        {row.clicks.toLocaleString(data.locale)}
+                      </strong>
+                    </li>
+                  {/each}
+                </ul>
+                {#if item.result.estimated}<p class="breakdown-note">
+                    {analytics.estimated}
+                  </p>{/if}
+              {:else}<p class="breakdown-note">{analytics.empty}</p>{/if}
+            {:else}<p class="breakdown-note" role="status">
+                {labels[2]}
+              </p>{/if}
+          </section>
+        {/each}
+      </div>
+    </section>
+  {/if}
 </div>
 
 <style>
@@ -255,8 +260,57 @@
     max-width: 1200px;
   }
   .overview-header {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    border-radius: 20px;
+    background: linear-gradient(115deg, #132740, #123c43);
+    color: #fff;
+  }
+  .hero-copy {
+    display: grid;
+    align-content: center;
+    gap: 0.7rem;
+  }
+  .overview-header h1 {
+    font-size: clamp(1.8rem, 3.4vw, 2.8rem);
+    line-height: 1.15;
+    letter-spacing: -0.045em;
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 1rem;
+    gap: 1.25rem;
+    margin-top: 0.7rem;
+  }
+  .hero-actions .admin-button-primary {
+    background: #6ce4d3;
+    color: #102a32;
+  }
+  .hero-link {
+    color: #e9fbf8;
+    font-size: 0.875rem;
+    font-weight: 650;
+  }
+  .hero-metric {
+    display: grid;
+    align-content: center;
+    gap: 0.35rem;
+    min-width: min(16rem, 100%);
+    padding: 1rem 1.5rem;
+    border-left: 1px solid rgb(255 255 255 / 22%);
+    color: #c3dcdd;
+    font-size: 0.8rem;
+  }
+  .hero-metric strong {
+    color: #fff;
+    font-size: clamp(2.5rem, 4vw, 3.5rem);
+    line-height: 1;
+    letter-spacing: -0.05em;
+    font-variant-numeric: tabular-nums;
   }
   .dashboard-content {
     display: grid;
@@ -294,34 +348,26 @@
   .section-heading > a:hover {
     color: var(--ui-primary);
   }
-  .metric-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    justify-content: space-between;
-    gap: 1rem;
-    margin: 2rem 0 1.5rem;
-  }
-  .metric-label,
-  .period,
   .chart-heading span,
   .chart-footer,
   .empty {
     color: var(--ui-text-muted);
     font-size: 0.83rem;
   }
-  .comparison,
   .breakdown-note {
     margin-top: 0.45rem;
     color: var(--ui-text-muted);
     font-size: 0.8rem;
     line-height: 1.5;
   }
+  .breakdown-card {
+    margin-top: 1.25rem;
+  }
   .breakdowns {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
     gap: 1.25rem;
-    margin-top: 1.25rem;
+    margin-top: 1rem;
   }
   .breakdown h3 {
     font-size: 0.85rem;
@@ -334,21 +380,6 @@
     min-height: 0;
     padding: 0.4rem 0;
     font-size: 0.83rem;
-  }
-  .metric-label {
-    font-weight: 600;
-  }
-  .click-count {
-    margin-top: 0.2rem;
-    font-size: clamp(2.75rem, 5vw, 4rem);
-    font-weight: 700;
-    letter-spacing: -0.055em;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
-  .period {
-    text-align: right;
-    line-height: 1.6;
   }
   .chart-heading {
     display: flex;
@@ -452,18 +483,21 @@
     }
   }
   @media (max-width: 650px) {
+    .overview-header {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .hero-metric {
+      border-left: 0;
+      border-top: 1px solid rgb(255 255 255 / 22%);
+      padding: 1.25rem 0 0;
+    }
     .link-cards {
       grid-template-columns: 1fr;
     }
     .analytics,
     .link-card {
       padding: 1.1rem;
-    }
-    .metric-header {
-      margin-block: 1.5rem;
-    }
-    .period {
-      text-align: left;
     }
   }
 </style>

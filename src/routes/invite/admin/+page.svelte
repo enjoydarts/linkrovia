@@ -36,7 +36,10 @@
   {#if data.signedIn}
     <p>{m.signedIn}</p>
     <p class="mt-4">
-      <a class="text-primary underline" href="/admin">
+      <a
+        class="inline-flex min-h-12 items-center rounded-md bg-primary px-4 font-medium text-on-primary hover:bg-primary-hover"
+        href="/admin"
+      >
         {messages['admin.title']}
       </a>
     </p>

@@ -83,7 +83,7 @@ test('renders the branded landing in all locales, two themes, and two widths', a
     await page.evaluate(() => document.fonts.ready);
 
     for (const [theme, panel] of [
-      ['light', 'rgb(245, 248, 250)'],
+      ['light', 'rgb(242, 246, 247)'],
       ['dark', 'rgb(11, 18, 32)'],
     ] as const) {
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });

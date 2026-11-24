@@ -224,82 +224,91 @@
     <p>{messages.description}</p>
   </header>
 
-  <section class="context-panel space-y-5">
-    <form class="space-y-5" onsubmit={previewFile}>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="space-y-2">
-          <label for="csv-file" class="block text-sm font-semibold">
-            {messages.file}
-          </label>
-          <input
-            id="csv-file"
-            class="admin-control w-full min-w-0"
-            name="csv"
-            type="file"
-            accept=".csv,text/csv"
-            aria-describedby="csv-limits"
-            onchange={resetPreview}
-            disabled={!interactive || busy}
-            required
-          />
-          <p id="csv-limits" class="text-sm text-muted">
-            {messages.limits}
-          </p>
+  <div
+    class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"
+  >
+    <section class="context-panel min-w-0 space-y-5">
+      <form class="space-y-5" onsubmit={previewFile}>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <label for="csv-file" class="block text-sm font-semibold">
+              {messages.file}
+            </label>
+            <input
+              id="csv-file"
+              class="admin-control w-full min-w-0"
+              name="csv"
+              type="file"
+              accept=".csv,text/csv"
+              aria-describedby="csv-limits"
+              onchange={resetPreview}
+              disabled={!interactive || busy}
+              required
+            />
+            <p id="csv-limits" class="text-sm text-muted">
+              {messages.limits}
+            </p>
+          </div>
+          <div class="space-y-2">
+            <label for="csv-duplicate" class="block text-sm font-semibold">
+              {messages.policy}
+            </label>
+            <select
+              id="csv-duplicate"
+              bind:value={duplicate}
+              onchange={resetPreview}
+              disabled={!interactive || busy}
+              class="admin-control w-full min-w-0"
+            >
+              <option value="error">{messages.error}</option>
+              <option value="skip">{messages.skip}</option>
+            </select>
+            <p class="text-sm text-muted">
+              {messages.timeZone} · {data.timeZone}
+            </p>
+          </div>
         </div>
-        <div class="space-y-2">
-          <label for="csv-duplicate" class="block text-sm font-semibold">
-            {messages.policy}
-          </label>
-          <select
-            id="csv-duplicate"
-            bind:value={duplicate}
-            onchange={resetPreview}
+        <div class="flex flex-wrap gap-3">
+          <button
+            type="submit"
+            class="admin-button admin-button-primary"
             disabled={!interactive || busy}
-            class="admin-control w-full min-w-0"
           >
-            <option value="error">{messages.error}</option>
-            <option value="skip">{messages.skip}</option>
-          </select>
-          <p class="text-sm text-muted">
-            {messages.timeZone} · {data.timeZone}
-          </p>
+            {messages.preview}
+          </button>
+          <button
+            type="button"
+            class="admin-button"
+            disabled={!interactive}
+            onclick={() => download('links-example.csv', example)}
+          >
+            {messages.example}
+          </button>
         </div>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <button
-          type="submit"
-          class="admin-button admin-button-primary"
-          disabled={!interactive || busy}
-        >
-          {messages.preview}
-        </button>
-        <button
-          type="button"
-          class="admin-button"
-          disabled={!interactive}
-          onclick={() => download('links-example.csv', example)}
-        >
-          {messages.example}
-        </button>
-      </div>
-    </form>
-    <noscript><p class="text-sm">{messages.javascript}</p></noscript>
-
-    <details class="space-y-2 text-sm">
-      <summary class="cursor-pointer font-semibold">{messages.format}</summary>
+      </form>
+      <noscript><p class="text-sm">{messages.javascript}</p></noscript>
+      {#if issue}
+        <p role="alert" class="text-sm font-medium">{label(issue)}</p>
+      {/if}
+      {#if busy}
+        <p role="status" class="text-sm font-medium">{messages.working}</p>
+      {/if}
+    </section>
+    <aside
+      class="context-panel min-w-0 space-y-3 text-sm"
+      aria-labelledby="csv-format"
+    >
+      <h2 id="csv-format" class="text-lg font-semibold">{messages.format}</h2>
       <p class="mt-3">{messages.required}</p>
       <p>{messages.formats}</p>
       <p>{messages.dateFormat}</p>
-      <p class="font-mono wrap-anywhere">{example.split('\r\n')[0]}</p>
-    </details>
-  </section>
-
-  {#if issue}
-    <p role="alert" class="text-sm font-medium">{label(issue)}</p>
-  {/if}
-  {#if busy}
-    <p role="status" class="text-sm font-medium">{messages.working}</p>
-  {/if}
+      <p
+        class="rounded-md border border-line bg-canvas p-2 font-mono wrap-anywhere"
+      >
+        {example.split('\r\n')[0]}
+      </p>
+    </aside>
+  </div>
 
   {#if preview}
     <section class="context-panel space-y-4" aria-labelledby="csv-results">

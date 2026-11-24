@@ -25,67 +25,105 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<section class="max-w-2xl space-y-5">
-  <h2 class="text-xl font-semibold tracking-tight">{m.title}</h2>
+<section class="max-w-4xl space-y-5">
   {#if data.link.redirectType === 301 || data.link.redirectType === 308}
     <p>{m.temporaryRedirect}</p>
   {/if}
   {#if data.link.consumedAt !== null}<p>{m.alreadyRedeemed}</p>{/if}
   <form
     method="POST"
-    class="space-y-5 rounded-xl border p-5"
+    class="protection-form rounded-xl border p-5"
     style="border-color: var(--ui-border); background: var(--ui-surface)"
   >
     <input type="hidden" name="csrfToken" value={data.csrfToken} />
     <input type="hidden" name="updatedAt" value={data.link.updatedAt} />
-    <label class="block space-y-2">
-      <span class="block font-medium">{m.title}</span>
-      <select name="mode" class="admin-control">
-        <option value="none" selected={data.link.protectionMode === 'none'}>
-          {m.none}
-        </option>
-        <option
-          value="password"
-          selected={data.link.protectionMode === 'password'}
+    <div class="mode-choice space-y-3">
+      <label class="block space-y-2">
+        <span class="block font-medium">{m.title}</span>
+        <select name="mode" class="admin-control w-full">
+          <option value="none" selected={data.link.protectionMode === 'none'}>
+            {m.none}
+          </option>
+          <option
+            value="password"
+            selected={data.link.protectionMode === 'password'}
+          >
+            {m.password}
+          </option>
+          <option
+            value="one_time"
+            selected={data.link.protectionMode === 'one_time'}
+          >
+            {m.oneTime}
+          </option>
+          <option
+            value="password_one_time"
+            selected={data.link.protectionMode === 'password_one_time'}
+          >
+            {m.passwordOneTime}
+          </option>
+        </select>
+      </label>
+    </div>
+    <div class="mode-details space-y-4">
+      <div class="password-options space-y-3">
+        <label class="block space-y-2">
+          <span class="block font-medium">{m.password}</span>
+          <input
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            maxlength="128"
+            minlength="12"
+            aria-describedby="password-help"
+            class="admin-control w-full"
+          />
+        </label>
+        <p
+          id="password-help"
+          class="text-sm"
+          style="color: var(--ui-text-muted)"
         >
-          {m.password}
-        </option>
-        <option
-          value="one_time"
-          selected={data.link.protectionMode === 'one_time'}
-        >
-          {m.oneTime}
-        </option>
-        <option
-          value="password_one_time"
-          selected={data.link.protectionMode === 'password_one_time'}
-        >
-          {m.passwordOneTime}
-        </option>
-      </select>
-    </label>
-    <label class="block space-y-2">
-      <span class="block font-medium">{m.password}</span>
-      <input
-        name="password"
-        type="password"
-        autocomplete="new-password"
-        maxlength="128"
-        minlength="12"
-        aria-describedby="password-help"
-        class="admin-control"
-      />
-    </label>
-    <p id="password-help" class="text-sm" style="color: var(--ui-text-muted)">
-      {m.passwordHelp}
-      {m.paidNote}
-    </p>
-    {#if message}<p role="alert" class="text-negative">
-        {message}
-      </p>{/if}
-    {#if form?.saved}<p role="status">{m.saved}</p>{/if}
-    <button type="submit" class="admin-button admin-button-primary">
-      {link.save}
-    </button>
+          {m.passwordHelp}
+          {m.paidNote}
+        </p>
+      </div>
+      {#if message}<p role="alert" class="text-negative">
+          {message}
+        </p>{/if}
+      {#if form?.saved}<p role="status">{m.saved}</p>{/if}
+      <button type="submit" class="admin-button admin-button-primary">
+        {link.save}
+      </button>
+    </div>
   </form>
 </section>
+
+<style>
+  .protection-form {
+    display: grid;
+    gap: 1.5rem;
+  }
+  .protection-form:not(
+      :has(option:is([value='password'], [value='password_one_time']):checked)
+    )
+    .password-options {
+    display: none;
+  }
+  .mode-choice {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--ui-border);
+  }
+  @media (min-width: 720px) {
+    .protection-form {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+      gap: 2rem;
+      padding: 1.75rem;
+    }
+    .mode-choice {
+      padding: 0 2rem 0 0;
+      border-bottom: 0;
+      border-right: 1px solid var(--ui-border);
+    }
+  }
+</style>
