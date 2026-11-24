@@ -12,13 +12,6 @@
 
 <svelte:head><title>{m.edit} · {brand.name}</title></svelte:head>
 <div class="space-y-6">
-  {#if data.link}<p class="break-all">
-      <span class="font-medium">{m.shortUrl}:</span>
-      <a href={data.link.shortUrl} class="text-link underline">
-        {data.link.shortUrl}
-      </a>
-    </p>
-  {/if}
   {#if form?.code === 'temporary_redirect'}
     <p role="alert" class="text-negative">
       {protection.temporaryRedirect}
@@ -35,8 +28,10 @@
     values={form && 'values' in form ? form.values : undefined}
   />
   {#if data.link}
-    <details class="max-w-2xl rounded-md border border-negative p-4">
-      <summary class="cursor-pointer font-medium">{x.deleteHelp}</summary>
+    <details class="context-panel max-w-3xl">
+      <summary class="cursor-pointer font-medium text-negative">
+        {x.deleteHelp}
+      </summary>
       <form method="POST" action="?/remove" class="mt-4 space-y-4">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
         <input

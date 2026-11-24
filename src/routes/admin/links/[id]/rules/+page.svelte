@@ -15,12 +15,6 @@
     <p>{m.help}</p>
     <p>{m.visitorHelp}</p>
   </div>
-  <dl class="rounded-lg border border-line bg-surface p-4 text-sm">
-    <dt class="font-medium">{m.defaultDestination}</dt>
-    <dd class="mt-1 break-all text-muted">
-      <code>{data.destinationUrl}</code>
-    </dd>
-  </dl>
   {#if form?.saved}
     <p role="status" class="text-sm text-positive">{m.saved}</p>
   {/if}

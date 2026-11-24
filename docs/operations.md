@@ -4,7 +4,8 @@ This guide describes the current self-hosted Worker. Linkrovia is in development
 
 ## Check the installation
 
-- Open `/health` on the same hostname as the deployed Worker. `{"status":"ok"}` confirms the application can reach its D1 database. Check analytics, custom domains, and redirects separately.
+- As the owner, open **Settings → Operations health** for D1 connectivity and size when available, Analytics SQL connectivity, the last saved click day and recent gaps, pending conversion archive work, and the deployed Worker version. Follow the recovery link for missing click days or open the Worker's **Observability** view for scheduled failures. Click-reporting diagnostics use one bounded Analytics SQL read when you open the page. A new dataset may be unavailable until a first click is recorded.
+- Open `/health` on the same hostname as the deployed Worker. `{"status":"ok"}` confirms the application can reach its D1 database. A separate redirect check confirms that links work on each connected hostname.
 - Sign in to the admin console and open **Analytics**. Successful short-link redirects can continue when analytics writes fail, so verify that reports are available before relying on them. If a report is unavailable, check the query and bindings. A report can be empty when no clicks were recorded.
 - Check the Worker's **Observability** view in Cloudflare for scheduled invocation failures. The configured Cron Trigger is `15,45 * * * *`. Daily aggregation runs at 03:15 UTC. The minute-45 invocations reconcile recent days and process recovery requests.
 - Open a short link on its configured hostname to check its redirect separately. Linkrovia does not currently provide automated destination health checks.

@@ -2,8 +2,13 @@ import type { Locale } from '$lib/i18n/locale';
 
 const en = {
   title: 'Redirect rules',
+  edit: 'Edit',
+  collapse: 'Collapse',
+  disabled: 'Disabled',
+  noDestination: 'No destination yet',
+  noValue: 'No condition value',
   javascript: 'Enable JavaScript to edit and reorder rules.',
-  help: 'The first enabled rule with all conditions matching wins. Rules with the same priority are evaluated in ascending ID order.',
+  help: 'Rules are checked from top to bottom. The first enabled rule whose conditions all match determines the destination.',
   visitorHelp:
     'Unavailable visitor details may prevent a match. Visitors can change the browser details and language they send.',
   defaultDestination: 'Default destination when no rule matches',
@@ -50,9 +55,14 @@ const catalogs: Record<Locale, Messages> = {
   en,
   ja: {
     title: '転送ルール',
+    edit: '編集',
+    collapse: '閉じる',
+    disabled: '無効',
+    noDestination: '転送先が未入力',
+    noValue: '条件値が未入力',
     javascript:
       'ルールを編集・並べ替えするには JavaScript を有効にしてください。',
-    help: '有効なルールのうち、すべての条件に一致した最初のルールを適用します。優先度が同じ場合はルールIDの昇順で判定します。',
+    help: '上から順に確認し、すべての条件に一致する最初の有効なルールの転送先を使います。',
     visitorHelp:
       '訪問者情報を取得できない場合は一致しないことがあります。ブラウザー情報と言語は訪問者が変更できます。',
     defaultDestination: 'ルールが一致しない場合の既定の転送先',
@@ -95,8 +105,13 @@ const catalogs: Record<Locale, Messages> = {
   },
   'zh-CN': {
     title: '重定向规则',
+    edit: '编辑',
+    collapse: '收起',
+    disabled: '已停用',
+    noDestination: '尚未填写目标网址',
+    noValue: '尚未填写条件值',
     javascript: '请启用 JavaScript 以编辑和调整规则顺序。',
-    help: '系统应用第一个满足全部条件的已启用规则。优先级相同时，按规则 ID 升序判断。',
+    help: '系统应用第一个满足全部条件的已启用规则。规则按从上到下的顺序检查。',
     visitorHelp:
       '访客信息缺失时可能无法匹配。访客可以更改发送的浏览器信息和语言。',
     defaultDestination: '没有匹配规则时的默认目标',
@@ -138,8 +153,13 @@ const catalogs: Record<Locale, Messages> = {
   },
   'zh-TW': {
     title: '重新導向規則',
+    edit: '編輯',
+    collapse: '收合',
+    disabled: '已停用',
+    noDestination: '尚未填寫目的地',
+    noValue: '尚未填寫條件值',
     javascript: '請啟用 JavaScript 以編輯及調整規則順序。',
-    help: '系統會套用第一個符合所有條件的已啟用規則。優先順序相同時，依規則 ID 升冪比對。',
+    help: '系統會套用第一個符合所有條件的已啟用規則。規則會由上而下依序檢查。',
     visitorHelp:
       '缺少訪客資料時可能無法符合規則。訪客可以變更傳送的瀏覽器資訊和語言。',
     defaultDestination: '沒有符合規則時的預設目的地',
@@ -181,8 +201,13 @@ const catalogs: Record<Locale, Messages> = {
   },
   es: {
     title: 'Reglas de redirección',
+    edit: 'Editar',
+    collapse: 'Contraer',
+    disabled: 'Desactivada',
+    noDestination: 'Sin destino',
+    noValue: 'Sin valor',
     javascript: 'Activa JavaScript para editar y ordenar las reglas.',
-    help: 'Se aplica la primera regla habilitada que cumple todas las condiciones. Si la prioridad coincide, se evalúa primero el ID menor.',
+    help: 'Se aplica la primera regla habilitada que cumple todas las condiciones. Las reglas se comprueban de arriba abajo.',
     visitorHelp:
       'Los datos del visitante que no estén disponibles pueden impedir una coincidencia. El visitante puede cambiar los datos del navegador y el idioma que envía.',
     defaultDestination: 'Destino predeterminado cuando ninguna regla coincide',
@@ -225,8 +250,13 @@ const catalogs: Record<Locale, Messages> = {
   },
   it: {
     title: 'Regole di reindirizzamento',
+    edit: 'Modifica',
+    collapse: 'Chiudi',
+    disabled: 'Disattiva',
+    noDestination: 'Destinazione mancante',
+    noValue: 'Valore mancante',
     javascript: 'Abilita JavaScript per modificare e riordinare le regole.',
-    help: 'Si applica la prima regola attiva che soddisfa tutte le condizioni. A parità di priorità, le regole vengono valutate in ordine crescente di ID.',
+    help: 'Si applica la prima regola attiva che soddisfa tutte le condizioni. Le regole vengono controllate dall’alto verso il basso.',
     visitorHelp:
       'Se alcuni dati del visitatore non sono disponibili, la regola potrebbe non corrispondere. Il visitatore può modificare i dati del browser e la lingua che invia.',
     defaultDestination:
@@ -270,8 +300,13 @@ const catalogs: Record<Locale, Messages> = {
   },
   fr: {
     title: 'Règles de redirection',
+    edit: 'Modifier',
+    collapse: 'Replier',
+    disabled: 'Désactivée',
+    noDestination: 'Destination manquante',
+    noValue: 'Valeur manquante',
     javascript: 'Activez JavaScript pour modifier et réorganiser les règles.',
-    help: 'La première règle activée dont toutes les conditions sont remplies s’applique. À priorité égale, les règles sont évaluées par ordre croissant d’identifiant.',
+    help: 'La première règle activée dont toutes les conditions sont remplies s’applique. Les règles sont examinées de haut en bas.',
     visitorHelp:
       'Des données de visite manquantes peuvent empêcher une correspondance. Les visiteurs peuvent modifier les informations du navigateur et la langue envoyées.',
     defaultDestination: 'Destination par défaut si aucune règle ne correspond',

@@ -140,7 +140,6 @@
   let traffic = $derived(trafficLabels[locale]);
 </script>
 
-{@render repair?.()}
 <nav class="presets" aria-label={periods.range}>
   {#each Object.entries(periods.presets) as [range, label] (range)}
     <a
@@ -368,6 +367,8 @@
     </section>
   </div>
 {/if}
+
+{@render repair?.()}
 
 <style>
   h2 {

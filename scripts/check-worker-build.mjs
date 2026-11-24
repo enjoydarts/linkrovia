@@ -8,6 +8,7 @@ const redirect = JSON.parse(await readFile(redirectPath, 'utf8'));
 const configPath = resolve(dirname(redirectPath), redirect.configPath);
 const config = JSON.parse(await readFile(configPath, 'utf8'));
 assert.deepEqual(config.triggers.crons, ['15,45 * * * *']);
+assert.equal(config.version_metadata?.binding, 'CF_VERSION_METADATA');
 assert.equal(
   config.analytics_engine_datasets.find(({ binding }) => binding === 'CLICKS')
     ?.dataset,

@@ -75,6 +75,23 @@ test('registers and signs in with a discoverable passkey', async ({
     await expect(page).toHaveURL('/admin');
     await expect(page.locator('form[action="/logout"]')).toBeVisible();
 
+    await test.step('opens private operations diagnostics from settings', async () => {
+      await page.goto('/admin/settings');
+      await page.getByRole('link', { name: 'Operations health' }).click();
+      await expect(page).toHaveURL('/admin/settings/health');
+      await expect(
+        page.getByRole('heading', { name: 'Operations health', level: 1 }),
+      ).toBeVisible();
+      await expect(
+        page.getByText('Local sample data', { exact: true }),
+      ).toBeVisible();
+      await page.setViewportSize({ width: 360, height: 800 });
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBe(360);
+      await page.setViewportSize({ width: 1280, height: 720 });
+    });
+
     await test.step('continues with the existing passkey onto a custom admin host', async () => {
       const before = await page.goto(`${customOrigin}/login`);
       expect(before?.status()).toBe(404);
@@ -123,6 +140,8 @@ test('registers and signs in with a discoverable passkey', async ({
 
     const denied = await page.goto('/admin/settings/admins');
     expect(denied?.status()).toBe(403);
+    const healthDenied = await page.goto('/admin/settings/health');
+    expect(healthDenied?.status()).toBe(403);
     await page.goto('/admin');
     await signOut(page);
     await page.goto(invite);

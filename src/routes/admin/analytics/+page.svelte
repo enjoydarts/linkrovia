@@ -25,7 +25,11 @@
 >
   {#snippet repair()}
     {#if data.repair}
-      <section class="workspace-panel repair" aria-label={m.title}>
+      <section
+        id="click-history-recovery"
+        class="workspace-panel repair"
+        aria-label={m.title}
+      >
         <details>
           <summary>{m.title}</summary>
           <p>{m.help}</p>

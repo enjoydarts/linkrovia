@@ -3,16 +3,12 @@
   import ReportChart from '$lib/components/analytics/ReportChart.svelte';
   import { analyticsMessages } from '$lib/components/analytics/messages';
   import Plus from '@lucide/svelte/icons/plus';
-  import Globe from '@lucide/svelte/icons/globe';
-  import Settings from '@lucide/svelte/icons/settings';
   import { messagesFor } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
-  import { preferenceMessages } from '$lib/i18n/preferences';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
   let messages = $derived(messagesFor(data.locale));
   let links = $derived(linkMessages(data.locale));
-  let preferences = $derived(preferenceMessages(data.locale));
   let analytics = $derived(analyticsMessages(data.locale));
   const dashboardLabels = {
     en: [
@@ -88,14 +84,6 @@
       <Plus size={17} aria-hidden="true" />{links.create}
     </a>
   </header>
-  <nav class="overview-shortcuts" aria-label={messages['admin.overview']}>
-    <a href="/admin/domains" class="admin-button">
-      <Globe size={16} aria-hidden="true" />{links.domains}
-    </a>
-    <a href="/admin/settings" class="admin-button">
-      <Settings size={16} aria-hidden="true" />{preferences.settings}
-    </a>
-  </nav>
   <div class="dashboard-content">
     <section class="analytics card" aria-labelledby="analytics-heading">
       <div class="section-heading">
@@ -175,6 +163,29 @@
       {/if}
     </section>
     <div class="link-cards">
+      <section class="card link-card recent" aria-labelledby="recent-links">
+        <div class="section-heading">
+          <h2 id="recent-links">{messages['admin.recent']}</h2>
+          <a href="/admin/links">
+            {links.links} <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        {#if data.recentLinks.length}
+          <ul>
+            {#each data.recentLinks as link (link.id)}
+              <li>
+                <a class="recent-item" href={`/admin/links/${link.id}`}>
+                  {#if link.title}<strong>{link.title}</strong>{/if}
+                  <span>{link.shortUrl.replace(/^https?:\/\//, '')}</span>
+                </a>
+                <span class:enabled={link.isActive} class="state-indicator">
+                  {link.isActive ? links.active : links.inactive}
+                </span>
+              </li>
+            {/each}
+          </ul>
+        {:else}<p class="empty">{links.empty}</p>{/if}
+      </section>
       {#if data.report}
         <section class="card link-card" aria-labelledby="breakdown-heading">
           <div class="section-heading">
@@ -235,29 +246,6 @@
           {:else}<p class="empty">{analytics.empty}</p>{/if}
         </section>
       {/if}
-      <section class="card link-card recent" aria-labelledby="recent-links">
-        <div class="section-heading">
-          <h2 id="recent-links">{messages['admin.recent']}</h2>
-          <a href="/admin/links">
-            {links.links} <span aria-hidden="true">→</span>
-          </a>
-        </div>
-        {#if data.recentLinks.length}
-          <ul>
-            {#each data.recentLinks as link (link.id)}
-              <li>
-                <a class="recent-item" href={`/admin/links/${link.id}`}>
-                  {#if link.title}<strong>{link.title}</strong>{/if}
-                  <span>{link.shortUrl.replace(/^https?:\/\//, '')}</span>
-                </a>
-                <span class:enabled={link.isActive} class="state-indicator">
-                  {link.isActive ? links.active : links.inactive}
-                </span>
-              </li>
-            {/each}
-          </ul>
-        {:else}<p class="empty">{links.empty}</p>{/if}
-      </section>
     </div>
   </div>
 </div>
@@ -269,11 +257,6 @@
   .overview-header {
     align-items: center;
     margin-bottom: 1rem;
-  }
-  .overview-shortcuts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
   }
   .dashboard-content {
     display: grid;

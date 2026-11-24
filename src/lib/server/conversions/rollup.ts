@@ -1,16 +1,49 @@
-const retentionSeconds = 30 * 86400;
+const daySeconds = 86400;
+const retentionSeconds = 30 * daySeconds;
 const batchSize = 500;
 
+const dueReferences = `created_at <= ? AND expires_at <= ?`;
+const dueReceipts = `created_at < ? AND occurred_at < ?
+  AND (click_ref_hash IS NULL OR NOT EXISTS (
+    SELECT 1 FROM click_attributions ref WHERE ref.ref_hash = conversion_receipts.click_ref_hash
+  ))`;
+
 const expiredReferences = `SELECT ref_hash FROM click_attributions
-  WHERE created_at <= ? AND expires_at <= ?
+  WHERE ${dueReferences}
   ORDER BY created_at, ref_hash LIMIT ${batchSize}`;
 
 const oldReceipts = `SELECT id FROM conversion_receipts
-  WHERE created_at < ? AND occurred_at < ?
-  AND (click_ref_hash IS NULL OR NOT EXISTS (
-    SELECT 1 FROM click_attributions ref WHERE ref.ref_hash = conversion_receipts.click_ref_hash
-  ))
+  WHERE ${dueReceipts}
   ORDER BY created_at, id LIMIT ${batchSize}`;
+
+function cutoffs(now: number) {
+  const createdBefore = now - retentionSeconds;
+  return {
+    createdBefore,
+    occurredBefore: Math.floor(createdBefore / daySeconds) * daySeconds,
+  };
+}
+
+export async function oldestDueConversionAt(db: D1Database, now: number) {
+  const { createdBefore, occurredBefore } = cutoffs(now);
+  // Receipts qualify only after their UTC day closes and the retention period
+  // passes. The cutoff on receipt creation is strict, unlike references.
+  return db
+    .prepare(
+      `SELECT MIN(due_at) AS due_at FROM (
+       SELECT MIN(MAX(created_at + ${retentionSeconds}, expires_at)) AS due_at
+       FROM click_attributions WHERE ${dueReferences}
+       UNION ALL
+       SELECT MIN(MAX(
+         created_at + ${retentionSeconds} + 1,
+         (occurred_at / ${daySeconds} + 1) * ${daySeconds} + ${retentionSeconds}
+       )) AS due_at
+       FROM conversion_receipts WHERE ${dueReceipts}
+     )`,
+    )
+    .bind(createdBefore, now, createdBefore, occurredBefore)
+    .first<number>('due_at');
+}
 
 export async function rollupConversions(
   db: D1Database,
@@ -19,8 +52,7 @@ export async function rollupConversions(
   const now = Math.floor(Math.min(scheduledAt.getTime(), Date.now()) / 1000);
   if (!Number.isSafeInteger(now))
     throw new RangeError('Invalid conversion rollup date');
-  const createdBefore = now - retentionSeconds;
-  const occurredBefore = Math.floor(createdBefore / 86400) * 86400;
+  const { createdBefore, occurredBefore } = cutoffs(now);
 
   // D1 executes this batch in a single transaction. Both DELETE statements use
   // the same bounded selections as their preceding snapshots.

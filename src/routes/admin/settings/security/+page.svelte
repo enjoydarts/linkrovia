@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { healthMessages } from '../health/messages';
   import { brand } from '$lib/brand';
   import { preferenceMessages } from '$lib/i18n/preferences';
   import '../../admin-context.css';
@@ -27,6 +28,7 @@
       <a href="/admin/settings">
         {preferenceMessages(data.locale).personal}
       </a><span aria-current="page">{messages.title}</span>
+      <a href="/admin/settings/health">{healthMessages(data.locale).title}</a>
     </nav>
     <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
     <p>{messages.intro}</p>

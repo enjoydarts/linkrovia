@@ -1,5 +1,6 @@
 <script lang="ts">
   import { adminInviteMessages } from '$lib/i18n/admin-invites';
+  import { healthMessages } from './health/messages';
   import { brand } from '$lib/brand';
   import { messagesFor } from '$lib/i18n/locale';
   import '../admin-context.css';
@@ -11,6 +12,16 @@
   let m = $derived(preferenceMessages(data.locale));
   let userZone = $derived(data.userZone);
   let defaultZone = $derived(data.defaultZone);
+  const scopeLabels = {
+    en: ['Personal preferences', 'Instance defaults'],
+    ja: ['個人の設定', '導入先全体の既定値'],
+    'zh-CN': ['个人偏好', '实例默认设置'],
+    'zh-TW': ['個人偏好', '執行個體預設設定'],
+    es: ['Preferencias personales', 'Valores predeterminados de la instancia'],
+    it: ['Preferenze personali', 'Impostazioni predefinite dell’istanza'],
+    fr: ['Préférences personnelles', 'Valeurs par défaut de l’instance'],
+  } as const;
+  let scopes = $derived(scopeLabels[data.locale]);
 
   function zoneExamples(zone: string) {
     if (!data.timeZones.includes(zone)) return [];
@@ -49,6 +60,7 @@
         {messagesFor(data.locale)['admin.security']}
       </a>
       {#if data.isOwner}
+        <a href="/admin/settings/health">{healthMessages(data.locale).title}</a>
         <a href="/admin/settings/admins">
           {adminInviteMessages[data.locale].title}
         </a>
@@ -77,6 +89,7 @@
     class="context-panel space-y-5 rounded-lg border border-line bg-surface p-5"
   >
     <input type="hidden" name="csrfToken" value={data.csrfToken} />
+    <h2 class="text-lg font-semibold">{scopes[0]}</h2>
     <div class="space-y-2">
       <label for="locale" class="block font-medium">{m.language}</label><select
         id="locale"
@@ -137,6 +150,7 @@
       class="context-panel space-y-5 rounded-lg border border-line bg-surface p-5"
     >
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
+      <h2 class="text-lg font-semibold">{scopes[1]}</h2>
       <div class="space-y-2">
         <label for="default-timezone" class="block font-medium">
           {m.defaultZone}

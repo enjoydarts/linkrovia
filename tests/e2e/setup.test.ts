@@ -144,6 +144,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         name: 'Links',
         exact: true,
       });
+      await detailsTabs.getByText('Link tools', { exact: true }).click();
       await detailsTabs.getByRole('link', { name: 'Rule simulator' }).click();
       await expect(page).toHaveURL(`${linkPage}/simulate`);
       await page.getByLabel('Country code').fill('JP');
@@ -215,6 +216,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await expect(
         page.getByText('A fixture link', { exact: true }),
       ).toBeVisible();
+      await linkTabs.getByText('Link tools', { exact: true }).click();
       await linkTabs.locator('a[href$="/qr"]').click();
       await expect(page).toHaveURL(`${linkPage}/qr`);
       await linkTabs.getByRole('link', { name: 'Analytics' }).click();
@@ -535,6 +537,11 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       .click();
     await expect(page).toHaveURL(/\/admin\/links\/[a-f0-9-]{36}$/);
     const editUrl = page.url();
+    const tabs = page.getByRole('navigation', { name: 'Links', exact: true });
+    await tabs.getByText('Link tools', { exact: true }).click();
+    await expect(
+      tabs.getByRole('link', { name: 'Link protection' }),
+    ).toBeVisible();
     await page.getByRole('link', { name: 'Link protection' }).click();
     const mode = page.locator('[name=mode]');
     await mode.selectOption('password_one_time');
@@ -546,6 +553,8 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     ).toBeVisible();
 
     await page.goto(editUrl);
+    await tabs.getByText('Link tools', { exact: true }).click();
+    await expect(tabs.getByRole('link', { name: 'QR code' })).toBeVisible();
     await page.getByRole('link', { name: 'QR code' }).click();
     await page.getByRole('button', { name: 'Create QR code' }).click();
     const qrUrl = await page.getByText(/\/q\/[a-f0-9]{64}$/).textContent();
@@ -1301,10 +1310,18 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       page.getByText('Redirect rules saved.', { exact: true }),
     ).toBeVisible();
     await page.reload();
+    await expect(first.getByLabel('Destination URL')).toBeHidden();
+    await first.getByRole('button', { name: 'Edit Rule 1' }).click();
     await expect(first.getByLabel('Destination URL')).toHaveValue(
       'https://example.net/featured?fixed=1#section',
     );
+    await second.getByRole('button', { name: 'Edit Rule 2' }).click();
+    await expect(first.getByLabel('Destination URL')).toBeHidden();
+    await expect(second.getByLabel('Destination URL')).toHaveValue(
+      'https://example.net/japan',
+    );
 
+    await tabs.getByText('Link tools', { exact: true }).click();
     await tabs.getByRole('link', { name: 'Campaign parameters' }).click();
     await expect(
       page.getByRole('heading', { level: 1, name: 'Campaign parameters' }),
@@ -1346,6 +1363,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       'https://example.org/default?fixed=1&utm_source=general#section',
     );
 
+    await tabs.getByText('Link tools', { exact: true }).click();
     await tabs.getByRole('link', { name: 'Rule simulator' }).click();
     await page.getByLabel('Country code').fill('JP');
     await page.getByLabel('Language tag').fill('ja');

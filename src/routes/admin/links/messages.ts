@@ -83,3 +83,13 @@ export const listMessages = {
     recentlyUpdated: 'Récemment modifiés',
   },
 } satisfies Record<Locale, ListMessages>;
+
+export const detailNavigation = {
+  en: 'Link tools',
+  ja: 'リンクツール',
+  'zh-CN': '链接工具',
+  'zh-TW': '連結工具',
+  es: 'Herramientas del enlace',
+  it: 'Strumenti del link',
+  fr: 'Outils du lien',
+} satisfies Record<Locale, string>;

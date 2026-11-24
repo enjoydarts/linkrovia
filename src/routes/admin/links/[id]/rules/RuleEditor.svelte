@@ -66,6 +66,7 @@
   let dragged = $state<number | null>(null);
   let over = $state<number | null>(null);
   let movedPosition = $state(0);
+  let expandedKey = $state<number | null>(null);
   let failure = $derived(form?.code);
   let invalidIndex = $derived(form?.index ?? -1);
 
@@ -73,7 +74,7 @@
     interactive = true;
   });
 
-  const fieldClass = 'admin-control';
+  const fieldClass = 'admin-control w-full';
   const buttonClass =
     'admin-button disabled:opacity-50 aria-disabled:opacity-50';
   const platforms: Record<string, string> = {
@@ -109,13 +110,15 @@
       active: true,
       conditions: [newCondition('os')],
     });
+    expandedKey = key;
     void focus(`rule-${key}-url`);
   }
 
   function removeRule(index: number) {
     rules.splice(index, 1);
     const next = rules[index] ?? rules[index - 1];
-    void focus(next ? `rule-${next.key}-url` : 'add-rule');
+    expandedKey = null;
+    void focus(next ? `rule-${next.key}-edit` : 'add-rule');
   }
 
   function addCondition(rule: Rule) {
@@ -186,7 +189,15 @@
     return async ({ result, update }) => {
       await update({ reset: false });
       pending = false;
-      if (result.type === 'failure') void focus('rules-error');
+      if (result.type === 'failure') {
+        if (
+          result.data?.code === 'invalid_rule' &&
+          typeof result.data.index === 'number'
+        ) {
+          expandedKey = rules[result.data.index]?.key ?? null;
+        }
+        void focus('rules-error');
+      }
     };
   };
 </script>
@@ -237,8 +248,56 @@
         ondragover={(event) => allowDrop(event, rule.key)}
         ondrop={(event) => dropRule(event, index)}
       >
-        <legend class="px-2 font-semibold">{label(index + 1)}</legend>
-
+        <legend class="sr-only">{label(index + 1)}</legend>
+        <div class="flex flex-wrap items-start gap-3">
+          <span
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-page text-sm font-semibold"
+          >
+            {index + 1}
+          </span>
+          <div class="min-w-0 flex-1 space-y-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="font-semibold">{label(index + 1)}</span>
+              <span class="rounded-full border border-line px-2 py-0.5 text-xs">
+                {rule.active ? m.enabled : m.disabled}
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-xs text-muted">
+              {#each rule.conditions as condition (condition.key)}
+                <span class="rounded-md bg-page px-2 py-1">
+                  {m[condition.type]}: {platforms[condition.value] ??
+                    (condition.value === 'mobile' ||
+                    condition.value === 'tablet' ||
+                    condition.value === 'desktop' ||
+                    condition.value === 'other'
+                      ? m[condition.value]
+                      : condition.value || m.noValue)}{condition.type ===
+                    'language' && condition.operator === 'base_language'
+                    ? ` (${m.base})`
+                    : ''}
+                </span>
+              {/each}
+            </div>
+            <p class="wrap-anywhere text-sm text-muted">
+              {rule.destinationUrl || m.noDestination}
+            </p>
+          </div>
+          <button
+            id="rule-{rule.key}-edit"
+            type="button"
+            class={buttonClass}
+            aria-expanded={expandedKey === rule.key}
+            aria-controls="rule-{rule.key}-editor"
+            onclick={() =>
+              (expandedKey = expandedKey === rule.key ? null : rule.key)}
+          >
+            {expandedKey === rule.key ? m.collapse : m.edit}<span
+              class="sr-only"
+            >
+              {label(index + 1)}
+            </span>
+          </button>
+        </div>
         <div class="flex flex-wrap items-center gap-2">
           <span
             class="cursor-grab rounded-md border border-line p-2 text-muted active:cursor-grabbing"
@@ -270,130 +329,135 @@
           >
             {m.moveDown}
           </button>
-          <button
-            type="button"
-            class={buttonClass}
-            onclick={() => removeRule(index)}
-          >
-            {m.removeRule}
-          </button>
         </div>
-        <dl class="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
-          <div class="flex gap-2">
-            <dt>{m.priority}</dt>
-            <dd>{rule.priority}</dd>
-          </div>
-          {#if rule.id}
-            <div class="flex flex-wrap gap-x-2">
-              <dt>{m.id}</dt>
-              <dd class="break-all"><code>{rule.id}</code></dd>
-            </div>
-          {/if}
-        </dl>
-
-        <label class="block space-y-1.5 text-sm font-medium">
-          <span>{m.destination}</span>
-          <input
-            id="rule-{rule.key}-url"
-            class={fieldClass}
-            type="url"
-            bind:value={rule.destinationUrl}
-            placeholder="https://example.org/"
-            maxlength="8192"
-            spellcheck="false"
-            required
-            aria-describedby={failure === 'invalid_rule' &&
-            index === invalidIndex
-              ? 'rules-error'
-              : undefined}
-          />
-        </label>
-        <label class="flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" bind:checked={rule.active} />
-          {m.enabled}
-        </label>
-        <div class="space-y-3">
-          {#each rule.conditions as condition, conditionIndex (condition.key)}
-            <div
-              class="grid items-end gap-2 rounded-lg border border-line p-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]"
-            >
-              <label class="block space-y-1.5 text-sm">
-                <span class="font-medium">{m.type}</span>
-                <select
-                  id="condition-{condition.key}-type"
-                  class={fieldClass}
-                  value={condition.type}
-                  onchange={(event) =>
-                    changeType(
-                      condition,
-                      event.currentTarget.value as ConditionType,
-                    )}
+        {#if expandedKey === rule.key}
+          <div
+            id="rule-{rule.key}-editor"
+            class="space-y-4 border-t border-line pt-4"
+          >
+            <label class="block space-y-1.5 text-sm font-medium">
+              <span>{m.destination}</span>
+              <input
+                id="rule-{rule.key}-url"
+                class={fieldClass}
+                type="url"
+                bind:value={rule.destinationUrl}
+                placeholder="https://example.org/"
+                maxlength="8192"
+                spellcheck="false"
+                required
+                aria-describedby={failure === 'invalid_rule' &&
+                index === invalidIndex
+                  ? 'rules-error'
+                  : undefined}
+              />
+            </label>
+            <label class="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" bind:checked={rule.active} />
+              {m.enabled}
+            </label>
+            <div class="space-y-3">
+              {#each rule.conditions as condition, conditionIndex (condition.key)}
+                <div
+                  class="grid items-end gap-2 rounded-lg border border-line p-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]"
                 >
-                  {#each types as type (type)}
-                    <option value={type}>{m[type]}</option>
-                  {/each}
-                </select>
-              </label>
-              {#if condition.type === 'language'}
-                <label class="block space-y-1.5 text-sm">
-                  <span class="font-medium">{m.languageMatch}</span>
-                  <select class={fieldClass} bind:value={condition.operator}>
-                    <option value="eq">{m.exact}</option>
-                    <option value="base_language">{m.base}</option>
-                  </select>
-                </label>
-              {/if}
-              <label class="block space-y-1.5 text-sm">
-                <span class="font-medium">{m.value}</span>
-                {#if condition.type === 'os' || condition.type === 'device'}
-                  <select class={fieldClass} bind:value={condition.value}>
-                    {#each data.options[condition.type] as option (option)}
-                      <option value={option}>
-                        {platforms[option] ??
-                          m[
-                            option as 'mobile' | 'tablet' | 'desktop' | 'other'
-                          ]}
-                      </option>
-                    {/each}
-                  </select>
-                {:else}
-                  <input
-                    class={fieldClass}
-                    type="text"
-                    bind:value={condition.value}
-                    placeholder={hints[condition.type]}
-                    maxlength={condition.type === 'country'
-                      ? 2
-                      : condition.type === 'region'
-                        ? 6
-                        : 64}
-                    spellcheck="false"
-                    required
-                  />
-                {/if}
-              </label>
+                  <label class="block space-y-1.5 text-sm">
+                    <span class="font-medium">{m.type}</span>
+                    <select
+                      id="condition-{condition.key}-type"
+                      class={fieldClass}
+                      value={condition.type}
+                      onchange={(event) =>
+                        changeType(
+                          condition,
+                          event.currentTarget.value as ConditionType,
+                        )}
+                    >
+                      {#each types as type (type)}
+                        <option value={type}>{m[type]}</option>
+                      {/each}
+                    </select>
+                  </label>
+                  {#if condition.type === 'language'}
+                    <label class="block space-y-1.5 text-sm">
+                      <span class="font-medium">{m.languageMatch}</span>
+                      <select
+                        class={fieldClass}
+                        bind:value={condition.operator}
+                      >
+                        <option value="eq">{m.exact}</option>
+                        <option value="base_language">{m.base}</option>
+                      </select>
+                    </label>
+                  {/if}
+                  <label class="block space-y-1.5 text-sm">
+                    <span class="font-medium">{m.value}</span>
+                    {#if condition.type === 'os' || condition.type === 'device'}
+                      <select class={fieldClass} bind:value={condition.value}>
+                        {#each data.options[condition.type] as option (option)}
+                          <option value={option}>
+                            {platforms[option] ??
+                              m[
+                                option as
+                                  'mobile' | 'tablet' | 'desktop' | 'other'
+                              ]}
+                          </option>
+                        {/each}
+                      </select>
+                    {:else}
+                      <input
+                        class={fieldClass}
+                        type="text"
+                        bind:value={condition.value}
+                        placeholder={hints[condition.type]}
+                        maxlength={condition.type === 'country'
+                          ? 2
+                          : condition.type === 'region'
+                            ? 6
+                            : 64}
+                        spellcheck="false"
+                        required
+                      />
+                    {/if}
+                  </label>
+                  <button
+                    type="button"
+                    class={buttonClass}
+                    onclick={() => removeCondition(rule, conditionIndex)}
+                    disabled={rule.conditions.length === 1}
+                  >
+                    {m.removeCondition}
+                  </button>
+                </div>
+              {/each}
               <button
+                id="rule-{rule.key}-add-condition"
                 type="button"
                 class={buttonClass}
-                onclick={() => removeCondition(rule, conditionIndex)}
-                disabled={rule.conditions.length === 1}
+                onclick={() => addCondition(rule)}
+                disabled={rule.conditions.length >= data.limits.maxConditions}
               >
-                {m.removeCondition}
+                {m.addCondition}
               </button>
             </div>
-          {/each}
-          <button
-            id="rule-{rule.key}-add-condition"
-            type="button"
-            class={buttonClass}
-            onclick={() => addCondition(rule)}
-            disabled={rule.conditions.length >= data.limits.maxConditions}
-          >
-            {m.addCondition}
-          </button>
-        </div>
+            <button
+              type="button"
+              class={buttonClass}
+              onclick={() => removeRule(index)}
+            >
+              {m.removeRule}
+            </button>
+          </div>
+        {/if}
       </fieldset>
     {/each}
+
+    <dl class="rounded-xl border border-line bg-surface p-4 text-sm">
+      <dt class="font-semibold">{m.defaultDestination}</dt>
+      <dd class="mt-2 break-all text-muted">
+        <code>{data.destinationUrl}</code>
+      </dd>
+    </dl>
 
     <div class="flex flex-wrap gap-3">
       <button

@@ -44,6 +44,8 @@
       label: csvMessages(data.locale).title,
       icon: Upload,
     },
+    { href: '/admin/utm', label: 'UTM', icon: Route },
+    { href: '/admin/domains', label: links.domains, icon: Globe },
     ...(data.user.role === 'owner'
       ? [
           {
@@ -51,15 +53,9 @@
             label: backupMessages(data.locale).title,
             icon: Archive,
           },
-          {
-            href: '/admin/integrations/mcp',
-            label: 'MCP',
-            icon: Route,
-          },
+          { href: '/admin/integrations/mcp', label: 'MCP', icon: Route },
         ]
       : []),
-    { href: '/admin/utm', label: 'UTM', icon: Route },
-    { href: '/admin/domains', label: links.domains, icon: Globe },
     { href: '/admin/settings', label: preferences.settings, icon: Settings },
     {
       href: '/admin/settings/security',
@@ -73,13 +69,13 @@
     },
   ]);
   const groupLabels = {
-    en: ['Workspace', 'Manage'],
-    ja: ['ワークスペース', '管理'],
-    'zh-CN': ['工作区', '管理'],
-    'zh-TW': ['工作區', '管理'],
-    es: ['Espacio de trabajo', 'Administrar'],
-    it: ['Area di lavoro', 'Gestione'],
-    fr: ['Espace de travail', 'Gestion'],
+    en: ['Workspace', 'Link tools', 'Instance'],
+    ja: ['ワークスペース', 'リンクツール', 'インスタンス'],
+    'zh-CN': ['工作区', '链接工具', '实例'],
+    'zh-TW': ['工作區', '連結工具', '執行個體'],
+    es: ['Espacio de trabajo', 'Herramientas de enlaces', 'Instancia'],
+    it: ['Area di lavoro', 'Strumenti per link', 'Istanza'],
+    fr: ['Espace de travail', 'Outils de liens', 'Instance'],
   } as const;
   let currentItem = $derived(
     nav.find((item) => active(item.href, page.url.pathname)) ?? nav[0],
@@ -104,17 +100,26 @@
     fr: 'Fermer la navigation',
   };
   function active(href: string, path: string) {
-    return href === '/admin' || href === '/admin/settings'
-      ? href === path
-      : path === href || path.startsWith(`${href}/`);
+    if (href === '/admin') return href === path;
+    if (href === '/admin/settings') {
+      return (
+        path === href ||
+        (path.startsWith(`${href}/`) && !path.startsWith(`${href}/security`))
+      );
+    }
+    return path === href || path.startsWith(`${href}/`);
   }
 </script>
 
 {#snippet navigation()}
   <nav aria-label={messages['admin.title']} class="navigation">
     {#each nav as item, index (item.href)}
-      {#if index === 0 || item.href === '/admin/import'}
-        <p class="nav-group">{groupLabels[data.locale][index === 0 ? 0 : 1]}</p>
+      {#if index === 0 || item.href === '/admin/import' || item.href === '/admin/domains'}
+        <p class="nav-group">
+          {groupLabels[data.locale][
+            index === 0 ? 0 : item.href === '/admin/import' ? 1 : 2
+          ]}
+        </p>
       {/if}
       <a
         href={item.href}
@@ -129,16 +134,13 @@
           <item.icon size={18} strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span>{item.label}</span>
-        {#if active(item.href, page.url.pathname)}
-          <span class="current-position" aria-hidden="true"></span>
-        {/if}
       </a>
     {/each}
   </nav>
 {/snippet}
 <div class="admin-shell">
   <aside class="sidebar">
-    <div class="brand-wrap"><Brand href="/admin" tone="dark" /></div>
+    <div class="brand-wrap"><Brand href="/admin" /></div>
     {@render navigation()}
   </aside>
   <dialog
@@ -148,7 +150,7 @@
     aria-label={messages['admin.title']}
   >
     <div class="drawer-header">
-      <Brand href="/admin" tone="dark" />
+      <Brand href="/admin" />
       <form method="dialog">
         <button
           class="drawer-close"
@@ -209,24 +211,25 @@
   .admin-shell {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 232px minmax(0, 1fr);
     background: var(--ui-background);
     color: var(--ui-text);
   }
   .sidebar,
   .drawer {
-    background: var(--brand-ink);
-    color: var(--brand-on-ink);
+    background: light-dark(var(--ui-surface), var(--brand-ink));
+    color: var(--ui-text);
   }
   .sidebar {
-    padding: 30px 18px;
+    padding: 24px 14px;
     position: sticky;
     top: 0;
     height: 100vh;
     overflow-y: auto;
+    border-inline-end: 1px solid var(--ui-border);
   }
   .brand-wrap {
-    padding: 0 10px 24px;
+    padding: 0 10px 18px;
   }
   .navigation {
     display: flex;
@@ -234,8 +237,8 @@
     gap: 4px;
   }
   .nav-group {
-    margin: 20px 13px 8px;
-    color: var(--brand-muted-on-ink);
+    margin: 20px 11px 7px;
+    color: var(--ui-text-muted);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.11em;
@@ -244,14 +247,14 @@
   }
   .navigation a {
     display: grid;
-    grid-template-columns: 27px minmax(0, 1fr) 6px;
+    grid-template-columns: 27px minmax(0, 1fr);
     align-items: center;
     gap: 8px;
-    min-height: 40px;
+    min-height: 38px;
     padding: 6px 11px 6px 8px;
     border: 1px solid transparent;
-    border-radius: 10px;
-    color: var(--brand-muted-on-ink);
+    border-radius: 8px;
+    color: var(--ui-text-muted);
     font-size: 14px;
     font-weight: 530;
     text-decoration: none;
@@ -268,45 +271,29 @@
     border-radius: 7px;
   }
   .navigation a:hover {
-    background: var(--brand-ink-panel);
-    color: var(--brand-on-ink);
+    background: light-dark(var(--ui-background), var(--brand-ink-panel));
+    color: var(--ui-text);
   }
   .navigation a[aria-current] {
-    background: color-mix(
-      in srgb,
-      var(--brand-ink-panel) 95%,
-      var(--brand-signal)
-    );
-    border-color: var(--brand-ink-border);
-    color: var(--brand-on-ink);
+    background: light-dark(var(--ui-accent-surface), var(--brand-ink-panel));
+    color: var(--ui-link);
     font-weight: 640;
-  }
-  .navigation a[aria-current] .nav-icon {
-    background: color-mix(in srgb, var(--brand-signal) 13%, transparent);
-    color: var(--brand-focus-on-ink);
-  }
-  .current-position {
-    width: 5px;
-    height: 5px;
-    justify-self: end;
-    border-radius: 50%;
-    background: var(--brand-focus-on-ink);
   }
   .navigation a:focus-visible,
   .drawer-close:focus-visible {
-    outline: 3px solid var(--brand-focus-on-ink);
+    outline: 3px solid var(--ui-focus);
     outline-offset: 2px;
   }
   .admin-content {
     min-width: 0;
   }
   .topbar {
-    min-height: 76px;
+    min-height: 64px;
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 24px;
-    padding: 14px 40px;
+    gap: 20px;
+    padding: 10px 32px;
     border-bottom: 1px solid var(--ui-border);
     background: var(--ui-surface);
   }
@@ -371,7 +358,7 @@
   .main-content {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 48px 40px 80px;
+    padding: 36px 32px 72px;
   }
   .menu-button {
     display: none;
@@ -401,7 +388,7 @@
     place-items: center;
     width: 44px;
     height: 44px;
-    color: var(--brand-on-ink);
+    color: var(--ui-text);
   }
   @media (max-width: 767px) {
     .admin-shell {
@@ -426,6 +413,14 @@
     }
     .topbar-context {
       display: none;
+    }
+    .topbar-account {
+      max-width: min(45vw, 220px);
+    }
+    .account-email {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .account-mark {
       display: none;
