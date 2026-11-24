@@ -13,7 +13,7 @@ Linkrovia is an open-source URL shortener for Cloudflare Workers. Use your own d
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia)
 [![CI](https://github.com/enjoydarts/linkrovia/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/enjoydarts/linkrovia/actions/workflows/ci.yml)
 
-On a new Cloudflare account, [enable Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine) once before deploying.
+You can finish setup and start using short links before [enabling click analytics](docs/deployment.md#enable-click-analytics).
 
 ## See it in action
 
@@ -29,7 +29,7 @@ On a new Cloudflare account, [enable Workers Analytics Engine](https://dash.clou
 
 - **Route and schedule.** Open **Redirect rules** on a saved link to route visitors by device, operating system, location, or language. Test the rules in the simulator. Set start and expiration times, and apply reusable UTM templates to each destination.
 - **Control access.** Create password-protected or one-time links, download QR codes, and sign in to the admin dashboard with passkeys. Owners can invite administrators and enable Cloudflare Turnstile for sign-in.
-- **Measure results.** Click collection starts with your first redirect. Explore reports by link, domain, and traffic source. Define conversion goals and send events from your server.
+- **Measure results.** Click collection starts with your first redirect after Analytics Engine is enabled. Explore reports by link, domain, and traffic source. Define conversion goals and send events from your server.
 - **Automate and migrate.** Import links from CSV, export portable configuration backups, and use scoped API keys for REST or MCP. The admin dashboard includes examples for Codex, Claude Code, GitHub Copilot, VS Code, Cursor, and Gemini CLI.
 
 The dashboard supports English, Japanese, Simplified Chinese, Traditional Chinese, Spanish, Italian, and French, with light and dark themes and user-selectable time zones.

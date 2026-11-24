@@ -1,3 +1,4 @@
+import { dev } from '$app/env';
 import { error, redirect } from '@sveltejs/kit';
 import { getDb } from '$lib/server/db/client';
 import { getEffectiveTimeZone } from '$lib/server/db/preferences';
@@ -14,5 +15,6 @@ export const load = (async ({ locals }) => {
     user: { email: user.email, role: user.role },
     csrfToken,
     timeZone: await getEffectiveTimeZone(getDb(locals.env.DB), user.timezone),
+    analyticsDeferred: !dev && !locals.env.CLICKS && !locals.env.ANALYTICS_SQL,
   };
 }) satisfies LayoutServerLoad;

@@ -2,17 +2,13 @@
 
 Linkrovia runs on one Cloudflare Worker with a D1 database. The Worker serves the app and runs the scheduled analytics jobs. Linkrovia is in development. Workers Builds deployment and custom-domain setup through owner passkey registration have been verified on a deployed Worker. End-to-end installation with the Deploy to Cloudflare button on a new Workers Free account is pending verification.
 
-## Before you deploy
-
-Open [Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine), select the Cloudflare account that will host Linkrovia, and enable the service if prompted. This is a one-time account setup step. Linkrovia starts recording clicks as soon as the Worker serves short links, and [Cloudflare creates the dataset on its first write](https://developers.cloudflare.com/analytics/analytics-engine/get-started/).
-
-If a build stops with Cloudflare error `10089`, enable Analytics Engine in the destination account and select **Retry build** for the failed run. The retry uses the existing Worker and database and skips D1 migrations that already ran.
-
 ## Install with Deploy to Cloudflare
 
 1. Open [Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia), sign in to Cloudflare, and connect GitHub when prompted.
 2. Choose the names for your repository, Worker, and new D1 database. When prompted for `SETUP_TOKEN`, generate and save a private random value of at least 32 characters. Keep `npm run build` and `npm run deploy` as the build and deploy commands.
 3. After deployment succeeds, follow the [browser setup steps](#set-up-the-owner-account).
+
+When Cloudflare rejects the first upload with error `10089`, Linkrovia retries the upload without its click analytics bindings. You can finish setup and use short links, then [enable click analytics](#enable-click-analytics) on the same installation.
 
 [How Cloudflare provisions resources for the deploy button](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
 
@@ -36,6 +32,12 @@ If the error returns immediately after authorization and there is no build log, 
 1. Open your Worker's `workers.dev` address from **Workers & Pages**. Check that `/health` returns `{"status":"ok"}`, then open `/setup` and enter your setup token. If setup asks you to configure the Worker, check that the deployed Worker has the secret. If you lost the token before completing setup, replace it and deploy the change.
 2. Choose where to open your admin dashboard before registering your passkey. Select **Use this hostname** to stay on `workers.dev`. To use a custom hostname, follow the [domain connection guide](domains.md), open setup on the custom hostname, and enter the setup token again there. If the page is still waiting for HTTPS, retry from the same setup screen when Cloudflare is ready.
 3. Create the owner account and register a passkey on the chosen hostname. Open a fresh browser session and confirm you can sign in there. Remove `SETUP_TOKEN` from **Variables and Secrets** after setup is complete.
+
+## Enable click analytics
+
+1. Open [Workers Analytics Engine](https://dash.cloudflare.com/?to=/:account/workers/analytics-engine), select the Cloudflare account that hosts Linkrovia, and enable the service.
+2. In the same Worker's **Deployments**, select **View Build History**, open the latest build, and select **Retry build**. Workers Builds uses the installation's existing Worker and database. [Build history and retry](https://developers.cloudflare.com/workers/ci-cd/builds/troubleshoot/)
+3. Open a short link and check **Link analytics**. Click collection starts with the redeployed Worker. [Cloudflare creates the dataset on its first write](https://developers.cloudflare.com/analytics/analytics-engine/get-started/).
 
 ## Keep analytics history
 

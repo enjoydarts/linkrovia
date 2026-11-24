@@ -16,7 +16,9 @@ import {
   type TrendResult,
 } from './repository';
 
-export type ClickAnalyticsEnv = Pick<Cloudflare.Env, 'ANALYTICS_SQL'> & {
+export type ClickAnalyticsEnv = Partial<
+  Pick<Cloudflare.Env, 'ANALYTICS_SQL'>
+> & {
   LINKROVIA_CLICKS_DATASET?: string;
 };
 

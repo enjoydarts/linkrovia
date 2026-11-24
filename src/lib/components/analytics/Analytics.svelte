@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AnalyticsActivationNotice from './AnalyticsActivationNotice.svelte';
   import type { Snippet } from 'svelte';
   import type { Locale } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
@@ -18,6 +19,8 @@
     filters,
     domains = [],
     linkScoped = false,
+    analyticsDeferred = false,
+    canConfigureAnalytics = false,
     repair,
   }: {
     locale: Locale;
@@ -27,6 +30,8 @@
     filters: Record<string, string>;
     domains?: readonly { id: string; hostname: string }[];
     linkScoped?: boolean;
+    analyticsDeferred?: boolean;
+    canConfigureAnalytics?: boolean;
     repair?: Snippet;
   } = $props();
   let m = $derived(analyticsMessages(locale));
@@ -243,7 +248,10 @@
     </button>
   </form>
 </div>
-{#if failed}
+{#if analyticsDeferred}
+  <AnalyticsActivationNotice {locale} canConfigure={canConfigureAnalytics} />
+{/if}
+{#if failed && !(analyticsDeferred && failed === true)}
   <p class="notice" role="alert">
     {failed === 'unsupported_archive_filters'
       ? archive.unsupportedFilters

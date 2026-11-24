@@ -1,9 +1,6 @@
 import { dev } from '$app/env';
 import { Temporal } from '@js-temporal/polyfill';
-import {
-  CloudflareAnalyticsRepository,
-  type ClickAnalyticsEnv,
-} from '$lib/server/analytics/cloudflare';
+import { CloudflareAnalyticsRepository } from '$lib/server/analytics/cloudflare';
 import { MockAnalyticsRepository } from '$lib/server/analytics/mock';
 import type {
   AnalyticsDimension,
@@ -48,6 +45,14 @@ export const load = (async (event) => {
     result: BreakdownResult | null;
   }> = [];
   try {
+    const { ANALYTICS_SQL: binding, LINKROVIA_CLICKS_DATASET: dataset } =
+      event.locals.env;
+    const repository = dev
+      ? new MockAnalyticsRepository()
+      : binding
+        ? new CloudflareAnalyticsRepository(binding, dataset)
+        : null;
+    if (!repository) throw new Error('Analytics SQL binding is unavailable');
     const parsed = parseAnalyticsQuery(
       new URLSearchParams({ dimension: 'link' }),
       timezone,
@@ -55,12 +60,6 @@ export const load = (async (event) => {
     report = await loadAnalyticsReport(event.locals.env, parsed, {
       development: dev,
     });
-    const repository = dev
-      ? new MockAnalyticsRepository()
-      : new CloudflareAnalyticsRepository(
-          event.locals.env.ANALYTICS_SQL,
-          (event.locals.env as ClickAnalyticsEnv).LINKROVIA_CLICKS_DATASET,
-        );
     const priorEnd = Temporal.PlainDate.from(parsed.from).subtract({ days: 1 });
     const priorStart = priorEnd.subtract({ days: 13 });
     const prior = parseAnalyticsQuery(

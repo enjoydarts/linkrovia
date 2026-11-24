@@ -1,5 +1,6 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import AnalyticsActivationNotice from '$lib/components/analytics/AnalyticsActivationNotice.svelte';
   import ReportChart from '$lib/components/analytics/ReportChart.svelte';
   import { analyticsMessages } from '$lib/components/analytics/messages';
   import Plus from '@lucide/svelte/icons/plus';
@@ -109,63 +110,70 @@
     </section>
   {/if}
   <div class="dashboard-content">
-    <section class="context-panel" aria-labelledby="analytics-heading">
-      <div class="admin-section-header section-heading">
-        <h2 id="analytics-heading">{analytics.title}</h2>
-        <a href="/admin/analytics">
-          {labels[4]} <span aria-hidden="true">→</span>
-        </a>
-      </div>
-      {#if data.report}
-        <div class="chart-heading">
-          <h3>{analytics.daily}</h3>
-          <span>
-            {analytics.timezone}: {data.report.meta
-              .timezone}{#if data.report.meta.dateBasis === 'UTC' && data.report.meta.timezone !== 'UTC'}
-              · UTC{/if}
-          </span>
+    {#if data.analyticsDeferred}
+      <AnalyticsActivationNotice
+        locale={data.locale}
+        canConfigure={data.user.role === 'owner'}
+      />
+    {:else}
+      <section class="context-panel" aria-labelledby="analytics-heading">
+        <div class="admin-section-header section-heading">
+          <h2 id="analytics-heading">{analytics.title}</h2>
+          <a href="/admin/analytics">
+            {labels[4]} <span aria-hidden="true">→</span>
+          </a>
         </div>
-        <ReportChart
-          kind="line"
-          labels={data.report.series.map((row) => row.date)}
-          values={data.report.series.map((row) => row.clicks)}
-          label={analytics.clicks}
-        />
-        <div class="chart-footer">
-          <p>
-            {data.report.meta.source === 'analytics-engine'
-              ? labels[3]
-              : analytics.sample}{#if data.report.meta.estimated}
-              · {analytics.estimated}{/if}
-          </p>
-          <details>
-            <summary>{analytics.daily}</summary>
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">{analytics.date}</th><th scope="col">
-                    {analytics.clicks}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each data.report.series as row (row.date)}
+        {#if data.report}
+          <div class="chart-heading">
+            <h3>{analytics.daily}</h3>
+            <span>
+              {analytics.timezone}: {data.report.meta
+                .timezone}{#if data.report.meta.dateBasis === 'UTC' && data.report.meta.timezone !== 'UTC'}
+                · UTC{/if}
+            </span>
+          </div>
+          <ReportChart
+            kind="line"
+            labels={data.report.series.map((row) => row.date)}
+            values={data.report.series.map((row) => row.clicks)}
+            label={analytics.clicks}
+          />
+          <div class="chart-footer">
+            <p>
+              {data.report.meta.source === 'analytics-engine'
+                ? labels[3]
+                : analytics.sample}{#if data.report.meta.estimated}
+                · {analytics.estimated}{/if}
+            </p>
+            <details>
+              <summary>{analytics.daily}</summary>
+              <table>
+                <thead>
                   <tr>
-                    <th scope="row">{row.date}</th><td>
-                      {row.clicks?.toLocaleString(data.locale) ?? '—'}
-                    </td>
+                    <th scope="col">{analytics.date}</th><th scope="col">
+                      {analytics.clicks}
+                    </th>
                   </tr>
-                {/each}
-              </tbody>
-            </table>
-          </details>
-        </div>
-      {:else}
-        <p class="empty" role="status">
-          {labels[2]} · <a href="/admin/analytics">{labels[4]}</a>
-        </p>
-      {/if}
-    </section>
+                </thead>
+                <tbody>
+                  {#each data.report.series as row (row.date)}
+                    <tr>
+                      <th scope="row">{row.date}</th><td>
+                        {row.clicks?.toLocaleString(data.locale) ?? '—'}
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </details>
+          </div>
+        {:else}
+          <p class="empty" role="status">
+            {labels[2]} · <a href="/admin/analytics">{labels[4]}</a>
+          </p>
+        {/if}
+      </section>
+    {/if}
     <div class="link-cards">
       <section
         class="context-panel link-card recent"

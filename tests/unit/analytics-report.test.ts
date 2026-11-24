@@ -7,6 +7,13 @@ import {
 
 const now = Date.parse('2026-11-12T12:00:00Z') / 1000;
 
+it('treats a deferred production analytics binding as unavailable', async () => {
+  const query = parseAnalyticsQuery(new URLSearchParams(), 'UTC', { now });
+  await expect(
+    loadAnalyticsReport({}, query, { development: false }),
+  ).rejects.toThrow('Analytics SQL binding is unavailable');
+});
+
 it('uses the local civil dates and a half-open interval on a 25-hour day', () => {
   const params = new URLSearchParams({
     from: '2026-11-01',

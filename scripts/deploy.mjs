@@ -1,11 +1,21 @@
-import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import {
+  closeSync,
+  openSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const redirectPath = resolve(root, '.wrangler/deploy/config.json');
 const wrangler = resolve(root, 'node_modules/wrangler/bin/wrangler.js');
+const analyticsDisabledCode = '[code: 10089]';
 
 function runWrangler(args) {
   const result = spawnSync(process.execPath, [wrangler, ...args], {
@@ -14,6 +24,59 @@ function runWrangler(args) {
   });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
+}
+
+function upload(configPath) {
+  return new Promise((resolveUpload, reject) => {
+    const child = spawn(
+      process.execPath,
+      [wrangler, 'deploy', '--config', relative(root, configPath)],
+      { cwd: root, stdio: ['inherit', 'inherit', 'pipe'] },
+    );
+    child.stderr.pipe(process.stderr, { end: false });
+
+    let tail = '';
+    let analyticsDisabled = false;
+    child.stderr.on('data', (chunk) => {
+      // Wrangler prints API error codes on stderr. Keep only enough to match a split code.
+      if (analyticsDisabled) return;
+      const output = tail + chunk.toString();
+      analyticsDisabled = output.includes(analyticsDisabledCode);
+      tail = output.slice(1 - analyticsDisabledCode.length);
+    });
+    child.once('error', reject);
+    child.once('close', (code) =>
+      resolveUpload({
+        status: code ?? 1,
+        analyticsDisabled: code !== null && code !== 0 && analyticsDisabled,
+      }),
+    );
+  });
+}
+
+async function uploadWithoutAnalytics(generatedPath, config) {
+  config.analytics_engine_datasets = config.analytics_engine_datasets.filter(
+    (entry) => entry.binding !== 'CLICKS',
+  );
+  if (config.analytics?.binding === 'ANALYTICS_SQL') delete config.analytics;
+  delete config.vars.LINKROVIA_CLICKS_DATASET;
+
+  // A sibling config keeps Wrangler's paths to the Worker, assets, and migrations valid.
+  const fallbackPath = resolve(
+    dirname(generatedPath),
+    `.wrangler-no-analytics-${randomUUID()}.json`,
+  );
+  const file = openSync(fallbackPath, 'wx', 0o600);
+  try {
+    try {
+      writeFileSync(file, JSON.stringify(config));
+    } finally {
+      closeSync(file);
+    }
+    return await upload(fallbackPath);
+  } finally {
+    rmSync(fallbackPath, { force: true });
+  }
 }
 
 try {
@@ -107,7 +170,16 @@ try {
   runWrangler(['deploy', ...configArgs, '--dry-run']);
   if (!dryRun) {
     runWrangler(['d1', 'migrations', 'apply', 'DB', '--remote', ...configArgs]);
-    runWrangler(['deploy', ...configArgs]);
+    const result = await upload(generatedPath);
+    if (result.analyticsDisabled) {
+      console.warn(
+        'Cloudflare Analytics Engine is disabled. Retrying the Worker upload without it. Enable Analytics Engine in Cloudflare and redeploy to start collecting clicks.',
+      );
+      const fallback = await uploadWithoutAnalytics(generatedPath, config);
+      process.exitCode = fallback.status;
+    } else {
+      process.exitCode = result.status;
+    }
   }
 } catch (error) {
   if (error.code === 'ENOENT') {

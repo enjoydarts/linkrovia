@@ -79,7 +79,14 @@ export const load = (async ({ cookies, locals, url }) => {
     await verifySetupProof(cookies.get(setupProofCookie), secret, url.origin)
   ) {
     if (hosts?.management === hostname)
-      return { locale, ...methods, step: 'owner', turnstile: null } as const;
+      return {
+        locale,
+        ...methods,
+        step: 'owner',
+        turnstile: null,
+        analyticsDeferred:
+          !dev && !locals.env.CLICKS && !locals.env.ANALYTICS_SQL,
+      } as const;
     if (hosts?.deployment === hostname)
       return {
         locale,

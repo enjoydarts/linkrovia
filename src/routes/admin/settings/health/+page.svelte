@@ -1,10 +1,15 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import {
+    analyticsActivationMessages,
+    analyticsEngineDashboard,
+  } from '$lib/i18n/analytics-activation';
   import '../../admin-context.css';
   import type { PageProps } from './$types';
   import { healthMessages } from './messages';
 
   let { data }: PageProps = $props();
+  let activation = $derived(analyticsActivationMessages[data.locale]);
   let m = $derived(healthMessages(data.locale));
   let format = $derived(
     new Intl.DateTimeFormat(data.locale, {
@@ -70,10 +75,23 @@
       <p
         class="inline-block rounded-md border border-line bg-canvas px-2.5 py-1 text-sm font-medium"
       >
-        {data.health.analytics === 'available'
-          ? m.connected
-          : m[data.health.analytics]}
+        {data.analyticsDeferred
+          ? m.unconfigured
+          : data.health.analytics === 'available'
+            ? m.connected
+            : m[data.health.analytics]}
       </p>
+      {#if data.analyticsDeferred}
+        <p class="text-sm text-muted">{activation.steps}</p>
+        <a
+          class="admin-button"
+          href={analyticsEngineDashboard}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {activation.dashboard} <span aria-hidden="true">↗</span>
+        </a>
+      {/if}
     </section>
     <section class="context-panel space-y-3" aria-labelledby="clicks-heading">
       <div class="admin-section-header">
@@ -82,7 +100,7 @@
       <p
         class="inline-block rounded-md border border-line bg-canvas px-2.5 py-1 text-sm font-medium"
       >
-        {m[data.health.clicks.status]}
+        {data.analyticsDeferred ? m.unconfigured : m[data.health.clicks.status]}
       </p>
       <dl class="space-y-2 text-sm">
         <div>
@@ -93,7 +111,7 @@
           <dt class="font-medium">{m.completed}</dt>
           <dd>{date(data.health.clicks.completedAt)}</dd>
         </div>
-        {#if data.health.clicks.missingDays.length}
+        {#if !data.analyticsDeferred && data.health.clicks.missingDays.length}
           <div>
             <dt class="font-medium">{m.missing}</dt>
             <dd class="break-words">
@@ -102,12 +120,14 @@
           </div>
         {/if}
       </dl>
-      <a
-        class="admin-button block w-fit"
-        href="/admin/analytics#click-history-recovery"
-      >
-        {m.recovery}
-      </a>
+      {#if !data.analyticsDeferred}
+        <a
+          class="admin-button block w-fit"
+          href="/admin/analytics#click-history-recovery"
+        >
+          {m.recovery}
+        </a>
+      {/if}
     </section>
     <section
       class="context-panel space-y-3"

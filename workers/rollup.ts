@@ -34,6 +34,7 @@ async function reconciliationDate(
 }
 
 async function rollupClicks(job: ClickRollupJob, env: RollupEnv, now: number) {
+  if (!env.ANALYTICS_SQL) return;
   const analyticsRepository = new CloudflareAnalyticsRepository(
     env.ANALYTICS_SQL,
     env.LINKROVIA_CLICKS_DATASET,

@@ -288,7 +288,8 @@ async function appendLiveTail(
   query: StatsQuery,
   retentionStart: number,
 ) {
-  if (archive.breakdown.length >= combinedBreakdownLimit) return archive;
+  if (!env.ANALYTICS_SQL || archive.breakdown.length >= combinedBreakdownLimit)
+    return archive;
   const lastSaved = archive.series.findLast(({ clicks }) => clicks !== null);
   const nextDay = lastSaved
     ? Date.parse(lastSaved.date) / 1000 + daySeconds
@@ -406,10 +407,13 @@ export async function loadAnalyticsReport(
   }
   const repository = development
     ? new MockAnalyticsRepository()
-    : new CloudflareAnalyticsRepository(
-        env.ANALYTICS_SQL,
-        env.LINKROVIA_CLICKS_DATASET,
-      );
+    : env.ANALYTICS_SQL
+      ? new CloudflareAnalyticsRepository(
+          env.ANALYTICS_SQL,
+          env.LINKROVIA_CLICKS_DATASET,
+        )
+      : null;
+  if (!repository) throw new Error('Analytics SQL binding is unavailable');
   const hourly = granularity === 'hour';
   const [trend, result] = await Promise.all([
     repository.getClickTrend({

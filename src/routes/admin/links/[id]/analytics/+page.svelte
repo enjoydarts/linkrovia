@@ -15,6 +15,8 @@
     report={data.report}
     failed={data.failed}
     filters={data.filters}
+    analyticsDeferred={data.analyticsDeferred}
+    canConfigureAnalytics={data.user.role === 'owner'}
     base={`/admin/links/${data.linkId}/analytics`}
     linkScoped
   />

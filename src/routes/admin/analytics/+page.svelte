@@ -21,10 +21,12 @@
   failed={data.failed}
   filters={data.filters}
   domains={data.domains}
+  analyticsDeferred={data.analyticsDeferred}
+  canConfigureAnalytics={data.user.role === 'owner'}
   base="/admin/analytics"
 >
   {#snippet repair()}
-    {#if data.repair}
+    {#if data.repair && !data.analyticsDeferred}
       <section
         id="click-history-recovery"
         class="workspace-panel repair"

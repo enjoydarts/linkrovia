@@ -1,5 +1,9 @@
 <script lang="ts">
   import { brand } from '$lib/brand';
+  import {
+    analyticsActivationMessages,
+    analyticsEngineDashboard,
+  } from '$lib/i18n/analytics-activation';
   import { enhance } from '$app/forms';
   import { messagesFor } from '$lib/i18n/locale';
   import AuthFrame from '$lib/components/auth/AuthFrame.svelte';
@@ -10,6 +14,7 @@
   import type { PageProps, SubmitFunction } from './$types';
 
   let { data, form }: PageProps = $props();
+  let activation = $derived(analyticsActivationMessages[data.locale]);
   let connecting = $state(false);
   let messages = $derived(messagesFor(data.locale));
   let domainMessages = $derived(setupDomainMessages[data.locale]);
@@ -214,6 +219,25 @@
     {:else if data.step === 'owner'}
       <section class="space-y-5">
         <h2 class="text-xl font-semibold">{messages['setup.step2']}</h2>
+        {#if data.analyticsDeferred}
+          <aside
+            class="space-y-2 rounded-md border border-line bg-surface-muted p-3 text-sm"
+            aria-labelledby="setup-analytics-heading"
+          >
+            <h3 id="setup-analytics-heading" class="font-semibold">
+              {activation.heading}
+            </h3>
+            <p>{activation.continueSetup} {activation.steps}</p>
+            <a
+              class="inline-block text-link underline underline-offset-4"
+              href={analyticsEngineDashboard}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {activation.dashboard} <span aria-hidden="true">↗</span>
+            </a>
+          </aside>
+        {/if}
         {#if data.passkeyAvailable}<PasskeyForm
             mode="setup"
             locale={data.locale}

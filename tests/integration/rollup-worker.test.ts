@@ -95,6 +95,23 @@ it.each([0, 2, 4, 23])(
   },
 );
 
+it('runs the hourly schedule without an analytics binding while tracking is deferred', async () => {
+  const { DB } = platform.env;
+  await worker.scheduled(
+    {
+      scheduledTime: new Date().setUTCMinutes(45, 0, 0),
+      cron: schedule,
+      noRetry() {},
+    },
+    { DB },
+  );
+  expect(
+    await DB.prepare('SELECT COUNT(*) AS count FROM rollup_jobs').first(
+      'count',
+    ),
+  ).toBe(0);
+});
+
 it('validates, bounds and restores a missing day outside automatic reconciliation', async () => {
   const { DB } = platform.env;
   const now = Math.floor(Date.now() / 1000);
