@@ -15,7 +15,6 @@
   import Menu from '@lucide/svelte/icons/menu';
   import X from '@lucide/svelte/icons/x';
   import { csvMessages } from './import/messages';
-  import { brand } from '$lib/brand';
   import Brand from '$lib/components/Brand.svelte';
   import { messagesFor } from '$lib/i18n/locale';
   import { linkMessages } from '$lib/i18n/links';
@@ -98,23 +97,11 @@
       key,
       label: groupLabels[data.locale][index],
       items: nav.filter((item) => groupFor(item.href) === key),
-      icon:
-        key === 'workspace'
-          ? LayoutDashboard
-          : key === 'tools'
-            ? Route
-            : Settings,
     })),
-  );
-  let currentGroup = $derived(
-    groupFor(
-      (nav.find((item) => active(item.href, page.url.pathname)) ?? nav[0]).href,
-    ),
   );
   let currentItem = $derived(
     nav.find((item) => active(item.href, page.url.pathname)) ?? nav[0],
   );
-  let currentSection = $derived(groups.find(({ key }) => key === currentGroup));
   let drawer: HTMLDialogElement;
   const menuLabels = {
     en: 'Open navigation',
@@ -139,56 +126,41 @@
     if (href === '/admin/settings') {
       return (
         path === href ||
-        (path.startsWith(`${href}/`) && !path.startsWith(`${href}/security`))
+        (path.startsWith(`${href}/`) &&
+          path !== `${href}/security` &&
+          !path.startsWith(`${href}/security/`))
       );
     }
     return path === href || path.startsWith(`${href}/`);
   }
 </script>
 
-{#snippet navigation(all = false)}
+{#snippet navigation()}
   <nav aria-label={messages['admin.title']} class="navigation">
     {#each groups as group (group.key)}
-      {#if all || group.key === currentGroup}
-        {#if all}<p class="nav-group">{group.label}</p>{/if}
-        {#each group.items as item (item.href)}
-          <a
-            href={item.href}
-            aria-current={active(item.href, page.url.pathname)
-              ? item.href === page.url.pathname
-                ? 'page'
-                : 'location'
-              : undefined}
-            onclick={() => drawer?.close()}
-          >
-            <span class="nav-icon">
-              <item.icon size={18} strokeWidth={1.8} aria-hidden="true" />
-            </span>
-            <span>{item.label}</span>
-          </a>
-        {/each}
-      {/if}
+      <p class="nav-group">{group.label}</p>
+      {#each group.items as item (item.href)}
+        <a
+          href={item.href}
+          aria-current={active(item.href, page.url.pathname)
+            ? item.href === page.url.pathname
+              ? 'page'
+              : 'location'
+            : undefined}
+          onclick={() => drawer?.close()}
+        >
+          <span class="nav-icon">
+            <item.icon size={18} strokeWidth={1.8} aria-hidden="true" />
+          </span>
+          <span>{item.label}</span>
+        </a>
+      {/each}
     {/each}
   </nav>
 {/snippet}
 <div class="admin-shell">
-  <aside class="rail" aria-label={messages['admin.title']}>
-    <Brand href="/admin" iconOnly tone="dark" />
-    <div class="rail-divider"></div>
-    {#each groups as group (group.key)}
-      <a
-        href={group.items[0].href}
-        aria-label={group.label}
-        title={group.label}
-        aria-current={group.key === currentGroup ? 'true' : undefined}
-        class:rail-active={group.key === currentGroup}
-      >
-        <group.icon size={20} aria-hidden="true" />
-      </a>
-    {/each}
-  </aside>
   <aside class="sidebar">
-    <p class="sidebar-title">{currentSection?.label}</p>
+    <div class="sidebar-brand"><Brand href="/admin" /></div>
     {@render navigation()}
   </aside>
   <dialog
@@ -209,7 +181,7 @@
         </button>
       </form>
     </div>
-    {@render navigation(true)}
+    {@render navigation()}
   </dialog>
   <div class="admin-content">
     <header class="topbar">
@@ -227,9 +199,7 @@
       >
         <Menu size={23} />
       </button>
-      <div class="topbar-context">
-        <span>{brand.name}</span><strong>{currentItem.label}</strong>
-      </div>
+      <span class="topbar-context">{currentItem.label}</span>
       <div class="topbar-account">
         <span class="account-mark" aria-hidden="true">
           {data.user.email.slice(0, 1).toUpperCase()}
@@ -259,44 +229,9 @@
   .admin-shell {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 68px 220px minmax(0, 1fr);
+    grid-template-columns: 212px minmax(0, 1fr);
     background: var(--ui-background);
     color: var(--ui-text);
-  }
-  .rail {
-    position: sticky;
-    top: 0;
-    display: flex;
-    height: 100vh;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 20px 10px;
-    background: #101b32;
-    color: #c3d3dc;
-  }
-  .rail-divider {
-    width: 28px;
-    height: 1px;
-    margin: 12px 0 4px;
-    background: #34465a;
-  }
-  .rail > a {
-    display: grid;
-    width: 44px;
-    height: 44px;
-    place-items: center;
-    border-radius: 12px;
-    color: inherit;
-  }
-  .rail > a:hover,
-  .rail > a.rail-active {
-    background: #28414d;
-    color: #6cf0df;
-  }
-  .rail > a:focus-visible {
-    outline: 3px solid #5eead4;
-    outline-offset: 2px;
   }
   .sidebar,
   .drawer {
@@ -304,23 +239,19 @@
     color: var(--ui-text);
   }
   .sidebar {
-    padding: 24px 14px;
+    padding: 0 12px 24px;
     position: sticky;
     top: 0;
     height: 100vh;
     overflow-y: auto;
     border-inline-end: 1px solid var(--ui-border);
   }
-  .sidebar-title {
-    min-height: 2.75rem;
+  .sidebar-brand {
     display: flex;
     align-items: center;
-    margin: 0 0 1rem;
-    padding-inline: 0.7rem;
-    color: var(--ui-text);
-    font-size: 1rem;
-    font-weight: 720;
-    overflow-wrap: anywhere;
+    min-height: 72px;
+    padding: 0 6px;
+    border-bottom: 1px solid var(--ui-border);
   }
   .navigation {
     display: flex;
@@ -368,8 +299,7 @@
   .navigation a[aria-current] {
     background: light-dark(var(--ui-accent-surface), var(--brand-ink-panel));
     color: var(--ui-link);
-    box-shadow: inset 3px 0 var(--ui-primary);
-    font-weight: 700;
+    font-weight: 650;
   }
   .navigation a:focus-visible,
   .drawer-close:focus-visible {
@@ -390,21 +320,7 @@
     background: light-dark(rgb(255 255 255 / 80%), rgb(18 32 54 / 88%));
   }
   .topbar-context {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-right: auto;
-    color: var(--ui-text-muted);
-    font-size: 13px;
-  }
-  .topbar-context strong {
-    color: var(--ui-text);
-    font-weight: 650;
-  }
-  .topbar-context strong::before {
-    content: '/';
-    color: var(--ui-border);
-    margin-right: 12px;
+    display: none;
   }
   .topbar-account {
     display: flex;
@@ -448,9 +364,8 @@
     text-decoration: underline;
   }
   .main-content {
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 44px clamp(28px, 4vw, 64px) 80px;
+    width: 100%;
+    padding: 36px clamp(20px, 3vw, 36px) 80px;
   }
   .menu-button {
     display: none;
@@ -486,8 +401,7 @@
     .admin-shell {
       display: block;
     }
-    .sidebar,
-    .rail {
+    .sidebar {
       display: none;
     }
     .topbar {
@@ -501,14 +415,21 @@
       flex: none;
       width: 44px;
       height: 44px;
-      margin-right: auto;
       color: var(--ui-text);
     }
     .topbar-context {
-      display: none;
+      display: block;
+      min-width: 0;
+      margin-right: auto;
+      overflow: hidden;
+      color: var(--ui-text);
+      font-size: 13px;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .topbar-account {
-      max-width: min(45vw, 220px);
+      max-width: min(35vw, 220px);
     }
     .account-email {
       overflow: hidden;
@@ -518,8 +439,28 @@
     .account-mark {
       display: none;
     }
+    .account-zone {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .main-content {
       padding: 32px 20px 60px;
+    }
+  }
+  @media (max-width: 420px) {
+    .topbar {
+      gap: 6px;
+      padding-inline: 12px;
+    }
+    .topbar-context {
+      display: none;
+    }
+    .menu-button {
+      margin-right: auto;
+    }
+    .topbar-account {
+      max-width: 45vw;
     }
   }
 </style>

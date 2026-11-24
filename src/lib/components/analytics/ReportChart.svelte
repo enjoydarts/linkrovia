@@ -143,4 +143,8 @@
   .chart.breakdown {
     height: 18rem;
   }
+  canvas {
+    display: block;
+    max-inline-size: 100%;
+  }
 </style>

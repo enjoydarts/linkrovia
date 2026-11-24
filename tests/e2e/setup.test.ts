@@ -226,7 +226,30 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await linkTabs.getByRole('link', { name: 'Analytics' }).click();
       await expect(page).toHaveURL(`${linkPage}/analytics`);
       const desktop = page.viewportSize()!;
-      await page.setViewportSize({ width: 390, height: 844 });
+      await page.setViewportSize({ width: 320, height: 844 });
+      const linkSections = page.locator('details.mobile-sections');
+      const linkMenu = linkSections.locator('summary');
+      await expect(linkMenu).toHaveText(/Link sections\s*Analytics/);
+      await linkMenu.focus();
+      await page.keyboard.press('Enter');
+      await expect(linkTabs.locator('a[aria-current]')).toHaveCount(1);
+      await linkTabs
+        .getByRole('link', { name: 'Conversions', exact: true })
+        .click();
+      await expect(page).toHaveURL(`${linkPage}/conversions`);
+      await expect(linkSections).not.toHaveAttribute('open');
+      await expect(linkMenu).toHaveText(/Link sections\s*Conversions/);
+      await linkMenu.press('Enter');
+      await expect(
+        linkTabs.getByRole('link', { name: 'Conversions' }),
+      ).toHaveAttribute('aria-current', 'page');
+      await linkTabs
+        .getByRole('link', { name: 'Analytics', exact: true })
+        .click();
+      await expect(page).toHaveURL(`${linkPage}/analytics`);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBe(320);
       await expect(page.getByLabel('Group by')).toBeHidden();
       await page.locator('label[for="report-filters-toggle"]').click();
       await expect(
@@ -498,8 +521,8 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       await withoutJs.close();
     }
     await page
-      .locator('.rail')
-      .getByRole('link', { name: 'Link tools', exact: true })
+      .locator('.sidebar')
+      .getByRole('link', { name: 'CSV import', exact: true })
       .click();
     await expect(page).toHaveURL('/admin/import');
     const csvFile = page.getByLabel('CSV file');

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined';
@@ -36,40 +37,21 @@
     detailId ? `/admin/links/${encodeURIComponent(detailId)}` : '',
   );
 
-  let groups = $derived([
+  let sectionsList = $derived([
+    { suffix: '', label: m.edit, icon: Link2 },
+    { suffix: '/rules', label: rules.title, icon: Route },
     {
-      label: labels.configuration,
-      entries: [
-        { suffix: '', label: m.edit, icon: Link2 },
-        { suffix: '/rules', label: rules.title, icon: Route },
-        { suffix: '/protection', label: protection.title, icon: Shield },
-        { suffix: '/simulate', label: simulation.title, icon: FlaskConical },
-      ],
+      suffix: '/analytics',
+      label: analytics.title,
+      icon: ChartNoAxesCombined,
     },
-    {
-      label: labels.performance,
-      entries: [
-        {
-          suffix: '/analytics',
-          label: analytics.title,
-          icon: ChartNoAxesCombined,
-        },
-        { suffix: '/conversions', label: analytics.conversions, icon: Target },
-      ],
-    },
-    {
-      label: labels.sharing,
-      entries: [
-        { suffix: '/qr', label: protection.qr, icon: QrCode },
-        { suffix: '/utm', label: utm.title, icon: Tags },
-      ],
-    },
+    { suffix: '/conversions', label: analytics.conversions, icon: Target },
+    { suffix: '/protection', label: protection.title, icon: Shield },
+    { suffix: '/qr', label: protection.qr, icon: QrCode },
+    { suffix: '/utm', label: utm.title, icon: Tags },
+    { suffix: '/simulate', label: simulation.title, icon: FlaskConical },
   ]);
-  let active = $derived(
-    groups
-      .flatMap(({ entries }) => entries)
-      .find(({ suffix }) => isCurrent(suffix)),
-  );
+  let active = $derived(sectionsList.find(({ suffix }) => isCurrent(suffix)));
   let sectionTitle = $derived(
     active?.suffix === '/analytics'
       ? analytics.linkTitle
@@ -77,6 +59,13 @@
   );
   let sections = $state<HTMLDetailsElement>();
   let copied = $state<{ url: string; ok: boolean } | null>(null);
+
+  afterNavigate(({ from, to }) => {
+    if (!sections?.open || from?.url.pathname === to?.url.pathname) return;
+    const focusWithin = sections.contains(document.activeElement);
+    sections.open = false;
+    if (focusWithin) sections.querySelector('summary')?.focus();
+  });
 
   function isCurrent(suffix: string) {
     return page.url.pathname === linkPath + suffix;
@@ -90,33 +79,23 @@
       copied = { url, ok: false };
     }
   }
-
-  function closeSections() {
-    if (sections) sections.open = false;
-  }
 </script>
 
 {#snippet navigation()}
   <nav aria-label={m.links}>
-    {#each groups as group (group.label)}
-      <div class="subnav-group">
-        <p>{group.label}</p>
-        <ul>
-          {#each group.entries as entry (entry.suffix)}
-            <li>
-              <a
-                href={linkPath + entry.suffix}
-                aria-current={isCurrent(entry.suffix) ? 'page' : undefined}
-                onclick={closeSections}
-              >
-                <entry.icon size={17} strokeWidth={1.8} aria-hidden="true" />
-                <span>{entry.label}</span>
-              </a>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/each}
+    <ul>
+      {#each sectionsList as entry (entry.suffix)}
+        <li>
+          <a
+            href={linkPath + entry.suffix}
+            aria-current={isCurrent(entry.suffix) ? 'page' : undefined}
+          >
+            <entry.icon size={16} strokeWidth={1.8} aria-hidden="true" />
+            <span>{entry.label}</span>
+          </a>
+        </li>
+      {/each}
+    </ul>
   </nav>
 {/snippet}
 
@@ -156,22 +135,23 @@
           </p>
         {/if}
       {/if}
-    </header>
-    <div class="link-columns">
-      <aside class="link-sections">
+      <div class="link-sections">
         {@render navigation()}
-      </aside>
+      </div>
       <details class="mobile-sections" bind:this={sections}>
         <summary>
-          {labels.sections}
+          <span class="section-summary">
+            <span>{labels.sections}</span>
+            {#if active}<span class="section-current">{active.label}</span>{/if}
+          </span>
           <ChevronDown size={16} aria-hidden="true" />
         </summary>
         {@render navigation()}
       </details>
-      <div class="link-task">
-        <h1>{sectionTitle}</h1>
-        {@render children()}
-      </div>
+    </header>
+    <div class="link-task">
+      <h1>{sectionTitle}</h1>
+      {@render children()}
     </div>
   </div>
 {:else}
@@ -200,6 +180,7 @@
     display: grid;
     gap: clamp(0.85rem, 2vw, 1.5rem);
     min-width: 0;
+    container-type: inline-size;
   }
   .index-header {
     margin: 0;
@@ -236,6 +217,9 @@
     justify-content: space-between;
     flex-wrap: wrap;
   }
+  .record-key {
+    flex: 1 1 18rem;
+  }
   .record-icon {
     display: grid;
     flex: 0 0 2.6rem;
@@ -269,56 +253,37 @@
     color: var(--ui-text-muted);
     font-size: 0.83rem;
   }
-  .link-columns {
-    display: grid;
-    grid-template-columns: minmax(9rem, 11.6rem) minmax(0, 1fr);
-    align-items: start;
-    gap: clamp(0.9rem, 1.7vw, 1.6rem);
-  }
   .link-sections {
-    position: sticky;
-    top: 0.8rem;
-    min-width: 0;
-    padding-inline-end: 0.75rem;
-    border-inline-end: 1px solid var(--ui-border);
+    margin-block-start: 0.55rem;
+    border-block-start: 1px solid var(--ui-border);
   }
-  .subnav-group + .subnav-group {
-    margin-top: 0.85rem;
+  .link-sections ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.3rem;
   }
-  .subnav-group p {
-    margin: 0 0 0.3rem;
-    padding-inline: 0.55rem;
-    font-size: 0.75rem;
-    font-weight: 680;
-    color: var(--ui-text-muted);
-  }
-  .subnav-group ul {
-    display: grid;
-    gap: 0.12rem;
-  }
-  .subnav-group a {
+  nav a {
     display: flex;
     min-height: 2.75rem;
     align-items: center;
     gap: 0.5rem;
-    padding-inline: 0.55rem;
-    border-radius: var(--ui-radius-sm);
     color: var(--ui-text-muted);
-    font-size: 0.86rem;
-    font-weight: 620;
+    font-size: 0.875rem;
+    font-weight: 570;
     overflow-wrap: anywhere;
   }
-  .subnav-group a :global(svg) {
+  nav a :global(svg) {
     flex: none;
   }
-  .subnav-group a:hover {
-    background: var(--ui-surface);
-    color: var(--ui-text);
-  }
-  .subnav-group a[aria-current='page'] {
-    background: var(--ui-accent-surface);
+  nav a:hover,
+  nav a[aria-current='page'] {
     color: var(--ui-link);
-    box-shadow: inset 3px 0 var(--ui-primary);
+  }
+  .link-sections a {
+    border-block-end: 2px solid transparent;
+  }
+  .link-sections a[aria-current='page'] {
+    border-block-end-color: var(--ui-primary);
   }
   .link-task {
     display: grid;
@@ -335,19 +300,14 @@
   .mobile-sections {
     display: none;
   }
-  @media (max-width: 1050px) {
-    .link-columns {
-      grid-template-columns: minmax(0, 1fr);
-    }
+  @container (max-width: 50rem) {
     .link-sections {
       display: none;
     }
     .mobile-sections {
       display: block;
-      padding: 0.25rem 0.65rem;
-      border: 1px solid var(--ui-border);
-      border-radius: var(--ui-radius-sm);
-      background: var(--ui-surface);
+      margin-block-start: 0.55rem;
+      border-block-start: 1px solid var(--ui-border);
     }
     .mobile-sections summary {
       display: flex;
@@ -355,7 +315,6 @@
       justify-content: space-between;
       align-items: center;
       gap: 0.5rem;
-      padding-inline: 0.45rem;
       color: var(--ui-link);
       font-weight: 650;
       cursor: pointer;
@@ -364,12 +323,39 @@
     .mobile-sections summary::-webkit-details-marker {
       display: none;
     }
+    .mobile-sections summary :global(svg) {
+      flex: none;
+    }
+    .section-summary {
+      display: flex;
+      flex-wrap: wrap;
+      column-gap: 0.55rem;
+      align-items: baseline;
+      font-size: 0.875rem;
+    }
+    .section-current {
+      color: var(--ui-text-muted);
+      font-weight: 500;
+    }
     .mobile-sections nav {
-      padding: 0.45rem 0 0.7rem;
-      border-top: 1px solid var(--ui-border);
+      padding-block: 0.25rem;
     }
     .mobile-sections ul {
+      display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.2rem;
+    }
+    .mobile-sections a {
+      padding-inline: 0.45rem;
+      border-radius: var(--ui-radius-sm);
+    }
+    .mobile-sections a[aria-current='page'] {
+      background: var(--ui-accent-surface);
+    }
+  }
+  @container (max-width: 26rem) {
+    .mobile-sections ul {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>
