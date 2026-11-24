@@ -161,7 +161,31 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         'https://example.org/path?fixed=1#target',
       );
       await expect(simulation.locator('a')).toHaveCount(0);
-      await page.goto('/admin/analytics');
+      const analyticsScripts = Promise.withResolvers<void>();
+      const holdScripts: Parameters<typeof page.route>[1] = async (route) => {
+        if (route.request().resourceType() === 'script') {
+          await analyticsScripts.promise;
+        }
+        await route.continue();
+      };
+      const seriesSummary = page.getByText('Clicks by date table', {
+        exact: true,
+      });
+      const seriesTable = page
+        .locator('details')
+        .filter({ has: seriesSummary })
+        .getByRole('table');
+      await page.route('**/*', holdScripts);
+      try {
+        await page.goto('/admin/analytics', { waitUntil: 'commit' });
+        await seriesSummary.click();
+        await expect(seriesTable).toBeVisible();
+      } finally {
+        analyticsScripts.resolve();
+      }
+      await page.waitForLoadState('networkidle');
+      await page.unroute('**/*', holdScripts);
+      await expect(seriesTable).toBeVisible();
       await expect(
         page.getByRole('heading', { name: 'Analytics', exact: true }),
       ).toBeVisible();
@@ -177,8 +201,6 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
         page.getByRole('heading', { name: 'Daily clicks' }),
       ).toBeVisible();
       await expect(page.locator('canvas')).toHaveCount(2);
-      await page.getByText('Clicks by date table', { exact: true }).click();
-      await expect(page.locator('table').first()).toBeVisible();
       const clicks = await page.locator('.count').innerText();
       expect(Number(clicks.replaceAll(',', ''))).toBeGreaterThan(0);
 

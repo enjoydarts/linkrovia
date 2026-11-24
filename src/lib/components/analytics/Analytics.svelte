@@ -145,6 +145,19 @@
   let traffic = $derived(trafficLabels[locale]);
 </script>
 
+{#snippet tableDisclosure(label: string, startOpen: boolean, table: Snippet)}
+  {#snippet contents()}
+    <summary>{label}</summary>
+    <div class="table-wrap">{@render table()}</div>
+  {/snippet}
+  <!-- Static markup preserves any toggle before hydration. -->
+  {#if startOpen}
+    <details open>{@render contents()}</details>
+  {:else}
+    <details>{@render contents()}</details>
+  {/if}
+{/snippet}
+
 <div class="report-controls">
   <nav class="presets" aria-label={periods.range}>
     {#each Object.entries(periods.presets) as [range, label] (range)}
@@ -311,30 +324,28 @@
           label={m.clicks}
         />
       {/if}
-      <details open={!showSeriesChart}>
-        <summary>{m.seriesTable}</summary>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">
-                  {granularity === 'day' ? m.date : periods.starts}
-                </th><th scope="col">{m.clicks}</th>
-              </tr>
-            </thead><tbody>
-              {#each report.series as row (row.date)}<tr>
-                  <th scope="row">
-                    <time datetime={row.date}>
-                      {formatBucket(row.date)}
-                    </time>
-                  </th><td>
-                    {row.clicks?.toLocaleString(locale) ?? archive.missing}
-                  </td>
-                </tr>{/each}
-            </tbody>
-          </table>
-        </div>
-      </details>
+      {#snippet seriesTable()}
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">
+                {granularity === 'day' ? m.date : periods.starts}
+              </th><th scope="col">{m.clicks}</th>
+            </tr>
+          </thead><tbody>
+            {#each report.series as row (row.date)}<tr>
+                <th scope="row">
+                  <time datetime={row.date}>
+                    {formatBucket(row.date)}
+                  </time>
+                </th><td>
+                  {row.clicks?.toLocaleString(locale) ?? archive.missing}
+                </td>
+              </tr>{/each}
+          </tbody>
+        </table>
+      {/snippet}
+      {@render tableDisclosure(m.seriesTable, !showSeriesChart, seriesTable)}
     </section>
     <section class="context-panel">
       <h2>{m.breakdown}</h2>
@@ -352,28 +363,30 @@
           label={m.clicks}
         />
       {/if}
-      <details open={!showBreakdownChart}>
-        <summary>{m.breakdownTable}</summary>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">{m.category}</th><th scope="col">{m.clicks}</th>
-              </tr>
-            </thead><tbody>
-              {#each report.breakdown as row (row.key)}<tr>
-                  <th scope="row">
-                    {#if row.key}<a href={filterUrl(report.dimension, row.key)}>
-                        {row.key}
-                      </a>{:else}—{/if}
-                  </th><td>
-                    {row.clicks.toLocaleString(locale)}
-                  </td>
-                </tr>{/each}
-            </tbody>
-          </table>
-        </div>
-      </details>
+      {#snippet breakdownTable()}
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{m.category}</th><th scope="col">{m.clicks}</th>
+            </tr>
+          </thead><tbody>
+            {#each report.breakdown as row (row.key)}<tr>
+                <th scope="row">
+                  {#if row.key}<a href={filterUrl(report.dimension, row.key)}>
+                      {row.key}
+                    </a>{:else}—{/if}
+                </th><td>
+                  {row.clicks.toLocaleString(locale)}
+                </td>
+              </tr>{/each}
+          </tbody>
+        </table>
+      {/snippet}
+      {@render tableDisclosure(
+        m.breakdownTable,
+        !showBreakdownChart,
+        breakdownTable,
+      )}
     </section>
   </div>
 {/if}
