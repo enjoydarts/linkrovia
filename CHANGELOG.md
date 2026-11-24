@@ -6,6 +6,7 @@ This changelog tracks changes during active development. See the [deployment gui
 
 - Complete setup on Cloudflare accounts that have not enabled Analytics Engine yet, then enable click analytics on the same Worker.
 - Verify the published HTTPS route after a deployment and direct first-time Cloudflare accounts through `workers.dev` onboarding when needed.
+- Configure `workers.dev` with the available Workers Builds credentials, open setup from the published address, and explain missing database or setup token configuration on the setup page.
 - Integrated saved-link navigation into the page header and matched its active state to analytics navigation.
 
 ## v0.1.0 - 2026-11-24

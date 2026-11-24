@@ -50,6 +50,7 @@ const analyticsDisabled = [
 
 type Command = { args: string[]; config: typeof config };
 const deployedOrigin = 'https://selected-worker.example.workers.dev';
+const testApi = `https://api.cloudflare.com/client/v4/accounts/${'a'.repeat(32)}/workers`;
 const deployRecord = {
   type: 'deploy',
   version: 1,
@@ -87,6 +88,7 @@ function deploy(
       env: {
         ...process.env,
         npm_config_dry_run: 'false',
+        WORKERS_CI: '',
         WRANGLER_CI_OVERRIDE_NAME: 'selected-worker',
         WRANGLER_OUTPUT_FILE_PATH: '',
         WRANGLER_OUTPUT_FILE_DIRECTORY: '',
@@ -122,12 +124,32 @@ describe('deployment script', () => {
       new URL('../../scripts/deploy-readiness.mjs', import.meta.url),
       join(root, 'scripts/deploy-readiness.mjs'),
     );
+    copyFileSync(
+      new URL('../../scripts/deploy-workers-dev.mjs', import.meta.url),
+      join(root, 'scripts/deploy-workers-dev.mjs'),
+    );
     write(
       'mock-fetch.mjs',
       `
       import { appendFileSync } from 'node:fs';
       let checks = 0;
+      let enabled = false;
       globalThis.fetch = async (url, options) => {
+        if (url.startsWith('${testApi}/')) {
+          const path = url.slice('${testApi}'.length);
+          appendFileSync('api.log', options.method + ' ' + path + '\\n');
+          if (path === '/subdomain') {
+            return Response.json({ success: true, result: { subdomain: 'example' } });
+          }
+          if (path === '/scripts/selected-worker/subdomain' && options.method === 'POST') {
+            enabled = JSON.parse(options.body).enabled;
+            return Response.json({ success: true, result: { enabled } });
+          }
+          if (path === '/workers/selected-worker') {
+            return Response.json({ success: true, result: { subdomain: { enabled, url: '${deployedOrigin}' } } });
+          }
+          throw new Error('Unexpected API request ' + path);
+        }
         appendFileSync('requests.log', url + '\\n');
         if (!url.startsWith('${deployedOrigin}/') || options.redirect !== 'manual') {
           throw new Error('Unexpected request ' + url);
@@ -136,8 +158,8 @@ describe('deployment script', () => {
           if (++checks === 1 && process.env.TEST_DNS_PENDING) {
             throw new TypeError('fetch failed', { cause: { code: 'ENOTFOUND' } });
           }
-          const headers = process.env.TEST_SETUP_COMPLETE
-            ? { 'x-linkrovia-setup': 'complete' }
+          const headers = process.env.TEST_SETUP_STATE
+            ? { 'x-linkrovia-setup': process.env.TEST_SETUP_STATE }
             : {};
           return Response.json({ status: 'ok' }, { headers });
         }
@@ -323,12 +345,25 @@ describe('deployment script', () => {
   });
 
   it('recognizes setups completed on a different management hostname', () => {
-    const { status, stdout } = deploy([], [], { TEST_SETUP_COMPLETE: '1' });
+    const { status, stdout } = deploy([], [], { TEST_SETUP_STATE: 'complete' });
 
     expect(status).toBe(0);
     expect(stdout).toContain('Linkrovia is already set up');
     expect(readFileSync(join(root, 'requests.log'), 'utf8').trim()).toBe(
       `${deployedOrigin}/health`,
+    );
+  });
+
+  it('explains how to finish setup when the deployed secret is missing or invalid', () => {
+    const { status, stdout, stderr } = deploy([], [], {
+      TEST_SETUP_STATE: 'token-required',
+    });
+
+    expect(status).toBe(0);
+    expect(stderr).toContain('Variables and Secrets');
+    expect(stderr).toContain('SETUP_TOKEN');
+    expect(stdout).toContain(
+      `Open the Linkrovia setup page: ${deployedOrigin}/setup`,
     );
   });
 
@@ -338,5 +373,33 @@ describe('deployment script', () => {
 
     expect(status).toBe(0);
     expect(stdout).not.toContain('Checking the HTTPS setup route');
+  });
+
+  it('enables the deployed Worker route and checks its API-reported setup URL even without a Wrangler target', () => {
+    const { status, stdout } = deploy(
+      [{ status: 0 }, { status: 0 }, { status: 0, record: null }],
+      [],
+      {
+        WORKERS_CI: '1',
+        CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32),
+        CLOUDFLARE_API_TOKEN: 'test-deployment-token',
+        CLOUDFLARE_API_BASE_URL: '',
+        CF_API_BASE_URL: '',
+        CLOUDFLARE_COMPLIANCE_REGION: 'public',
+      },
+    );
+
+    expect(status).toBe(0);
+    expect(stdout).toContain(
+      `Open the Linkrovia setup page: ${deployedOrigin}/setup`,
+    );
+    expect(
+      readFileSync(join(root, 'api.log'), 'utf8').trim().split('\n'),
+    ).toEqual([
+      'GET /subdomain',
+      'GET /workers/selected-worker',
+      'POST /scripts/selected-worker/subdomain',
+      'GET /workers/selected-worker',
+    ]);
   });
 });

@@ -66,20 +66,22 @@
   title={messages['setup.title']}
   description={messages['setup.subtitle']}
 >
-  <nav class="setup-progress" aria-label={messages['setup.title']}>
-    <span class:current={data.step === 'token'}>
-      <b>01</b>
-      {messages['setup.step1']}
-    </span>
-    <span class:current={data.step === 'management'}>
-      <b>02</b>
-      {domainMessages.heading}
-    </span>
-    <span class:current={data.step === 'owner'}>
-      <b>03</b>
-      {messages['setup.step2']}
-    </span>
-  </nav>
+  {#if data.step !== 'configuration'}
+    <nav class="setup-progress" aria-label={messages['setup.title']}>
+      <span class:current={data.step === 'token'}>
+        <b>01</b>
+        {messages['setup.step1']}
+      </span>
+      <span class:current={data.step === 'management'}>
+        <b>02</b>
+        {domainMessages.heading}
+      </span>
+      <span class:current={data.step === 'owner'}>
+        <b>03</b>
+        {messages['setup.step2']}
+      </span>
+    </nav>
+  {/if}
   <div class="space-y-8">
     {#if data.step === 'token'}
       <section class="space-y-5">
@@ -301,10 +303,36 @@
           </p>{/if}
       </section>
     {:else}
-      <p>{messages['setup.configuration']}</p>
-      <a href="/login" class="text-link underline underline-offset-4">
-        {messages['login.title']}
-      </a>
+      <section class="space-y-5">
+        {#if data.configurationIssue === 'database'}
+          <h2 class="text-xl font-semibold">
+            {messages['setup.databaseMissing']}
+          </h2>
+          <p class="leading-relaxed">{messages['setup.databaseRecovery']}</p>
+        {:else}
+          <h2 class="text-xl font-semibold">
+            {messages['setup.tokenMissing']}
+          </h2>
+          <p class="leading-relaxed">{messages['setup.tokenRecovery']}</p>
+        {/if}
+        <div class="flex flex-wrap items-center gap-4">
+          <a
+            href="https://dash.cloudflare.com/?to=/:account/workers-and-pages"
+            class="text-link underline underline-offset-4"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {messages['setup.dashboard']} <span aria-hidden="true">↗</span>
+          </a>
+          <a
+            href="/setup"
+            data-sveltekit-reload
+            class="text-link underline underline-offset-4"
+          >
+            {messages['setup.retry']}
+          </a>
+        </div>
+      </section>
     {/if}
   </div>
 </AuthFrame>

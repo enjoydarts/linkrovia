@@ -5,6 +5,7 @@ import {
   canEnrollOwner,
   checkSetupToken,
   createSetupProof,
+  isConfiguredSetupToken,
   registerOwner,
   setupComplete,
   setupHosts,
@@ -51,17 +52,19 @@ export const load = (async ({ cookies, locals, url }) => {
       locale,
       ...methods,
       step: 'configuration',
+      configurationIssue: 'database',
       turnstile: null,
     } as const;
   if (await setupComplete(db))
     error(410, messagesFor(locale)['setup.completed']);
 
   const secret = locals.env.SETUP_TOKEN;
-  if (!secret || secret.trim().length < 32 || secret.length > 512) {
+  if (!isConfiguredSetupToken(secret)) {
     return {
       locale,
       ...methods,
       step: 'configuration',
+      configurationIssue: 'token',
       turnstile: null,
     } as const;
   }
@@ -184,7 +187,7 @@ export const actions = {
     if (await setupComplete(db)) return fail(410, { code: 'unavailable' });
 
     const secret = locals.env.SETUP_TOKEN;
-    if (!secret || secret.trim().length < 32 || secret.length > 512)
+    if (!isConfiguredSetupToken(secret))
       return fail(503, { code: 'unavailable' });
     if (!(await allowAuthAttempt(event, 'setup-verify')))
       return fail(429, { code: 'rate_limit' });

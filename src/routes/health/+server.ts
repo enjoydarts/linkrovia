@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { setupOpen } from '$lib/server/auth/setup';
+import { isConfiguredSetupToken, setupOpen } from '$lib/server/auth/setup';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals }) => {
@@ -10,12 +10,18 @@ export const GET: RequestHandler = async ({ locals }) => {
         `SELECT (${setupOpen}) AS pending FROM setup_state WHERE singleton = 1`,
       ).first<number>('pending');
       if (pending !== null) {
+        const setup =
+          pending !== 1
+            ? 'complete'
+            : isConfiguredSetupToken(locals.env.SETUP_TOKEN)
+              ? 'pending'
+              : 'token-required';
         return json(
           { status: 'ok' },
           {
             headers: {
               ...headers,
-              'x-linkrovia-setup': pending === 1 ? 'pending' : 'complete',
+              'x-linkrovia-setup': setup,
             },
           },
         );

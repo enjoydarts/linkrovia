@@ -14,7 +14,7 @@
         "description": "Stores your links, settings, and owner account. Create a new D1 database for this installation."
       },
       "SETUP_TOKEN": {
-        "description": "Generate and save a private random password of at least 32 characters with your password manager. Enter the same value on the Linkrovia setup screen after deployment."
+        "description": "Required. Generate and save a private random password of 32 to 512 characters. Enter the same value on the Linkrovia setup screen after deployment."
       },
       "TURNSTILE_SECRET_KEY": {
         "description": "Optional. Leave blank unless you have created a Turnstile widget for this instance."

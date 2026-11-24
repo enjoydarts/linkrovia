@@ -15,6 +15,7 @@ import {
   captureDeploymentOutput,
   reportBootstrapUrl,
 } from './deploy-readiness.mjs';
+import { workersBuildRouting } from './deploy-workers-dev.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const redirectPath = resolve(root, '.wrangler/deploy/config.json');
@@ -177,7 +178,9 @@ try {
     const workersDev =
       config.workers_dev ?? !(config.route || config.routes?.length);
     const output = workersDev ? captureDeploymentOutput(root) : undefined;
+    const routing = workersBuildRouting(config);
     try {
+      await routing?.prepare();
       let result = await upload(generatedPath, output?.env);
       if (result.analyticsDisabled) {
         console.warn(
@@ -192,7 +195,12 @@ try {
       process.exitCode = result.status;
       if (result.status === 0 && output) {
         const worker = process.env.WRANGLER_CI_OVERRIDE_NAME || config.name;
-        process.exitCode = (await reportBootstrapUrl(output.read(), worker))
+        const published = await routing?.publish(worker);
+        process.exitCode = (await reportBootstrapUrl(
+          output.read(),
+          worker,
+          published,
+        ))
           ? 0
           : 1;
       }

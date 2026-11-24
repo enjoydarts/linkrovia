@@ -37,7 +37,7 @@ The dashboard supports English, Japanese, Simplified Chinese, Traditional Chines
 ## Get started
 
 1. Deploy to your Cloudflare account and open the published HTTPS address. If Cloudflare asks for an account subdomain, follow the [deployment guide](docs/deployment.md#if-the-worker-address-does-not-open).
-2. Open `/setup` on your Worker's `workers.dev` address and enter the setup token. Choose the management hostname before registering your owner passkey. You can connect a custom hostname from a Cloudflare zone in the same account or use the Worker address. [Connect domains](docs/domains.md)
+2. Open the Worker's `workers.dev` address to start setup. Enter the private `SETUP_TOKEN` you set during deployment (32–512 characters), then choose the management hostname and register your owner passkey. [Connect domains](docs/domains.md)
 3. Create a short link, open it in another tab, and check its report under **Link analytics**.
 
 Linkrovia is in active development. Workers Builds deployment, guided custom-domain setup, and direct passkey registration on the chosen hostname have been verified. Fresh-account provisioning through the Deploy to Cloudflare button is still being verified. [Deployment status](docs/deployment.md)

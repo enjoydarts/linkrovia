@@ -7,7 +7,7 @@ import { encode, hex, randomHex, sha256, uuidV7 } from './crypto';
 export const setupProofCookie = '__Host-linkrovia_setup';
 export const setupProofMaxAge = 600;
 
-function validSecret(value: unknown): value is string {
+export function isConfiguredSetupToken(value: unknown): value is string {
   return (
     typeof value === 'string' &&
     value.length <= 512 &&
@@ -21,7 +21,7 @@ export async function checkSetupToken(
   configured: string | undefined,
 ): Promise<boolean> {
   if (
-    !validSecret(configured) ||
+    !isConfiguredSetupToken(configured) ||
     typeof submitted !== 'string' ||
     submitted.length > 512 ||
     !submitted.isWellFormed()
@@ -61,7 +61,8 @@ export async function createSetupProof(
   secret: string,
   origin?: string,
 ): Promise<string> {
-  if (!validSecret(secret)) throw new TypeError('Invalid setup secret');
+  if (!isConfiguredSetupToken(secret))
+    throw new TypeError('Invalid setup secret');
   const expiry = Math.floor(Date.now() / 1000) + setupProofMaxAge;
   const payload = `v1.${expiry}.${randomHex(16)}`;
   const tag = await crypto.subtle.sign(
@@ -77,7 +78,11 @@ export async function verifySetupProof(
   secret: string | undefined,
   origin?: string,
 ): Promise<boolean> {
-  if (typeof proof !== 'string' || proof.length > 114 || !validSecret(secret)) {
+  if (
+    typeof proof !== 'string' ||
+    proof.length > 114 ||
+    !isConfiguredSetupToken(secret)
+  ) {
     return false;
   }
   const match = /^(v1\.(\d{1,12})\.[0-9a-f]{32})\.([0-9a-f]{64})$/.exec(proof);

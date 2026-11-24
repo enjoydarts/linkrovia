@@ -2,7 +2,7 @@ import { dev } from '$app/env';
 import { fail, redirect } from '@sveltejs/kit';
 import { localeCookie } from '$lib/i18n/cookie';
 import { isLocale } from '$lib/i18n/locale';
-import { setupComplete } from '$lib/server/auth/setup';
+import { setupComplete, setupHosts } from '$lib/server/auth/setup';
 import {
   managementDomainEnabled,
   managementHostname,
@@ -17,8 +17,26 @@ export const load: PageServerLoad = async ({ locals, setHeaders, url }) => {
   });
   const db = locals.env.DB;
   const initialized = db ? await setupComplete(db) : false;
-  const primary = initialized && db ? await managementHostname(db) : null;
   const hostname = normalizeHostname(url.hostname, { allowLoopback: dev });
+  if (
+    !dev &&
+    db &&
+    !initialized &&
+    hostname &&
+    url.protocol === 'https:' &&
+    !url.port
+  ) {
+    const hosts = await setupHosts(db);
+    if (
+      !hosts?.deployment ||
+      hosts.deployment === hostname ||
+      hosts.management === hostname
+    ) {
+      redirect(302, '/setup');
+    }
+  }
+
+  const primary = initialized && db ? await managementHostname(db) : null;
   const canSignIn =
     !primary ||
     hostname === primary ||

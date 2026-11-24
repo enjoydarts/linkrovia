@@ -55,10 +55,19 @@ export function captureDeploymentOutput(root) {
   };
 }
 
+function publishedOrigin(target, workerName) {
+  if (typeof target !== 'string') return;
+  const label = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?';
+  const match = new RegExp(
+    `^https://(${label})\\.${label}(?:\\.fed)?\\.workers\\.dev/?$`,
+    'i',
+  ).exec(target);
+  if (match?.[1].toLowerCase() === workerName.toLowerCase())
+    return target.replace(/\/$/, '');
+}
+
 function workersDevOrigin(output, workerName) {
-  const labels = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
   const worker = workerName.toLowerCase();
-  if (!labels.test(worker)) return null;
   for (const line of output.trim().split('\n').reverse()) {
     if (!line.trim()) continue;
     let result;
@@ -77,13 +86,8 @@ function workersDevOrigin(output, workerName) {
       continue;
 
     for (const target of result.targets) {
-      if (typeof target !== 'string') continue;
-      const match =
-        /^https:\/\/([^./]+)\.([^./]+)(?:\.fed)?\.workers\.dev\/?$/.exec(
-          target,
-        );
-      if (match?.[1] === worker && labels.test(match[2]))
-        return target.replace(/\/$/, '');
+      const origin = publishedOrigin(target, worker);
+      if (origin) return origin;
     }
     return null;
   }
@@ -118,22 +122,25 @@ async function checkBootstrap(origin) {
   if ((await health.json())?.status !== 'ok') {
     throw new Error('/health did not return Linkrovia readiness');
   }
-  if (health.headers.get('x-linkrovia-setup') === 'complete')
-    return 'installed';
+  const setupState = health.headers.get('x-linkrovia-setup');
+  if (setupState === 'complete') return 'installed';
 
   const setup = await fetchRoute(`${origin}/setup`);
   await setup.body?.cancel();
   if (isAccessLogin(setup)) return 'access';
   if (setup.status === 410) return 'installed';
-  if (setup.status === 200) return 'ready';
+  if (setup.status === 200)
+    return setupState === 'token-required' ? 'token-required' : 'ready';
   throw new Error(`/setup returned HTTP ${setup.status}`);
 }
 
 const routeHelp =
   'In Cloudflare, open Workers & Pages and check Your subdomain. Then open this Worker’s Settings → Domains & Routes and enable its workers.dev address.';
 
-export async function reportBootstrapUrl(output, workerName) {
-  const origin = workersDevOrigin(output, workerName);
+export async function reportBootstrapUrl(output, workerName, published) {
+  const origin =
+    publishedOrigin(published, workerName) ??
+    workersDevOrigin(output, workerName);
   if (!origin) {
     console.error(
       `Worker upload finished, but Wrangler did not report a workers.dev URL. ${routeHelp}`,
@@ -161,6 +168,11 @@ export async function reportBootstrapUrl(output, workerName) {
         `Linkrovia is already set up. Open the management hostname you selected during setup.`,
       );
     } else {
+      if (state === 'token-required') {
+        console.warn(
+          'Initial setup needs a valid SETUP_TOKEN. In the Worker’s Settings → Variables and Secrets, set it as a Secret with 32 to 512 characters and deploy the change.',
+        );
+      }
       console.log(`Open the Linkrovia setup page: ${origin}/setup`);
     }
     return true;
