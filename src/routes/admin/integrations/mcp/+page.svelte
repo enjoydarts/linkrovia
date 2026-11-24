@@ -60,16 +60,14 @@
 
 <svelte:head><title>MCP · {brand.name}</title></svelte:head>
 
-<div class="space-y-7">
+<div class="admin-page">
   <header class="context-header space-y-2">
     <h1>MCP</h1>
     <p>{copy.client}</p>
   </header>
 
-  <div
-    class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]"
-  >
-    <div class="min-w-0 space-y-5">
+  <div class="admin-section-stack">
+    <div class="admin-section-stack">
       <section class="context-panel min-w-0 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-xl font-semibold">

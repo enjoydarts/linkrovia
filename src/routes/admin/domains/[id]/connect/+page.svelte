@@ -152,11 +152,11 @@
 </script>
 
 <svelte:head><title>{m.wizardTitle} · {brand.name}</title></svelte:head>
-<div class="space-y-7">
+<div class="admin-page">
   <header class="context-header space-y-3">
     <h1 class="text-3xl font-semibold tracking-tight">{m.wizardTitle}</h1>
     <p>{m.wizardIntro}</p>
-    <dl class="context-panel grid gap-4 text-sm sm:grid-cols-2">
+    <dl class="context-panel grid gap-4 text-sm">
       <div class="min-w-0 space-y-1">
         <dt class="font-medium">{m.hostname}</dt>
         <dd class="break-all font-mono">{data.domain.hostname}</dd>
@@ -169,17 +169,9 @@
   </header>
 
   {#if data.isOwner && data.domain.hostname !== data.managementHostname}
-    <div
-      class={[
-        'grid items-start gap-5',
-        data.domain.status !== 'active' &&
-          'lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]',
-      ]}
-    >
+    <div class="admin-section-stack">
       {#if data.domain.status !== 'active'}
-        <section
-          class="context-panel space-y-4 rounded-lg border border-line p-5"
-        >
+        <section class="context-panel space-y-4">
           <h2 class="text-xl font-semibold">{automatic.title}</h2>
           <p>{automatic.intro}</p>
           <p class="text-sm">{operationMessages.scopes}</p>
@@ -270,10 +262,8 @@
           {/if}
         </section>
       {/if}
-      <div class="min-w-0 space-y-5">
-        <details
-          class="context-panel space-y-4 rounded-lg border border-line p-5"
-        >
+      <div class="admin-section-stack">
+        <details class="context-panel space-y-4">
           <summary class="cursor-pointer text-xl font-semibold">
             {automatic.manual}
           </summary>
@@ -297,9 +287,7 @@
           <p class="text-sm">{m.externalDns}</p>
           <p class="text-sm font-medium">{m.noWorkersCname}</p>
         </details>
-        <section
-          class="context-panel space-y-4 rounded-lg border border-line p-5"
-        >
+        <section class="context-panel space-y-4">
           <h2 class="text-xl font-semibold">{m.checkConnection}</h2>
           <p class="text-sm">{m.httpsOnly}</p>
           <button
@@ -320,9 +308,7 @@
       </div>
     </div>
     {#if data.managementAvailable && data.domain.status === 'active' && data.domain.verifiedAt && data.domain.providerMode === 'cloudflare_custom_domain'}
-      <section
-        class="context-panel space-y-4 rounded-lg border border-line p-5"
-      >
+      <section class="context-panel space-y-4">
         <h2 class="text-xl font-semibold">{managementMessages.title}</h2>
         <p>{managementMessages.description}</p>
         <form method="POST" action="?/management" class="space-y-3">
@@ -355,7 +341,7 @@
     {#if data.domain.managed}
       <details
         open={form?.operation === 'detach'}
-        class="context-panel space-y-4 rounded-lg border border-line p-5"
+        class="context-panel space-y-4"
       >
         <summary class="cursor-pointer text-xl font-semibold">
           {automatic.detachTitle}

@@ -198,7 +198,7 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<div class="space-y-7">
+<div class="admin-page">
   <header class="context-header space-y-2">
     <h1>{m.title}</h1>
     <p>{m.intro}</p>
@@ -206,9 +206,7 @@
   {#if busy}<p role="status">{m.working}</p>{/if}
   {#if issue}<p role="alert">{issue}</p>{/if}
   {#if completed}<p role="status">{m.completed}</p>{/if}
-  <div
-    class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.65fr)]"
-  >
+  <div class="admin-section-stack">
     <section class="context-panel space-y-4" aria-labelledby="export-heading">
       <h2 id="export-heading" class="text-xl font-semibold">{m.export}</h2>
       <p>{m.exportHelp}</p>
@@ -241,7 +239,7 @@
           }}
         />
       </div>
-      <div class="grid items-start gap-4 sm:grid-cols-2">
+      <div class="grid gap-4">
         <fieldset disabled={busy} class="space-y-2">
           <legend class="font-semibold">{m.mode}</legend>
           <label class="block">
@@ -346,7 +344,7 @@
       {#if preview}
         <div class="space-y-4 border-t border-line pt-5" aria-live="polite">
           <h3 class="text-lg font-semibold">{m.preview}</h3>
-          <dl class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <dl class="grid gap-3">
             {#each countKeys as key (key)}<div>
                 <dt>{m[key]}</dt>
                 <dd class="font-semibold">{preview.preview[key]}</dd>

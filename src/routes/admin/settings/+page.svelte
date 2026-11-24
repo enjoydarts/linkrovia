@@ -104,40 +104,17 @@
 </script>
 
 <svelte:head><title>{m.settings} · {brand.name}</title></svelte:head>
-<div class="space-y-8">
-  <header
-    class="workspace-intro flex flex-wrap items-end justify-between gap-4"
-  >
+<div class="admin-page">
+  <header class="context-header">
     <h1>{m.settings}</h1>
-    <a href="#personal-preferences" class="admin-button">{m.personal}</a>
   </header>
-  <div class="grid items-start gap-5 lg:grid-cols-2">
-    {#each directories as directory (directory.label)}
-      <section class="context-panel space-y-3" aria-label={directory.label}>
-        <h2 class="text-lg font-semibold">{directory.label}</h2>
-        <ul class="divide-y divide-line">
-          {#each directory.entries as entry (entry.href)}
-            <li>
-              <a
-                href={entry.href}
-                class="flex items-center justify-between gap-4 py-3 font-medium text-link hover:underline"
-              >
-                <span>{entry.label}</span>
-                <ArrowRight size={16} aria-hidden="true" class="shrink-0" />
-              </a>
-            </li>
-          {/each}
-        </ul>
-      </section>
-    {/each}
-  </div>
   <datalist id="time-zones">
     {#each data.timeZones as zone (zone)}<option
         value={zone}
         label={zone.replaceAll('_', ' ').replaceAll('/', ' · ')}
       ></option>{/each}
   </datalist>
-  <div class={['grid items-start gap-5', data.isOwner && 'lg:grid-cols-2']}>
+  <div class="admin-section-stack">
     <form
       id="personal-preferences"
       aria-labelledby="personal-preferences-heading"
@@ -146,14 +123,13 @@
       class="context-panel scroll-mt-24 space-y-5"
     >
       <input type="hidden" name="csrfToken" value={data.csrfToken} />
-      <div class="space-y-1">
-        <h2 id="personal-preferences-heading" class="text-lg font-semibold">
+      <div class="admin-section-header">
+        <h2 id="personal-preferences-heading">
           {scopes[0]}
         </h2>
         <p class="text-sm text-muted">{m.intro}</p>
-        <p class="text-sm text-muted">{m.effective}: {data.timeZone}</p>
-        {#if data.saved === 'personal'}<p role="status">{m.saved}</p>{/if}
       </div>
+      <p class="text-sm text-muted">{m.effective}: {data.timeZone}</p>
       <div class="space-y-2">
         <label for="locale" class="block font-medium">
           {m.language}
@@ -201,21 +177,27 @@
           {/each}
         </select>
       </div>
-      {#if form?.section === 'personal'}<p role="alert" class="text-negative">
-          {m.invalid}
-        </p>{/if}
-      <button type="submit" class="admin-button admin-button-primary">
-        {m.save}
-      </button>
+      <div class="admin-form-footer">
+        {#if form?.section === 'personal'}
+          <p role="alert" class="text-negative">{m.invalid}</p>
+        {:else if data.saved === 'personal'}
+          <p role="status">{m.saved}</p>
+        {/if}
+        <button type="submit" class="admin-button admin-button-primary">
+          {m.save}
+        </button>
+      </div>
     </form>
     {#if data.isOwner}<form
         method="POST"
         action="?/defaultZone"
-        class="context-panel space-y-5 rounded-lg border border-line bg-surface p-5"
+        aria-labelledby="instance-defaults-heading"
+        class="context-panel space-y-5"
       >
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <h2 class="text-lg font-semibold">{scopes[1]}</h2>
-        {#if data.saved === 'global'}<p role="status">{m.globalSaved}</p>{/if}
+        <div class="admin-section-header">
+          <h2 id="instance-defaults-heading">{scopes[1]}</h2>
+        </div>
         <div class="space-y-2">
           <label for="default-timezone" class="block font-medium">
             {m.defaultZone}
@@ -263,12 +245,38 @@
             {m.defaultLanguageHelp}
           </p>
         </div>
-        {#if form?.section === 'global'}<p role="alert" class="text-negative">
-            {m.invalidZone}
-          </p>{/if}
-        <button type="submit" class="admin-button admin-button-primary">
-          {m.save}
-        </button>
+        <div class="admin-form-footer">
+          {#if form?.section === 'global'}
+            <p role="alert" class="text-negative">{m.invalidZone}</p>
+          {:else if data.saved === 'global'}
+            <p role="status">{m.globalSaved}</p>
+          {/if}
+          <button type="submit" class="admin-button admin-button-primary">
+            {m.save}
+          </button>
+        </div>
       </form>{/if}
+    <nav class="context-panel admin-section-stack" aria-label={m.settings}>
+      {#each directories as directory (directory.label)}
+        <section class="space-y-1" aria-label={directory.label}>
+          <div class="admin-section-header">
+            <h2>{directory.label}</h2>
+          </div>
+          <ul class="divide-y divide-line">
+            {#each directory.entries as entry (entry.href)}
+              <li>
+                <a
+                  href={entry.href}
+                  class="flex items-center justify-between gap-4 min-h-11 py-2 font-medium text-link hover:underline"
+                >
+                  <span>{entry.label}</span>
+                  <ArrowRight size={16} aria-hidden="true" class="shrink-0" />
+                </a>
+              </li>
+            {/each}
+          </ul>
+        </section>
+      {/each}
+    </nav>
   </div>
 </div>

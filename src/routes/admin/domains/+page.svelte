@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { preferenceMessages } from '$lib/i18n/preferences';
   import { brand } from '$lib/brand';
   import '../admin-context.css';
   import { domainMessages } from './messages';
@@ -9,15 +8,8 @@
 </script>
 
 <svelte:head><title>{m.domains} · {brand.name}</title></svelte:head>
-<div class="space-y-7">
+<div class="admin-page">
   <header class="context-header">
-    <a
-      href="/admin/settings"
-      class="inline-block text-sm font-medium text-link hover:underline"
-    >
-      <span aria-hidden="true">←</span>
-      {preferenceMessages(data.locale).settings}
-    </a>
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1>{m.domains}</h1>
@@ -30,9 +22,7 @@
       {/if}
     </div>
   </header>
-  <div
-    class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"
-  >
+  <div class="admin-section-stack">
     <ul
       class="context-panel context-list divide-y divide-line rounded-lg border border-line"
       aria-label={m.domains}
@@ -63,6 +53,7 @@
             </span>
             {#if data.isOwner && domain.hostname !== data.managementHostname}<a
                 class="admin-button"
+                aria-label={`${m.manage}: ${domain.hostname}`}
                 href={'/admin/domains/' +
                   encodeURIComponent(domain.id) +
                   '/connect'}

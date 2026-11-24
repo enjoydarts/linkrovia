@@ -1056,6 +1056,19 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   await test.step('persists the chosen theme and provides keyboard navigation at 360 px', async () => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/admin/settings');
+    const personalRegion = await page
+      .locator('#personal-preferences')
+      .boundingBox();
+    const defaultRegion = await page
+      .locator('form[action="?/defaultZone"]')
+      .boundingBox();
+    if (!personalRegion || !defaultRegion)
+      throw new Error('Missing settings forms');
+    expect(defaultRegion.x).toBe(personalRegion.x);
+    expect(defaultRegion.width).toBe(personalRegion.width);
+    expect(defaultRegion.y).toBeGreaterThan(
+      personalRegion.y + personalRegion.height,
+    );
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
     await expect(page.getByLabel('Appearance')).toHaveValue('system');
     await page.getByLabel('Appearance').selectOption('dark');

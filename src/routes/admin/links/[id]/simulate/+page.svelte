@@ -16,11 +16,11 @@
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 
-<div class="simulation-workspace">
+<div class="admin-section-stack">
   <form
     method="POST"
     aria-describedby="simulation-help"
-    class="space-y-5 rounded-xl border border-line bg-surface p-5"
+    class="context-panel space-y-5"
   >
     <p id="simulation-help" class="text-sm text-muted">{m.help}</p>
     <input type="hidden" name="csrfToken" value={data.csrfToken} />
@@ -54,16 +54,17 @@
         </div>
       {/each}
     </div>
-    <button type="submit" class="admin-button admin-button-primary">
-      {m.run}
-    </button>
+    <div class="admin-form-footer">
+      <button type="submit" class="admin-button admin-button-primary">
+        {m.run}
+      </button>
+    </div>
   </form>
 
-  <section
-    aria-labelledby="simulation-result"
-    class="space-y-4 rounded-xl border border-line bg-surface p-5"
-  >
-    <h2 id="simulation-result" class="text-xl font-semibold">{m.result}</h2>
+  <section aria-labelledby="simulation-result" class="context-panel space-y-4">
+    <header class="admin-section-header">
+      <h2 id="simulation-result">{m.result}</h2>
+    </header>
     {#if result}
       <dl class="space-y-3 text-sm">
         <div>
@@ -96,16 +97,3 @@
     {/if}
   </section>
 </div>
-
-<style>
-  .simulation-workspace {
-    display: grid;
-    align-items: start;
-    gap: 1.25rem;
-  }
-  @media (min-width: 900px) {
-    .simulation-workspace {
-      grid-template-columns: minmax(0, 1.15fr) minmax(17rem, 0.85fr);
-    }
-  }
-</style>

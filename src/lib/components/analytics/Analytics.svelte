@@ -255,7 +255,7 @@
     </p>
   {/if}
 {:else if report}
-  <div class="report-summary">
+  <div class="context-panel report-summary">
     <div class="report-head">
       <div class="metric">
         <span>{m.clicks}</span>
@@ -293,7 +293,7 @@
       </p>{/if}
   </div>
   <div class="report-charts">
-    <section>
+    <section class="context-panel">
       <h2>{periodTitle}</h2>
       {#if showSeriesChart}
         <ReportChart
@@ -328,7 +328,7 @@
         </div>
       </details>
     </section>
-    <section>
+    <section class="context-panel">
       <h2>{m.breakdown}</h2>
       {#if report.dimension === 'traffic'}
         <p class="filter-links">
@@ -384,13 +384,6 @@
     align-items: start;
     gap: 1rem;
     margin-top: 1rem;
-  }
-  section {
-    min-width: 0;
-    padding: clamp(1.1rem, 2.5vw, 1.6rem);
-    background: var(--ui-surface);
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-md);
   }
   .filter-links {
     display: flex;
@@ -485,10 +478,6 @@
   }
   .report-summary {
     margin-top: 1rem;
-    padding: 1.25rem 1.5rem;
-    background: var(--ui-surface);
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-md);
   }
   .report-head {
     display: flex;

@@ -7,6 +7,7 @@ This changelog tracks changes during active development. See the [deployment gui
 - Reworked the public and owner setup screens and redesigned the admin workspace, including link configuration, reports, provisioning, and instance settings.
 - Consolidated administration into a single sidebar. Saved links use navigation inside the link header, with a disclosure when space is limited.
 - Added breadcrumbs and an account menu to the administration toolbar, and aligned headers, forms, and panels to shared content edges.
+- Stacked instance settings in one column and standardized panel, heading, and form-action styles across administration screens.
 - Put routine search, link creation, and saved-link actions first and made detailed filters and scheduling options available on demand.
 - Added an owner-only operations health screen for D1, Analytics SQL, click archive gaps, conversion backlog, and the deployed Worker version.
 - Extended long-range click reports with retained Analytics Engine data after the last saved UTC day.

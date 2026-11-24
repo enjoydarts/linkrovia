@@ -26,7 +26,7 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<section class="space-y-5">
+<section class="admin-section-stack">
   <p class="text-sm text-muted">{m.help}</p>
   <p class="text-sm text-muted">{m.safe}</p>
   {#snippet destinationEditor(target: (typeof targets)[number])}
@@ -86,7 +86,7 @@
       {#if form?.saved && form.target === target.id}<p role="status">
           {m.saved}
         </p>{/if}
-      <div class="flex flex-wrap gap-3">
+      <div class="admin-form-footer">
         <button
           formaction="?/save"
           type="submit"
@@ -113,7 +113,7 @@
     </form>
   {/snippet}
 
-  <div class="destination-list">
+  <div class="context-panel context-list destination-list">
     {#each targets as target (target.id)}
       {#if target.id === selectedTarget}
         <details name="utm-target" open>
@@ -130,9 +130,6 @@
 
 <style>
   .destination-list {
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-surface);
     overflow: clip;
   }
   .destination-list details + details {

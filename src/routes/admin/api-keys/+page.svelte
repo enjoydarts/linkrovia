@@ -19,7 +19,7 @@
   <title>{messages.title} · {brand.name}</title>
 </svelte:head>
 
-<div class="space-y-7">
+<div class="admin-page">
   <header class="context-header flex flex-wrap items-end justify-between gap-4">
     <div>
       <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
@@ -54,9 +54,7 @@
     <p role="status" class="font-medium">{messages.revokedNotice}</p>
   {/if}
 
-  <div
-    class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"
-  >
+  <div class="admin-section-stack">
     <section class="context-panel space-y-4" aria-labelledby="your-api-keys">
       <h2 id="your-api-keys" class="text-xl font-semibold">
         {messages.existing}
@@ -107,6 +105,7 @@
                   <button
                     type="submit"
                     class="admin-button admin-button-danger"
+                    aria-label={`${messages.revoke}: ${key.name}`}
                   >
                     {messages.revoke}
                   </button>
@@ -151,7 +150,7 @@
       </div>
       <fieldset class="space-y-2">
         <legend class="font-medium">{messages.scopes}</legend>
-        <div class="grid gap-2 sm:grid-cols-2">
+        <div class="grid gap-2">
           {#each data.availableScopes as scope (scope)}
             <label class="flex items-center gap-2">
               <input type="checkbox" name="scope" value={scope} />

@@ -218,15 +218,13 @@
   <title>{messages.title} · {brand.name}</title>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="admin-page">
   <header class="context-header space-y-2">
     <h1>{messages.title}</h1>
     <p>{messages.description}</p>
   </header>
 
-  <div
-    class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"
-  >
+  <div class="admin-section-stack">
     <section class="context-panel min-w-0 space-y-5">
       <form class="space-y-5" onsubmit={previewFile}>
         <div class="grid gap-4 sm:grid-cols-2">
@@ -268,7 +266,7 @@
             </p>
           </div>
         </div>
-        <div class="flex flex-wrap gap-3">
+        <div class="admin-form-footer">
           <button
             type="submit"
             class="admin-button admin-button-primary"
@@ -294,11 +292,10 @@
         <p role="status" class="text-sm font-medium">{messages.working}</p>
       {/if}
     </section>
-    <aside
-      class="context-panel min-w-0 space-y-3 text-sm"
-      aria-labelledby="csv-format"
-    >
-      <h2 id="csv-format" class="text-lg font-semibold">{messages.format}</h2>
+    <details class="context-panel space-y-3 text-sm">
+      <summary class="cursor-pointer font-semibold text-link">
+        {messages.format}
+      </summary>
       <p class="mt-3">{messages.required}</p>
       <p>{messages.formats}</p>
       <p>{messages.dateFormat}</p>
@@ -307,13 +304,15 @@
       >
         {example.split('\r\n')[0]}
       </p>
-    </aside>
+    </details>
   </div>
 
   {#if preview}
     <section class="context-panel space-y-4" aria-labelledby="csv-results">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="csv-results" class="text-xl font-semibold">
+      <div
+        class="admin-section-header flex flex-wrap items-center justify-between gap-3"
+      >
+        <h2 id="csv-results">
           {started ? messages.results : messages.preview}
         </h2>
         <div class="flex flex-wrap gap-3">

@@ -10,7 +10,7 @@
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 
-<div class="space-y-5">
+<div class="admin-section-stack">
   <div class="space-y-2 text-sm text-muted">
     <p>{m.help}</p>
     <p>{m.visitorHelp}</p>

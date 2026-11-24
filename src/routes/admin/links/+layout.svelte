@@ -102,8 +102,9 @@
 {/snippet}
 
 {#if detailId}
-  <div class="link-workspace">
-    <header class="context-panel record-bar">
+  <div class="link-workspace admin-page">
+    <header class="workspace-intro"><h1>{sectionTitle}</h1></header>
+    <div class="context-panel record-bar">
       {#if data.linkContext}
         {@const shortUrl = data.linkContext.shortUrl}
         <div class="record-main">
@@ -146,9 +147,8 @@
         </summary>
         {@render navigation()}
       </details>
-    </header>
+    </div>
     <div class="link-task">
-      <h1>{sectionTitle}</h1>
       {@render children()}
     </div>
   </div>
@@ -263,13 +263,6 @@
     display: grid;
     gap: 1.05rem;
     min-width: 0;
-  }
-  .link-task h1 {
-    margin: 0;
-    font-size: clamp(1.45rem, 2.5vw, 1.9rem);
-    font-weight: 740;
-    letter-spacing: -0.035em;
-    overflow-wrap: anywhere;
   }
   .mobile-sections {
     display: none;

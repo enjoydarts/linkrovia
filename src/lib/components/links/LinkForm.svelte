@@ -332,7 +332,7 @@
       {@render optionalFields()}
     </details>
   {/if}
-  <footer class="form-actions">
+  <footer class="admin-form-footer">
     <button type="submit" class="admin-button admin-button-primary">
       {m.save}
     </button>
@@ -390,19 +390,10 @@
     color: var(--ui-text-muted);
     overflow-wrap: anywhere;
   }
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 0.8rem;
-    border-top: 1px solid var(--ui-border);
-  }
   @media (max-width: 700px) {
     .address-fields,
     .schedule-fields {
       grid-template-columns: minmax(0, 1fr);
-    }
-    .form-actions button {
-      width: 100%;
     }
   }
 </style>

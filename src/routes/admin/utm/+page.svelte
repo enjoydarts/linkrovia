@@ -71,7 +71,7 @@
   </details>
 {/snippet}
 
-<div class="space-y-6">
+<div class="admin-page">
   <header class="context-header space-y-2">
     <h1>{messages.title}</h1>
     <p>{messages.description}</p>
@@ -85,16 +85,16 @@
     </p>
   {/if}
 
-  <div
-    class="grid items-start gap-5 xl:grid-cols-[minmax(16rem,1fr)_minmax(0,2fr)]"
-  >
+  <div class="admin-section-stack">
     <section
       aria-labelledby="utm-templates-title"
       class="context-panel min-w-0 space-y-4"
     >
       <div class="space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="utm-templates-title" class="text-xl font-semibold">
+        <div
+          class="admin-section-header flex flex-wrap items-center justify-between gap-3"
+        >
+          <h2 id="utm-templates-title">
             {messages.templates}
           </h2>
           <a
@@ -133,15 +133,17 @@
       </div>
     </section>
 
-    <div class="min-w-0 space-y-5">
+    <div class="admin-section-stack">
       <section
         id="template-editor"
         aria-labelledby="template-editor-title"
         class="context-panel scroll-mt-24 min-w-0 space-y-4"
       >
-        <h2 id="template-editor-title" class="text-xl font-semibold">
-          {data.editing ? messages.editTemplate : messages.newTemplate}
-        </h2>
+        <header class="admin-section-header">
+          <h2 id="template-editor-title">
+            {data.editing ? messages.editTemplate : messages.newTemplate}
+          </h2>
+        </header>
 
         <form method="POST" action={`?/save${editQuery}`} class="space-y-4">
           <input type="hidden" name="csrfToken" value={data.csrfToken} />
@@ -179,13 +181,15 @@
             />
           </div>
           {@render utmFields('template', draft?.values)}
-          <button
-            type="submit"
-            class="admin-button admin-button-primary"
-            disabled={staleTemplate}
-          >
-            {messages.save}
-          </button>
+          <div class="admin-form-footer">
+            <button
+              type="submit"
+              class="admin-button admin-button-primary"
+              disabled={staleTemplate}
+            >
+              {messages.save}
+            </button>
+          </div>
         </form>
 
         {#if data.editing}
@@ -212,9 +216,9 @@
         aria-labelledby="utm-preview-title"
         class="context-panel min-w-0 space-y-4"
       >
-        <h2 id="utm-preview-title" class="text-xl font-semibold">
-          {messages.preview}
-        </h2>
+        <header class="admin-section-header">
+          <h2 id="utm-preview-title">{messages.preview}</h2>
+        </header>
         <form method="POST" action={`?/preview${editQuery}`} class="space-y-4">
           <input type="hidden" name="csrfToken" value={data.csrfToken} />
           <div class="space-y-1">
@@ -258,9 +262,11 @@
             </div>
           {/if}
           {@render utmFields('preview', previewInput?.values)}
-          <button type="submit" class="admin-button admin-button-primary">
-            {messages.previewAction}
-          </button>
+          <div class="admin-form-footer">
+            <button type="submit" class="admin-button admin-button-primary">
+              {messages.previewAction}
+            </button>
+          </div>
         </form>
 
         {#if form?.preview}

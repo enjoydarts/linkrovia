@@ -28,9 +28,9 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<div class="space-y-8">
-  <header class="context-header space-y-2">
-    <h1 class="text-3xl font-semibold tracking-tight">{m.title}</h1>
+<div class="admin-page">
+  <header class="context-header">
+    <h1>{m.title}</h1>
     <p>{m.intro}</p>
     {#if data.available}
       <a href="#invite-admin" class="admin-button admin-button-primary">
@@ -39,69 +39,77 @@
     {/if}
   </header>
 
-  {#if form?.inviteUrl}
-    {@const url = form.inviteUrl}
-    <section class="context-panel space-y-3">
-      <label for="invite-url" class="block font-medium">{m.link}</label>
-      <p id="invite-help" class="text-sm text-muted">{m.share}</p>
-      <input
-        id="invite-url"
-        type="text"
-        class="admin-control w-full"
-        value={url}
-        readonly
-        aria-describedby="invite-help"
-        onfocus={(event) => event.currentTarget.select()}
-      />
-      <button
-        type="button"
-        class="admin-button"
-        onclick={() => copyInvite(url)}
+  <div class="admin-section-stack">
+    {#if form?.inviteUrl}
+      {@const url = form.inviteUrl}
+      <section class="context-panel space-y-3">
+        <label for="invite-url" class="block font-medium">{m.link}</label>
+        <p id="invite-help" class="text-sm text-muted">{m.share}</p>
+        <input
+          id="invite-url"
+          type="text"
+          class="admin-control w-full"
+          value={url}
+          readonly
+          aria-describedby="invite-help"
+          onfocus={(event) => event.currentTarget.select()}
+        />
+        <button
+          type="button"
+          class="admin-button"
+          onclick={() => copyInvite(url)}
+        >
+          {m.copy}
+        </button>
+        <span role="status">{copied ? m.copied : ''}</span>
+      </section>
+    {/if}
+
+    {#if data.available}
+      <form
+        id="invite-admin"
+        method="POST"
+        action="?/invite"
+        aria-labelledby="invite-admin-heading"
+        class="context-panel scroll-mt-24 space-y-3"
       >
-        {m.copy}
-      </button>
-      <span role="status">{copied ? m.copied : ''}</span>
-    </section>
-  {/if}
+        <input type="hidden" name="csrfToken" value={data.csrfToken} />
+        <div class="admin-section-header">
+          <h2 id="invite-admin-heading">{m.invite}</h2>
+        </div>
+        <label for="email" class="block font-medium">
+          {messages['auth.email']}
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autocomplete="off"
+          maxlength="254"
+          class="admin-control w-full"
+        />
+        <div class="admin-form-footer">
+          {#if form?.code}
+            <p role="alert" class="text-negative">
+              {form.code === 'duplicate'
+                ? m.duplicate
+                : messages['error.invalid_input']}
+            </p>
+          {/if}
+          <button type="submit" class="admin-button admin-button-primary">
+            {m.invite}
+          </button>
+        </div>
+      </form>
+    {:else}
+      <p role="alert">{messages['passkey.unavailable']}</p>
+    {/if}
 
-  {#if data.available}
-    <form
-      id="invite-admin"
-      method="POST"
-      action="?/invite"
-      class="context-panel scroll-mt-24 space-y-3"
-    >
-      <input type="hidden" name="csrfToken" value={data.csrfToken} />
-      <label for="email" class="block font-medium">
-        {messages['auth.email']}
-      </label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        required
-        autocomplete="off"
-        maxlength="254"
-        class="admin-control w-full"
-      />
-      {#if form?.code}
-        <p role="alert" class="text-negative">
-          {form.code === 'duplicate'
-            ? m.duplicate
-            : messages['error.invalid_input']}
-        </p>
-      {/if}
-      <button type="submit" class="admin-button admin-button-primary">
-        {m.invite}
-      </button>
-    </form>
-  {:else}
-    <p role="alert">{messages['passkey.unavailable']}</p>
-  {/if}
-
-  <div class="grid items-start gap-5 lg:grid-cols-2">
-    <section class="context-panel space-y-3" aria-label={m.admins}>
-      <h2 class="text-xl font-semibold">{m.admins}</h2>
+    <section class="context-panel space-y-3" aria-labelledby="admin-members">
+      <div class="admin-section-header">
+        <h2 id="admin-members">{m.admins}</h2>
+      </div>
       {#if data.admins.length}
         <ul class="divide-y divide-line rounded-lg border border-line">
           {#each data.admins as admin (admin.id)}
@@ -140,8 +148,10 @@
         <p class="text-muted">{m.noAdmins}</p>
       {/if}
     </section>
-    <section class="context-panel space-y-3" aria-label={m.pending}>
-      <h2 class="text-xl font-semibold">{m.pending}</h2>
+    <section class="context-panel space-y-3" aria-labelledby="admin-pending">
+      <div class="admin-section-header">
+        <h2 id="admin-pending">{m.pending}</h2>
+      </div>
       {#if data.invitations.length}
         <ul class="divide-y divide-line rounded-lg border border-line">
           {#each data.invitations as invitation (invitation.id)}

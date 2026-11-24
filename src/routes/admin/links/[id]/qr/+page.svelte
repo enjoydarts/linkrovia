@@ -8,13 +8,9 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<div class="space-y-6">
-  <header class="space-y-2">
-    <h2 class="text-xl font-semibold tracking-tight">{m.title}</h2>
-    <p class="text-muted">{m.description}</p>
-    <p class="font-medium">{data.link.title || data.link.slug}</p>
-  </header>
-  <section class="rounded-xl border border-line bg-surface p-6">
+<div class="admin-section-stack">
+  <p class="text-sm text-muted">{m.description}</p>
+  <section class="context-panel">
     {#if data.url}
       <div class="qr-workspace">
         <div class="qr-preview rounded-lg bg-white p-3 shadow-sm">

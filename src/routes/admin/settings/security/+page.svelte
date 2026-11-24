@@ -17,64 +17,64 @@
   <title>{messages.title} · {brand.name}</title>
 </svelte:head>
 
-<div class="space-y-6">
-  <header class="context-header space-y-2">
-    <h1 class="text-3xl font-semibold tracking-tight">{messages.title}</h1>
+<div class="admin-page">
+  <header class="context-header">
+    <h1>{messages.title}</h1>
     <p>{messages.intro}</p>
   </header>
 
-  <dl class="context-panel grid gap-4 text-sm sm:grid-cols-2">
-    <div class="min-w-0 space-y-1">
-      <dt class="font-medium">{messages.status}</dt>
-      <dd>
-        {data.enabled
-          ? configurationIssue
-            ? messages.incomplete
-            : messages.enabled
-          : messages.disabled}
-      </dd>
-    </div>
-    <div class="min-w-0 space-y-1">
-      <dt class="font-medium">{messages.hostname}</dt>
-      <dd class="break-all"><code>{data.hostname}</code></dd>
-    </div>
-  </dl>
-
-  {#if form?.error}
-    <p role="alert" class="font-medium">{messages[form.error]}</p>
-  {:else if data.enabled && configurationIssue}
-    <p role="alert" class="font-medium">{messages[configurationIssue]}</p>
-  {:else if form?.saved}
-    <p role="status" class="font-medium">
-      {form.saved === 'enabled' ? messages.saved : messages.turnedOff}
-    </p>
-  {/if}
-
-  {#if form?.reviewSiteKey}
-    <form method="POST" action="?/enable" class="context-panel space-y-3">
-      <input type="hidden" name="csrfToken" value={data.csrfToken} />
-      <input type="hidden" name="siteKey" value={form.reviewSiteKey} />
-      <p>{messages.verify}</p>
-      <TurnstileWidget
-        siteKey={form.reviewSiteKey}
-        action="security_settings"
-        locale={data.locale}
-      />
-      <div class="flex flex-wrap items-center gap-4">
-        <button type="submit" class="admin-button admin-button-primary">
-          {data.enabled ? messages.verifySave : messages.verifyEnable}
-        </button>
-        <a
-          href={resolve('/admin/settings/security')}
-          data-sveltekit-reload
-          class="text-sm underline underline-offset-4"
-        >
-          {messages.edit}
-        </a>
+  <div class="admin-section-stack">
+    <dl class="context-panel space-y-4 text-sm">
+      <div class="min-w-0 space-y-1">
+        <dt class="font-medium">{messages.status}</dt>
+        <dd>
+          {data.enabled
+            ? configurationIssue
+              ? messages.incomplete
+              : messages.enabled
+            : messages.disabled}
+        </dd>
       </div>
-    </form>
-  {:else}
-    <div class="grid items-start gap-5 lg:grid-cols-2">
+      <div class="min-w-0 space-y-1">
+        <dt class="font-medium">{messages.hostname}</dt>
+        <dd class="break-all"><code>{data.hostname}</code></dd>
+      </div>
+    </dl>
+
+    {#if form?.error}
+      <p role="alert" class="font-medium">{messages[form.error]}</p>
+    {:else if data.enabled && configurationIssue}
+      <p role="alert" class="font-medium">{messages[configurationIssue]}</p>
+    {:else if form?.saved}
+      <p role="status" class="font-medium">
+        {form.saved === 'enabled' ? messages.saved : messages.turnedOff}
+      </p>
+    {/if}
+
+    {#if form?.reviewSiteKey}
+      <form method="POST" action="?/enable" class="context-panel space-y-3">
+        <input type="hidden" name="csrfToken" value={data.csrfToken} />
+        <input type="hidden" name="siteKey" value={form.reviewSiteKey} />
+        <p>{messages.verify}</p>
+        <TurnstileWidget
+          siteKey={form.reviewSiteKey}
+          action="security_settings"
+          locale={data.locale}
+        />
+        <div class="admin-form-footer">
+          <button type="submit" class="admin-button admin-button-primary">
+            {data.enabled ? messages.verifySave : messages.verifyEnable}
+          </button>
+          <a
+            href={resolve('/admin/settings/security')}
+            data-sveltekit-reload
+            class="text-sm underline underline-offset-4"
+          >
+            {messages.edit}
+          </a>
+        </div>
+      </form>
+    {:else}
       <ol class="context-panel list-decimal space-y-4 marker:font-semibold">
         <li class="ml-5 space-y-1">
           <a
@@ -98,7 +98,9 @@
 
       <form method="POST" action="?/prepare" class="context-panel space-y-3">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <h2 class="text-lg font-semibold">{messages.prepare}</h2>
+        <div class="admin-section-header">
+          <h2>{messages.prepare}</h2>
+        </div>
         <div class="space-y-1">
           <label for="site-key" class="block font-medium">
             {messages.siteKey}
@@ -117,23 +119,27 @@
           />
           <p id="site-key-hint" class="text-sm">{messages.siteKeyHint}</p>
         </div>
-        <button type="submit" class="admin-button admin-button-primary">
-          {messages.prepare}
-        </button>
+        <div class="admin-form-footer">
+          <button type="submit" class="admin-button admin-button-primary">
+            {messages.prepare}
+          </button>
+        </div>
       </form>
-    </div>
-  {/if}
+    {/if}
 
-  {#if data.enabled}
-    <details class="context-panel space-y-3">
-      <summary class="cursor-pointer font-semibold">{messages.disable}</summary>
-      <p class="text-sm">{messages.rotate}</p>
-      <form method="POST" action="?/disable">
-        <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <button type="submit" class="admin-button">
+    {#if data.enabled}
+      <details class="context-panel space-y-3">
+        <summary class="cursor-pointer font-semibold">
           {messages.disable}
-        </button>
-      </form>
-    </details>
-  {/if}
+        </summary>
+        <p class="text-sm">{messages.rotate}</p>
+        <form method="POST" action="?/disable" class="admin-form-footer">
+          <input type="hidden" name="csrfToken" value={data.csrfToken} />
+          <button type="submit" class="admin-button">
+            {messages.disable}
+          </button>
+        </form>
+      </details>
+    {/if}
+  </div>
 </div>

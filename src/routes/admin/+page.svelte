@@ -75,27 +75,29 @@
 </script>
 
 <svelte:head>
-  <title>{messages['admin.title']} · {brand.name}</title>
+  <title>{messages['admin.overview']} · {brand.name}</title>
 </svelte:head>
-<div class="overview">
-  <header class="overview-header">
-    <div class="hero-copy">
-      <h1>{messages['admin.title']}</h1>
-      <div class="hero-actions">
-        <a href="/admin/links/new" class="admin-button admin-button-primary">
-          <Plus size={17} aria-hidden="true" />{links.create}
-        </a>
-        <a href="/admin/links" class="hero-link">
-          {links.links} <span aria-hidden="true">→</span>
-        </a>
-      </div>
-    </div>
-    {#if data.report}
-      <div class="hero-metric">
-        <span>{analytics.clicks} · {labels[0]}</span>
+<div class="admin-page">
+  <header class="workspace-intro">
+    <h1>{messages['admin.overview']}</h1>
+    <a href="/admin/links/new" class="admin-button admin-button-primary">
+      <Plus size={17} aria-hidden="true" />{links.create}
+    </a>
+  </header>
+  {#if data.report}
+    <section
+      class="context-panel overview-metric"
+      aria-labelledby="overview-clicks"
+    >
+      <div class="metric-value">
+        <div class="admin-section-header">
+          <h2 id="overview-clicks">{analytics.clicks} · {labels[0]}</h2>
+        </div>
         <strong>
           {data.report.totalClicks?.toLocaleString(data.locale) ?? '—'}
         </strong>
+      </div>
+      <div class="metric-period">
         <span>{data.report.meta.from} – {data.report.meta.to}</span>
         <span>
           {comparison[0]}: {#if data.previous}{data.previous.total.toLocaleString(
@@ -104,11 +106,11 @@
               · {analytics.estimated}{/if}{:else}{comparison[1]}{/if}
         </span>
       </div>
-    {/if}
-  </header>
+    </section>
+  {/if}
   <div class="dashboard-content">
-    <section class="analytics card" aria-labelledby="analytics-heading">
-      <div class="section-heading">
+    <section class="context-panel" aria-labelledby="analytics-heading">
+      <div class="admin-section-header section-heading">
         <h2 id="analytics-heading">{analytics.title}</h2>
         <a href="/admin/analytics">
           {labels[4]} <span aria-hidden="true">→</span>
@@ -165,8 +167,11 @@
       {/if}
     </section>
     <div class="link-cards">
-      <section class="card link-card recent" aria-labelledby="recent-links">
-        <div class="section-heading">
+      <section
+        class="context-panel link-card recent"
+        aria-labelledby="recent-links"
+      >
+        <div class="admin-section-header section-heading">
           <h2 id="recent-links">{messages['admin.recent']}</h2>
           <a href="/admin/links">
             {links.links} <span aria-hidden="true">→</span>
@@ -189,8 +194,11 @@
         {:else}<p class="empty">{links.empty}</p>{/if}
       </section>
       {#if data.report}
-        <section class="card link-card" aria-labelledby="popular-heading">
-          <div class="section-heading">
+        <section
+          class="context-panel link-card"
+          aria-labelledby="popular-heading"
+        >
+          <div class="admin-section-header section-heading">
             <h2 id="popular-heading">{labels[1]}</h2>
             <a href="/admin/analytics">
               {labels[4]} <span aria-hidden="true">→</span>
@@ -217,10 +225,10 @@
   </div>
   {#if data.report}
     <section
-      class="card link-card breakdown-card"
+      class="context-panel link-card"
       aria-labelledby="breakdown-heading"
     >
-      <div class="section-heading">
+      <div class="admin-section-header section-heading">
         <h2 id="breakdown-heading">{analytics.breakdown}</h2>
         <a href="/admin/analytics">
           {labels[4]} <span aria-hidden="true">→</span>
@@ -256,85 +264,40 @@
 </div>
 
 <style>
-  .overview-header {
+  .overview-metric {
     display: flex;
-    align-items: stretch;
-    justify-content: space-between;
-    gap: 2rem;
-    padding: clamp(1.5rem, 3vw, 2.5rem);
-    border-radius: 20px;
-    background: linear-gradient(115deg, #132740, #123c43);
-    color: #fff;
-  }
-  .hero-copy {
-    display: grid;
-    align-content: center;
-    gap: 0.7rem;
-  }
-  .overview-header h1 {
-    font-size: clamp(1.8rem, 3.4vw, 2.8rem);
-    line-height: 1.15;
-    letter-spacing: -0.045em;
-  }
-  .hero-actions {
-    display: flex;
+    align-items: end;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 1.25rem;
-    margin-top: 0.7rem;
+    justify-content: space-between;
+    gap: 0.85rem 2rem;
   }
-  .hero-actions .admin-button-primary {
-    background: #6ce4d3;
-    color: #102a32;
-  }
-  .hero-link {
-    color: #e9fbf8;
-    font-size: 0.875rem;
-    font-weight: 650;
-  }
-  .hero-metric {
+  .metric-value,
+  .metric-period {
     display: grid;
-    align-content: center;
     gap: 0.35rem;
-    min-width: min(16rem, 100%);
-    padding: 1rem 1.5rem;
-    border-left: 1px solid rgb(255 255 255 / 22%);
-    color: #c3dcdd;
-    font-size: 0.8rem;
   }
-  .hero-metric strong {
-    color: #fff;
+  .metric-value strong {
     font-size: clamp(2.5rem, 4vw, 3.5rem);
     line-height: 1;
     letter-spacing: -0.05em;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-period {
+    color: var(--ui-text-muted);
+    font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
   }
   .dashboard-content {
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
     align-items: start;
-    gap: 1.25rem;
-    margin-top: 1.5rem;
-  }
-  .card {
-    min-width: 0;
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-surface);
-  }
-  .analytics {
-    padding: 1.4rem;
+    gap: var(--admin-section-gap);
   }
   .section-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-  }
-  .section-heading h2 {
-    font-size: 1.05rem;
-    font-weight: 680;
-    letter-spacing: -0.02em;
   }
   .section-heading > a {
     color: var(--ui-text-muted);
@@ -356,9 +319,6 @@
     color: var(--ui-text-muted);
     font-size: 0.8rem;
     line-height: 1.5;
-  }
-  .breakdown-card {
-    margin-top: 1.25rem;
   }
   .breakdowns {
     display: grid;
@@ -384,6 +344,7 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 0.5rem;
+    margin-top: 1rem;
     padding-top: 1.15rem;
     border-top: 1px solid var(--ui-border);
   }
@@ -416,10 +377,7 @@
   }
   .link-cards {
     display: grid;
-    gap: 1.25rem;
-  }
-  .link-card {
-    padding: 1.25rem;
+    gap: var(--admin-section-gap);
   }
   .link-card ul {
     margin-top: 1rem;
@@ -480,21 +438,8 @@
     }
   }
   @media (max-width: 650px) {
-    .overview-header {
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    .hero-metric {
-      border-left: 0;
-      border-top: 1px solid rgb(255 255 255 / 22%);
-      padding: 1.25rem 0 0;
-    }
     .link-cards {
       grid-template-columns: 1fr;
-    }
-    .analytics,
-    .link-card {
-      padding: 1.1rem;
     }
   }
 </style>

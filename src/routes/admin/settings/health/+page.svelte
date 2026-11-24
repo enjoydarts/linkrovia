@@ -29,14 +29,16 @@
 </script>
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
-<div class="space-y-6">
-  <header class="context-header space-y-2">
-    <h1 class="text-3xl font-semibold tracking-tight">{m.title}</h1>
+<div class="admin-page">
+  <header class="context-header">
+    <h1>{m.title}</h1>
     <p>{m.intro}</p>
   </header>
-  <div class="grid gap-5 sm:grid-cols-2">
+  <div class="admin-section-stack">
     <section class="context-panel space-y-4" aria-labelledby="storage-heading">
-      <h2 id="storage-heading" class="text-xl font-semibold">{m.database}</h2>
+      <div class="admin-section-header">
+        <h2 id="storage-heading">{m.database}</h2>
+      </div>
       <p
         class="inline-block rounded-md border border-line bg-canvas px-2.5 py-1 text-sm font-medium"
       >
@@ -60,9 +62,11 @@
       class="context-panel space-y-3"
       aria-labelledby="analytics-heading"
     >
-      <h2 id="analytics-heading" class="text-xl font-semibold">
-        {m.analytics}
-      </h2>
+      <div class="admin-section-header">
+        <h2 id="analytics-heading">
+          {m.analytics}
+        </h2>
+      </div>
       <p
         class="inline-block rounded-md border border-line bg-canvas px-2.5 py-1 text-sm font-medium"
       >
@@ -72,7 +76,9 @@
       </p>
     </section>
     <section class="context-panel space-y-3" aria-labelledby="clicks-heading">
-      <h2 id="clicks-heading" class="text-xl font-semibold">{m.clicks}</h2>
+      <div class="admin-section-header">
+        <h2 id="clicks-heading">{m.clicks}</h2>
+      </div>
       <p
         class="inline-block rounded-md border border-line bg-canvas px-2.5 py-1 text-sm font-medium"
       >
@@ -107,9 +113,11 @@
       class="context-panel space-y-3"
       aria-labelledby="conversions-heading"
     >
-      <h2 id="conversions-heading" class="text-xl font-semibold">
-        {m.conversions}
-      </h2>
+      <div class="admin-section-header">
+        <h2 id="conversions-heading">
+          {m.conversions}
+        </h2>
+      </div>
       <p
         class="inline-block rounded-md border border-line bg-canvas px-2.5 py-1 text-sm font-medium"
       >
@@ -122,22 +130,24 @@
         </dl>
       {/if}
     </section>
+    {#if data.health.version}
+      <details class="context-panel space-y-3">
+        <summary class="cursor-pointer text-lg font-semibold">
+          {m.version}
+        </summary>
+        <dl class="space-y-2 text-sm">
+          <div>
+            <dt class="font-medium">{m.deployment}</dt>
+            <dd class="break-all">{data.health.version.id}</dd>
+          </div>
+          <div>
+            <dt class="font-medium">{m.deployedAt}</dt>
+            <dd>
+              {format.format(new Date(data.health.version.timestamp))} UTC
+            </dd>
+          </div>
+        </dl>
+      </details>
+    {/if}
   </div>
-  {#if data.health.version}
-    <details class="context-panel space-y-3">
-      <summary class="cursor-pointer text-lg font-semibold">
-        {m.version}
-      </summary>
-      <dl class="space-y-2 text-sm">
-        <div>
-          <dt class="font-medium">{m.deployment}</dt>
-          <dd class="break-all">{data.health.version.id}</dd>
-        </div>
-        <div>
-          <dt class="font-medium">{m.deployedAt}</dt>
-          <dd>{format.format(new Date(data.health.version.timestamp))} UTC</dd>
-        </div>
-      </dl>
-    </details>
-  {/if}
 </div>

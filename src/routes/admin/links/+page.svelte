@@ -62,7 +62,12 @@
 <svelte:head><title>{m.links} · {brand.name}</title></svelte:head>
 
 <section class="link-library" aria-label={m.links}>
-  <form method="GET" role="search" class="toolbar" aria-label={m.searchLinks}>
+  <form
+    method="GET"
+    role="search"
+    class="context-panel toolbar"
+    aria-label={m.searchLinks}
+  >
     <label for="link-search" class="sr-only">{m.searchLinks}</label>
     <div class="search-box">
       <Search size={18} aria-hidden="true" />
@@ -165,7 +170,7 @@
   {/if}
 
   {#if data.links.length === 0}
-    <div class="empty">
+    <div class="context-panel empty">
       <Link2 size={24} aria-hidden="true" />
       <p>{hasFilters ? detailNavigation[data.locale].noMatches : m.empty}</p>
       {#if hasFilters}
@@ -183,7 +188,7 @@
         {m.status}
       </span><span></span>
     </div>
-    <ul class="link-rows">
+    <ul class="context-panel context-list link-rows">
       {#each data.links as link (link.id)}
         {@const linkPage = `/admin/links/${encodeURIComponent(link.id)}`}
         {@const linkLabel = link.title || link.shortUrl}
@@ -281,12 +286,6 @@
     min-width: 0;
     --row-columns: minmax(0, 1.45fr) minmax(0, 1fr) 6.5rem 6rem;
   }
-  .link-rows,
-  .empty {
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-surface);
-  }
   .toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
@@ -294,9 +293,6 @@
     gap: 0.7rem;
     margin-bottom: 0.65rem;
     padding: clamp(0.65rem, 1.8vw, 1rem);
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-surface);
   }
   .search-box {
     display: flex;

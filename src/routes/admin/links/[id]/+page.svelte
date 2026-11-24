@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head><title>{m.edit} · {brand.name}</title></svelte:head>
-<div class="space-y-6">
+<div class="admin-section-stack">
   {#if form?.code === 'temporary_redirect'}
     <p role="alert" class="text-negative">
       {protection.temporaryRedirect}
