@@ -83,6 +83,6 @@ The `links:write` API endpoints `POST /api/v1/links/import/validate` and `POST /
 
 ## Cloudflare runtime verification
 
-Local browser and workerd tests cover owner setup, passkey sign-in, D1 persistence, link management, analytics screens, CSV import, QR codes, and one-time link redemption. Workers Builds and custom-domain setup through owner passkey registration have been verified on Cloudflare. See the [deployment guide](deployment.md) for provider verification status.
+Local browser and workerd tests cover owner setup, passkey sign-in, D1 persistence, link management, analytics screens, CSV import, QR codes, and one-time link redemption. The Deploy to Cloudflare button has been verified through opening the setup screen on a public Worker. Custom-domain setup and owner passkey registration have also been verified on Cloudflare. See the [deployment guide](deployment.md) for verification details.
 
 Turnstile activation, protected sign-in, and disabling were exercised in a browser with a local Worker and the live Siteverify endpoint using Cloudflare's test keys. To reproduce that check, configure a matching test site key and `TURNSTILE_SECRET_KEY` on a local loopback installation, then use **Settings → Security**. [Cloudflare test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)

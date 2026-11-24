@@ -1,6 +1,6 @@
 # Deploying Linkrovia
 
-Linkrovia runs on one Cloudflare Worker with a D1 database. The Worker serves the app and runs the scheduled analytics jobs. Linkrovia is in development. Workers Builds deployment and custom-domain setup through owner passkey registration have been verified on a deployed Worker. End-to-end installation with the Deploy to Cloudflare button on a fresh account is pending verification.
+Linkrovia runs on one Cloudflare Worker with a D1 database. The Worker serves the app and runs the scheduled analytics jobs. The Deploy to Cloudflare button has been verified through reaching the setup screen at the Worker's public HTTPS address. Guided custom-domain setup and owner passkey registration have also been verified on an existing Cloudflare deployment.
 
 ## Install with Deploy to Cloudflare
 
