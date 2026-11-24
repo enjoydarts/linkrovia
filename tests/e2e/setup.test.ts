@@ -16,6 +16,9 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
   const password = 'a long development passphrase';
   const csvExpiry = '2099-12-31T00:15:00Z';
 
+  const initialHealth = await request.get('/health');
+  expect(initialHealth.headers()['x-linkrovia-setup']).toBe('pending');
+
   const crossOrigin = await request.post('/setup?/verify', {
     headers: { origin: 'https://other.example.com' },
     form: { setupToken: fixtureSetupToken },
@@ -48,6 +51,8 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
 
   const repeatedSetup = await request.get('/setup');
   expect(repeatedSetup.status()).toBe(410);
+  const installedHealth = await request.get('/health');
+  expect(installedHealth.headers()['x-linkrovia-setup']).toBe('complete');
 
   await page.locator('[name=email]').fill(email);
   await page.locator('[name=password]').fill('a different test passphrase');

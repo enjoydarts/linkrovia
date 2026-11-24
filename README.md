@@ -36,7 +36,7 @@ The dashboard supports English, Japanese, Simplified Chinese, Traditional Chines
 
 ## Get started
 
-1. Deploy on your Cloudflare account using the [deployment guide](docs/deployment.md).
+1. Deploy to your Cloudflare account and open the published HTTPS address. If Cloudflare asks for an account subdomain, follow the [deployment guide](docs/deployment.md#if-the-worker-address-does-not-open).
 2. Open `/setup` on your Worker's `workers.dev` address and enter the setup token. Choose the management hostname before registering your owner passkey. You can connect a custom hostname from a Cloudflare zone in the same account or use the Worker address. [Connect domains](docs/domains.md)
 3. Create a short link, open it in another tab, and check its report under **Link analytics**.
 

@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 const generatedPath = '.svelte-kit/cloudflare/worker/wrangler.json';
 const config = {
   name: 'test-linkrovia',
+  workers_dev: true,
   main: 'linkrovia.js',
   assets: { directory: '../client', binding: 'ASSETS' },
   triggers: { crons: ['15,45 * * * *'] },
@@ -48,7 +49,20 @@ const analyticsDisabled = [
 ];
 
 type Command = { args: string[]; config: typeof config };
-type Outcome = { status: number; stderr?: string[] };
+const deployedOrigin = 'https://selected-worker.example.workers.dev';
+const deployRecord = {
+  type: 'deploy',
+  version: 1,
+  worker_name: 'selected-worker',
+  version_id: 'new-version',
+  targets: [deployedOrigin, 'schedule: 15,45 * * * *'],
+};
+
+type Outcome = {
+  status: number;
+  stderr?: string[];
+  record?: typeof deployRecord | null;
+};
 
 let root: string;
 
@@ -58,13 +72,28 @@ function write(path: string, data: string) {
   writeFileSync(target, data);
 }
 
-function deploy(outcomes: Outcome[] = [], args: string[] = []) {
+function deploy(
+  outcomes: Outcome[] = [],
+  args: string[] = [],
+  env: Record<string, string> = {},
+) {
   write('outcomes.json', JSON.stringify(outcomes));
-  const result = spawnSync(process.execPath, ['scripts/deploy.mjs', ...args], {
-    cwd: root,
-    encoding: 'utf8',
-    env: { ...process.env, npm_config_dry_run: 'false' },
-  });
+  const result = spawnSync(
+    process.execPath,
+    ['--import', './mock-fetch.mjs', 'scripts/deploy.mjs', ...args],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        npm_config_dry_run: 'false',
+        WRANGLER_CI_OVERRIDE_NAME: 'selected-worker',
+        WRANGLER_OUTPUT_FILE_PATH: '',
+        WRANGLER_OUTPUT_FILE_DIRECTORY: '',
+        ...env,
+      },
+    },
+  );
   const commands: Command[] = readFileSync(join(root, 'commands.jsonl'), 'utf8')
     .trim()
     .split('\n')
@@ -89,10 +118,38 @@ describe('deployment script', () => {
       new URL('../../scripts/deploy.mjs', import.meta.url),
       join(root, 'scripts/deploy.mjs'),
     );
+    copyFileSync(
+      new URL('../../scripts/deploy-readiness.mjs', import.meta.url),
+      join(root, 'scripts/deploy-readiness.mjs'),
+    );
+    write(
+      'mock-fetch.mjs',
+      `
+      import { appendFileSync } from 'node:fs';
+      let checks = 0;
+      globalThis.fetch = async (url, options) => {
+        appendFileSync('requests.log', url + '\\n');
+        if (!url.startsWith('${deployedOrigin}/') || options.redirect !== 'manual') {
+          throw new Error('Unexpected request ' + url);
+        }
+        if (url.endsWith('/health')) {
+          if (++checks === 1 && process.env.TEST_DNS_PENDING) {
+            throw new TypeError('fetch failed', { cause: { code: 'ENOTFOUND' } });
+          }
+          const headers = process.env.TEST_SETUP_COMPLETE
+            ? { 'x-linkrovia-setup': 'complete' }
+            : {};
+          return Response.json({ status: 'ok' }, { headers });
+        }
+        return new Response('Setup page', { status: +(process.env.TEST_SETUP_STATUS || 200) });
+      };
+    `,
+    );
     write(
       'node_modules/wrangler/bin/wrangler.js',
       String.raw`
       const fs = require('node:fs');
+      const path = require('node:path');
       const args = process.argv.slice(2);
       const config = JSON.parse(fs.readFileSync(args[args.indexOf('--config') + 1], 'utf8'));
       fs.appendFileSync('commands.jsonl', JSON.stringify({ args, config }) + '\n');
@@ -103,6 +160,18 @@ describe('deployment script', () => {
         for (const part of outcome?.stderr ?? []) {
           process.stderr.write(part);
           await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        if (args[0] === 'deploy' && !args.includes('--dry-run') && (outcome?.status ?? 0) === 0) {
+          let output = process.env.WRANGLER_OUTPUT_FILE_PATH;
+          if (!output && process.env.WRANGLER_OUTPUT_FILE_DIRECTORY) {
+            output = path.join(process.env.WRANGLER_OUTPUT_FILE_DIRECTORY, 'wrangler-output-' + commandIndex + '.json');
+          }
+          const defaultRecord = ${JSON.stringify(deployRecord)};
+          const record = outcome?.record === undefined ? defaultRecord : outcome.record;
+          if (output && record) {
+            fs.mkdirSync(path.dirname(output), { recursive: true });
+            fs.appendFileSync(output, JSON.stringify(record) + '\n');
+          }
         }
         process.exitCode = outcome?.status ?? 0;
       }
@@ -122,6 +191,12 @@ describe('deployment script', () => {
     expect(commands.map(({ args }) => args)).toEqual(originalCommands);
     expect(commands.every((command) => command.config.analytics)).toBe(true);
     expect(stdout).toContain('Wrangler command 3');
+    expect(stdout).toContain(
+      `Open the Linkrovia setup page: ${deployedOrigin}/setup`,
+    );
+    expect(
+      readFileSync(join(root, 'requests.log'), 'utf8').trim().split('\n'),
+    ).toEqual([`${deployedOrigin}/health`, `${deployedOrigin}/setup`]);
   });
 
   it('only preflights on a standalone dry run', () => {
@@ -140,6 +215,9 @@ describe('deployment script', () => {
 
     expect(status).toBe(0);
     expect(stdout).toContain('Wrangler command 4');
+    expect(stdout).toContain(
+      `Open the Linkrovia setup page: ${deployedOrigin}/setup`,
+    );
     expect(stderr).toContain(analyticsDisabled.join(''));
     expect(commands).toHaveLength(4);
     expect(commands.slice(0, 3).map(({ args }) => args)).toEqual(
@@ -198,5 +276,67 @@ describe('deployment script', () => {
     expect(readdirSync(join(root, dirname(generatedPath)))).toEqual([
       'wrangler.json',
     ]);
+  });
+
+  it('allows DNS propagation before checking the HTTPS setup route', () => {
+    const { status, stdout } = deploy([], [], { TEST_DNS_PENDING: '1' });
+
+    expect(status).toBe(0);
+    expect(stdout).toContain(
+      `Open the Linkrovia setup page: ${deployedOrigin}/setup`,
+    );
+    expect(
+      readFileSync(join(root, 'requests.log'), 'utf8').trim().split('\n'),
+    ).toEqual([
+      `${deployedOrigin}/health`,
+      `${deployedOrigin}/health`,
+      `${deployedOrigin}/setup`,
+    ]);
+  });
+
+  it('reports a missing route even after Wrangler successfully uploads the Worker', () => {
+    write('existing.ndjson', JSON.stringify(deployRecord) + '\n');
+    const { status, stderr, stdout } = deploy(
+      [{ status: 0 }, { status: 0 }, { status: 0, record: null }],
+      [],
+      { WRANGLER_OUTPUT_FILE_PATH: 'existing.ndjson' },
+    );
+
+    expect(status).toBe(1);
+    expect(stderr).toContain('Settings → Domains & Routes');
+    expect(stdout).not.toContain('Open the Linkrovia setup page');
+  });
+
+  it('uses the Workers Builds output directory without replacing it', () => {
+    write('existing/wrangler-output-past.json', '{}\n');
+    const { status, stdout } = deploy([], [], {
+      WRANGLER_OUTPUT_FILE_DIRECTORY: 'existing',
+      TEST_SETUP_STATUS: '410',
+    });
+
+    expect(status).toBe(0);
+    expect(stdout).toContain('Linkrovia is already set up');
+    expect(readdirSync(join(root, 'existing')).sort()).toEqual([
+      'wrangler-output-2.json',
+      'wrangler-output-past.json',
+    ]);
+  });
+
+  it('recognizes setups completed on a different management hostname', () => {
+    const { status, stdout } = deploy([], [], { TEST_SETUP_COMPLETE: '1' });
+
+    expect(status).toBe(0);
+    expect(stdout).toContain('Linkrovia is already set up');
+    expect(readFileSync(join(root, 'requests.log'), 'utf8').trim()).toBe(
+      `${deployedOrigin}/health`,
+    );
+  });
+
+  it('allows an explicitly configured custom-domain-only deployment', () => {
+    write(generatedPath, JSON.stringify({ ...config, workers_dev: false }));
+    const { status, stdout } = deploy();
+
+    expect(status).toBe(0);
+    expect(stdout).not.toContain('Checking the HTTPS setup route');
   });
 });

@@ -11,6 +11,10 @@ import {
 } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  captureDeploymentOutput,
+  reportBootstrapUrl,
+} from './deploy-readiness.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const redirectPath = resolve(root, '.wrangler/deploy/config.json');
@@ -26,12 +30,12 @@ function runWrangler(args) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-function upload(configPath) {
+function upload(configPath, env) {
   return new Promise((resolveUpload, reject) => {
     const child = spawn(
       process.execPath,
       [wrangler, 'deploy', '--config', relative(root, configPath)],
-      { cwd: root, stdio: ['inherit', 'inherit', 'pipe'] },
+      { cwd: root, env, stdio: ['inherit', 'inherit', 'pipe'] },
     );
     child.stderr.pipe(process.stderr, { end: false });
 
@@ -54,7 +58,7 @@ function upload(configPath) {
   });
 }
 
-async function uploadWithoutAnalytics(generatedPath, config) {
+async function uploadWithoutAnalytics(generatedPath, config, env) {
   config.analytics_engine_datasets = config.analytics_engine_datasets.filter(
     (entry) => entry.binding !== 'CLICKS',
   );
@@ -73,7 +77,7 @@ async function uploadWithoutAnalytics(generatedPath, config) {
     } finally {
       closeSync(file);
     }
-    return await upload(fallbackPath);
+    return await upload(fallbackPath, env);
   } finally {
     rmSync(fallbackPath, { force: true });
   }
@@ -170,15 +174,30 @@ try {
   runWrangler(['deploy', ...configArgs, '--dry-run']);
   if (!dryRun) {
     runWrangler(['d1', 'migrations', 'apply', 'DB', '--remote', ...configArgs]);
-    const result = await upload(generatedPath);
-    if (result.analyticsDisabled) {
-      console.warn(
-        'Cloudflare Analytics Engine is disabled. Retrying the Worker upload without it. Enable Analytics Engine in Cloudflare and redeploy to start collecting clicks.',
-      );
-      const fallback = await uploadWithoutAnalytics(generatedPath, config);
-      process.exitCode = fallback.status;
-    } else {
+    const workersDev =
+      config.workers_dev ?? !(config.route || config.routes?.length);
+    const output = workersDev ? captureDeploymentOutput(root) : undefined;
+    try {
+      let result = await upload(generatedPath, output?.env);
+      if (result.analyticsDisabled) {
+        console.warn(
+          'Cloudflare Analytics Engine is disabled. Retrying the Worker upload without it. Enable Analytics Engine in Cloudflare and redeploy to start collecting clicks.',
+        );
+        result = await uploadWithoutAnalytics(
+          generatedPath,
+          config,
+          output?.env,
+        );
+      }
       process.exitCode = result.status;
+      if (result.status === 0 && output) {
+        const worker = process.env.WRANGLER_CI_OVERRIDE_NAME || config.name;
+        process.exitCode = (await reportBootstrapUrl(output.read(), worker))
+          ? 0
+          : 1;
+      }
+    } finally {
+      output?.dispose?.();
     }
   }
 } catch (error) {

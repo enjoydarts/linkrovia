@@ -1,16 +1,22 @@
 # Deploying Linkrovia
 
-Linkrovia runs on one Cloudflare Worker with a D1 database. The Worker serves the app and runs the scheduled analytics jobs. Linkrovia is in development. Workers Builds deployment and custom-domain setup through owner passkey registration have been verified on a deployed Worker. End-to-end installation with the Deploy to Cloudflare button on a new Workers Free account is pending verification.
+Linkrovia runs on one Cloudflare Worker with a D1 database. The Worker serves the app and runs the scheduled analytics jobs. Linkrovia is in development. Workers Builds deployment and custom-domain setup through owner passkey registration have been verified on a deployed Worker. End-to-end installation with the Deploy to Cloudflare button on a fresh account is pending verification.
 
 ## Install with Deploy to Cloudflare
 
 1. Open [Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia), sign in to Cloudflare, and connect GitHub when prompted.
 2. Choose the names for your repository, Worker, and new D1 database. When prompted for `SETUP_TOKEN`, generate and save a private random value of at least 32 characters. Keep `npm run build` and `npm run deploy` as the build and deploy commands.
-3. After deployment succeeds, follow the [browser setup steps](#set-up-the-owner-account).
+3. After deployment, open the Worker's published HTTPS address from **Workers & Pages**. The deploy command checks `/health` and `/setup` and shows the direct setup link in the build log. Follow the [browser setup steps](#set-up-the-owner-account).
 
 When Cloudflare rejects the first upload with error `10089`, Linkrovia retries the upload without its click analytics bindings. You can finish setup and use short links, then [enable click analytics](#enable-click-analytics) on the same installation.
 
 [How Cloudflare provisions resources for the deploy button](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
+
+### If the Worker address does not open
+
+If the account has no `workers.dev` subdomain yet, Cloudflare asks you to choose one when you open **Workers & Pages**. Complete that account-level setup, then return to the Worker. The Worker URL uses the format `<worker-name>.<account-subdomain>.workers.dev`. If the URL is still unavailable, open the Worker’s **Settings → Domains & Routes** and enable its `workers.dev` route if it is disabled. Allow a few minutes for the first route and DNS changes to become available, then retry the same URL. [Cloudflare workers.dev setup](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/)
+
+To retry a failed build, open the existing Worker's **Deployments → View Build History** and select **Retry build**. It uses the same Worker and database. [Cloudflare build troubleshooting](https://developers.cloudflare.com/workers/ci-cd/builds/troubleshoot/)
 
 ### GitHub authorization errors
 
@@ -29,7 +35,7 @@ If the error returns immediately after authorization and there is no build log, 
 
 ## Set up the owner account
 
-1. Open your Worker's `workers.dev` address from **Workers & Pages**. Check that `/health` returns `{"status":"ok"}`, then open `/setup` and enter your setup token. If setup asks you to configure the Worker, check that the deployed Worker has the secret. If you lost the token before completing setup, replace it and deploy the change.
+1. Open the setup link from the build log, or open your Worker's published HTTPS address and choose **Setup**. Enter your setup token. If the address is unavailable, follow the [Worker address steps](#if-the-worker-address-does-not-open). If setup asks you to configure the Worker, check that the deployed Worker has the secret. If you lost the token before completing setup, replace it and deploy the change.
 2. Choose where to open your admin dashboard before registering your passkey. Select **Use this hostname** to stay on `workers.dev`. To use a custom hostname, follow the [domain connection guide](domains.md), open setup on the custom hostname, and enter the setup token again there. If the page is still waiting for HTTPS, retry from the same setup screen when Cloudflare is ready.
 3. Create the owner account and register a passkey on the chosen hostname. Open a fresh browser session and confirm you can sign in there. Remove `SETUP_TOKEN` from **Variables and Secrets** after setup is complete.
 
@@ -63,3 +69,5 @@ npm run deploy
 ```
 
 The dry run packages the Worker and skips D1 migrations. A real deploy requires an explicit database ID, and it stops before uploading the Worker if a migration fails. Use the dashboard for the owner setup secret and follow the browser setup steps above.
+
+The default configuration publishes the Worker on `workers.dev`. For an installation that exclusively uses a custom hostname, set `workers_dev` to `false` in `wrangler.jsonc` and open setup or management on that custom hostname. [Cloudflare route settings](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/)
