@@ -1,13 +1,20 @@
 # Changelog
 
-This changelog tracks changes during active development. See the [deployment guide](docs/deployment.md) for verified deployment paths.
+This changelog records Linkrovia releases. See the [deployment guide](docs/deployment.md) for verified deployment paths.
 
 ## Unreleased
+
+## v1.0.0 - 2026-11-24
+
+First stable release.
 
 - Complete setup on Cloudflare accounts that have not enabled Analytics Engine yet, then enable click analytics on the same Worker.
 - Verify the published HTTPS route after a deployment and direct first-time Cloudflare accounts through `workers.dev` onboarding when needed.
 - Configure `workers.dev` with the available Workers Builds credentials, open setup from the published address, and explain missing database or setup token configuration on the setup page.
-- Integrated saved-link navigation into the page header and matched its active state to analytics navigation.
+- Integrate saved-link navigation into the page header and match its active state to analytics navigation.
+- Keep analytics tables open when they are expanded while the page loads.
+
+The database migrations are unchanged from v0.1.0. Preserve your Worker name, D1 database ID, and hostname settings when updating. [Upgrade guide](docs/upgrading.md)
 
 ## v0.1.0 - 2026-11-24
 
