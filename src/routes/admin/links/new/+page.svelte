@@ -5,7 +5,6 @@
   import { linkMessages } from '$lib/i18n/links';
   import { uiMessages } from '$lib/i18n/locale';
   import type { PageProps } from './$types';
-  import type { SubmitFunction } from '$app/forms';
 
   let { data, form }: PageProps = $props();
   let m = $derived(linkMessages(data.locale));
@@ -44,20 +43,17 @@
     }),
   );
 
-  const submit: SubmitFunction = ({ submitter }) => {
-    if (submitter?.getAttribute('formaction') !== '?/suggest') return;
-    generating = true;
-    return async ({ update }) => {
-      try {
-        await update({ reset: false });
-      } finally {
-        generating = false;
-      }
-    };
-  };
+  function showPendingSuggestion(event: SubmitEvent) {
+    if (event.submitter?.getAttribute('formaction') === '?/suggest') {
+      generating = true;
+    }
+  }
 </script>
 
 <svelte:head><title>{m.create} · {brand.name}</title></svelte:head>
+<span role="status" class="sr-only">
+  {generating ? copy.aiInsights.generating : ''}
+</span>
 <LinkForm
   locale={data.locale}
   csrfToken={data.csrfToken}
@@ -65,7 +61,7 @@
   link={data.link}
   timeZone={data.timeZone}
   formAction="?/create"
-  {submit}
+  onsubmit={showPendingSuggestion}
   busy={generating}
   error={form && 'code' in form ? form.code : undefined}
   values={form && 'values' in form ? form.values : undefined}
@@ -127,7 +123,6 @@
             class="admin-button"
             formaction="?/suggest"
             formnovalidate
-            disabled={generating}
           >
             {generating ? copy.aiInsights.generating : ai.generate}
           </button>

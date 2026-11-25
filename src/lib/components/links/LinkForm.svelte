@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
-  import type { SubmitFunction } from '$app/forms';
   import type { Snippet } from 'svelte';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import type { Locale } from '$lib/i18n/locale';
@@ -34,7 +32,7 @@
     error,
     values,
     formAction,
-    submit,
+    onsubmit,
     busy = false,
     suggestions,
   }: {
@@ -45,7 +43,7 @@
     timeZone: string;
     error?: string;
     formAction?: string;
-    submit?: SubmitFunction;
+    onsubmit?: (event: SubmitEvent) => void;
     busy?: boolean;
     suggestions?: Snippet;
     values?: {
@@ -107,10 +105,6 @@
     return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}:${part('second')}`;
   }
 
-  function enhanceWhenRequested(form: HTMLFormElement) {
-    if (submit) return enhance(form, submit);
-  }
-
   function savedFold(value: number | null | undefined): string {
     if (value == null) return '';
     const time = interpretLocalDateTime(localTime(value), timeZone);
@@ -144,233 +138,226 @@
 <form
   method="POST"
   action={formAction}
-  use:enhanceWhenRequested
+  {onsubmit}
+  inert={busy}
   class="context-panel link-form"
 >
   <input type="hidden" name="csrfToken" value={csrfToken} />
   {#if suggestions}<input type="submit" hidden />{/if}
-  <fieldset class="link-fields" disabled={busy}>
-    {#if link}<input
-        type="hidden"
-        name="updatedAt"
-        value={values?.updatedAt ?? link.updatedAt}
-      />{/if}
-    {#if error}<p
-        role="alert"
-        class="rounded-md border border-negative p-3 text-negative"
-      >
-        {error === 'conflict'
-          ? m.conflict
-          : error === 'time_gap'
-            ? x.gap
-            : error === 'time_overlap'
-              ? x.overlap
-              : error === 'slug_conflict'
-                ? x.slugConflict
-                : m.error}
-      </p>{/if}
+  {#if link}<input
+      type="hidden"
+      name="updatedAt"
+      value={values?.updatedAt ?? link.updatedAt}
+    />{/if}
+  {#if error}<p
+      role="alert"
+      class="rounded-md border border-negative p-3 text-negative"
+    >
+      {error === 'conflict'
+        ? m.conflict
+        : error === 'time_gap'
+          ? x.gap
+          : error === 'time_overlap'
+            ? x.overlap
+            : error === 'slug_conflict'
+              ? x.slugConflict
+              : m.error}
+    </p>{/if}
+  <div class="space-y-2">
+    <label for="destinationUrl" class="block font-medium">
+      {m.destination}
+    </label><input
+      id="destinationUrl"
+      name="destinationUrl"
+      type="url"
+      required
+      value={values?.destinationUrl ?? link?.destinationUrl ?? ''}
+      class="admin-control w-full"
+    />
+  </div>
+  <div class="address-fields">
     <div class="space-y-2">
-      <label for="destinationUrl" class="block font-medium">
-        {m.destination}
-      </label><input
-        id="destinationUrl"
-        name="destinationUrl"
-        type="url"
-        required
-        value={values?.destinationUrl ?? link?.destinationUrl ?? ''}
+      <label for="title" class="block font-medium">{m.title}</label><input
+        id="title"
+        name="title"
+        value={values?.title ?? link?.title ?? ''}
         class="admin-control w-full"
       />
     </div>
-    <div class="address-fields">
+    <div class="space-y-2">
+      <label for="domainId" class="block font-medium">
+        {m.domain}
+      </label><select
+        id="domainId"
+        name="domainId"
+        required
+        class="admin-control w-full"
+      >
+        {#each domains as domain (domain.id)}<option
+            value={domain.id}
+            selected={domain.id ===
+              (values?.domainId ?? link?.domainId ?? domains[0]?.id)}
+          >
+            {domain.hostname}{#if !domain.isActive}
+              ({m.draft}){/if}
+          </option>{/each}
+      </select>
+    </div>
+    <div class="space-y-2">
+      <label for="slug" class="block font-medium">{m.slug}</label><input
+        id="slug"
+        name="slug"
+        value={values?.slug ?? link?.slug ?? ''}
+        aria-describedby="slug-help"
+        class="admin-control w-full"
+      />
+      <p id="slug-help" class="text-sm text-muted">
+        {m.slugHelp}
+      </p>
+    </div>
+  </div>
+  {@render suggestions?.()}
+  <label class="flex items-center gap-2">
+    <input
+      type="checkbox"
+      name="active"
+      autocomplete="off"
+      checked={values?.active ?? link?.isActive ?? true}
+    />{m.enabled}
+  </label>
+  {#snippet optionalFields()}
+    <summary>
+      {x.options}
+      <ChevronDown size={17} aria-hidden="true" />
+    </summary>
+    <div class="option-fields">
       <div class="space-y-2">
-        <label for="title" class="block font-medium">{m.title}</label><input
-          id="title"
-          name="title"
-          value={values?.title ?? link?.title ?? ''}
-          class="admin-control w-full"
-        />
-      </div>
-      <div class="space-y-2">
-        <label for="domainId" class="block font-medium">
-          {m.domain}
+        <label for="status" class="block font-medium">
+          {m.redirect}
         </label><select
-          id="domainId"
-          name="domainId"
-          required
-          class="admin-control w-full"
+          id="status"
+          name="status"
+          bind:value={redirectStatus}
+          aria-describedby={permanent ? 'redirect-cache-warning' : undefined}
+          class="admin-control"
         >
-          {#each domains as domain (domain.id)}<option
-              value={domain.id}
-              selected={domain.id ===
-                (values?.domainId ?? link?.domainId ?? domains[0]?.id)}
-            >
-              {domain.hostname}{#if !domain.isActive}
-                ({m.draft}){/if}
+          {#each [301, 302, 307, 308] as status (status)}<option value={status}>
+              {status}
             </option>{/each}
         </select>
+        {#if permanent}<p
+            id="redirect-cache-warning"
+            role="status"
+            class="text-sm text-muted"
+          >
+            {x.permanentCache}
+          </p>{/if}
       </div>
+      <fieldset class="schedule-fields">
+        <legend class="px-1 font-medium">{m.timezone} {timeZone}</legend>
+        <div class="space-y-2">
+          <label for="startsAt" class="block font-medium">
+            {m.startsAt}
+          </label><input
+            id="startsAt"
+            name="startsAt"
+            type="datetime-local"
+            step="1"
+            bind:value={startsAt}
+            oninput={() => (startFold = '')}
+            aria-describedby="startsAt-utc"
+            class="admin-control w-full"
+          />
+          {#if startTime.kind === 'overlap'}
+            <label for="startFold" class="block text-sm">
+              {m.startsAt} · {x.fold}
+            </label>
+            <select
+              id="startFold"
+              name="startFold"
+              bind:value={startFold}
+              required
+              class="admin-control w-full"
+            >
+              <option value="">{x.choose}</option>
+              <option value="earlier">
+                {x.earlier} ({utcFormat.format(startTime.earlier * 1000)} UTC)
+              </option>
+              <option value="later">
+                {x.later} ({utcFormat.format(startTime.later * 1000)} UTC)
+              </option>
+            </select>
+          {/if}
+          {@render utcPreview('startsAt-utc', startUtc)}
+        </div>
+        <div class="space-y-2">
+          <label for="expiresAt" class="block font-medium">
+            {m.expiresAt}
+          </label><input
+            id="expiresAt"
+            name="expiresAt"
+            type="datetime-local"
+            step="1"
+            bind:value={expiresAt}
+            oninput={() => (expiryFold = '')}
+            aria-describedby="expiresAt-utc"
+            class="admin-control w-full"
+          />
+          {#if expiryTime.kind === 'overlap'}
+            <label for="expiryFold" class="block text-sm">
+              {m.expiresAt} · {x.fold}
+            </label>
+            <select
+              id="expiryFold"
+              name="expiryFold"
+              bind:value={expiryFold}
+              required
+              class="admin-control w-full"
+            >
+              <option value="">{x.choose}</option>
+              <option value="earlier">
+                {x.earlier} ({utcFormat.format(expiryTime.earlier * 1000)} UTC)
+              </option>
+              <option value="later">
+                {x.later} ({utcFormat.format(expiryTime.later * 1000)} UTC)
+              </option>
+            </select>
+          {/if}
+          {@render utcPreview('expiresAt-utc', expiryUtc)}
+        </div>
+      </fieldset>
       <div class="space-y-2">
-        <label for="slug" class="block font-medium">{m.slug}</label><input
-          id="slug"
-          name="slug"
-          value={values?.slug ?? link?.slug ?? ''}
-          aria-describedby="slug-help"
+        <label for="tags" class="block font-medium">{m.tags}</label><input
+          id="tags"
+          name="tags"
+          value={values?.tags ?? link?.tags.join(', ') ?? ''}
+          aria-describedby="tags-help"
           class="admin-control w-full"
         />
-        <p id="slug-help" class="text-sm text-muted">
-          {m.slugHelp}
+        <p id="tags-help" class="text-sm text-muted">
+          {m.tagsHelp}
         </p>
       </div>
     </div>
-    {@render suggestions?.()}
-    <label class="flex items-center gap-2">
-      <input
-        type="checkbox"
-        name="active"
-        autocomplete="off"
-        checked={values?.active ?? link?.isActive ?? true}
-      />{m.enabled}
-    </label>
-    {#snippet optionalFields()}
-      <summary>
-        {x.options}
-        <ChevronDown size={17} aria-hidden="true" />
-      </summary>
-      <div class="option-fields">
-        <div class="space-y-2">
-          <label for="status" class="block font-medium">
-            {m.redirect}
-          </label><select
-            id="status"
-            name="status"
-            bind:value={redirectStatus}
-            aria-describedby={permanent ? 'redirect-cache-warning' : undefined}
-            class="admin-control"
-          >
-            {#each [301, 302, 307, 308] as status (status)}<option
-                value={status}
-              >
-                {status}
-              </option>{/each}
-          </select>
-          {#if permanent}<p
-              id="redirect-cache-warning"
-              role="status"
-              class="text-sm text-muted"
-            >
-              {x.permanentCache}
-            </p>{/if}
-        </div>
-        <fieldset class="schedule-fields">
-          <legend class="px-1 font-medium">{m.timezone} {timeZone}</legend>
-          <div class="space-y-2">
-            <label for="startsAt" class="block font-medium">
-              {m.startsAt}
-            </label><input
-              id="startsAt"
-              name="startsAt"
-              type="datetime-local"
-              step="1"
-              bind:value={startsAt}
-              oninput={() => (startFold = '')}
-              aria-describedby="startsAt-utc"
-              class="admin-control w-full"
-            />
-            {#if startTime.kind === 'overlap'}
-              <label for="startFold" class="block text-sm">
-                {m.startsAt} · {x.fold}
-              </label>
-              <select
-                id="startFold"
-                name="startFold"
-                bind:value={startFold}
-                required
-                class="admin-control w-full"
-              >
-                <option value="">{x.choose}</option>
-                <option value="earlier">
-                  {x.earlier} ({utcFormat.format(startTime.earlier * 1000)} UTC)
-                </option>
-                <option value="later">
-                  {x.later} ({utcFormat.format(startTime.later * 1000)} UTC)
-                </option>
-              </select>
-            {/if}
-            {@render utcPreview('startsAt-utc', startUtc)}
-          </div>
-          <div class="space-y-2">
-            <label for="expiresAt" class="block font-medium">
-              {m.expiresAt}
-            </label><input
-              id="expiresAt"
-              name="expiresAt"
-              type="datetime-local"
-              step="1"
-              bind:value={expiresAt}
-              oninput={() => (expiryFold = '')}
-              aria-describedby="expiresAt-utc"
-              class="admin-control w-full"
-            />
-            {#if expiryTime.kind === 'overlap'}
-              <label for="expiryFold" class="block text-sm">
-                {m.expiresAt} · {x.fold}
-              </label>
-              <select
-                id="expiryFold"
-                name="expiryFold"
-                bind:value={expiryFold}
-                required
-                class="admin-control w-full"
-              >
-                <option value="">{x.choose}</option>
-                <option value="earlier">
-                  {x.earlier} ({utcFormat.format(expiryTime.earlier * 1000)} UTC)
-                </option>
-                <option value="later">
-                  {x.later} ({utcFormat.format(expiryTime.later * 1000)} UTC)
-                </option>
-              </select>
-            {/if}
-            {@render utcPreview('expiresAt-utc', expiryUtc)}
-          </div>
-        </fieldset>
-        <div class="space-y-2">
-          <label for="tags" class="block font-medium">{m.tags}</label><input
-            id="tags"
-            name="tags"
-            value={values?.tags ?? link?.tags.join(', ') ?? ''}
-            aria-describedby="tags-help"
-            class="admin-control w-full"
-          />
-          <p id="tags-help" class="text-sm text-muted">
-            {m.tagsHelp}
-          </p>
-        </div>
-      </div>
-    {/snippet}
-    {#if error}
-      <details class="link-options" open>
-        {@render optionalFields()}
-      </details>
-    {:else}
-      <details class="link-options">
-        {@render optionalFields()}
-      </details>
-    {/if}
-    <footer class="admin-form-footer">
-      <button type="submit" class="admin-button admin-button-primary">
-        {m.save}
-      </button>
-    </footer>
-  </fieldset>
+  {/snippet}
+  {#if error}
+    <details class="link-options" open>
+      {@render optionalFields()}
+    </details>
+  {:else}
+    <details class="link-options">
+      {@render optionalFields()}
+    </details>
+  {/if}
+  <footer class="admin-form-footer">
+    <button type="submit" class="admin-button admin-button-primary">
+      {m.save}
+    </button>
+  </footer>
 </form>
 
 <style>
-  .link-fields {
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
+  .link-form {
     display: grid;
     gap: clamp(1.15rem, 2.5vw, 1.6rem);
   }
