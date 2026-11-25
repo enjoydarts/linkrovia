@@ -920,7 +920,8 @@
     },
     "maxCost": "每次請求的最高費用",
     "budgetReached": "已達本月預算。",
-    "statusUnavailable": "無法載入 AI 設定，請重新整理頁面再試。"
+    "statusUnavailable": "無法載入 AI 設定，請重新整理頁面再試。",
+    "settingsIntro": "管理報告與連結建議共用的 AI 設定與預算。"
   },
   "aiCreate": {
     "title": "建議連結詳情",
@@ -929,7 +930,7 @@
     "generate": "產生建議",
     "use": "使用建議",
     "suggestions": "建議",
-    "unavailable": "請在洞察中啟用 AI 協助以產生建議。",
+    "unavailable": "AI 協助已停用。您可以查看相關設定。",
     "applied": "建議已套用至表單。請儲存連結以保留變更。",
     "descriptionPlaceholder": "例如：夏季活動指南"
   }

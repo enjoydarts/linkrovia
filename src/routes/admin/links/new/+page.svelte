@@ -128,7 +128,7 @@
           </button>
         {:else}
           <p>{blockedReason}</p>
-          <a href="/admin/analytics/insights">{copy.aiInsights.settings}</a>
+          <a href="/admin/settings/ai">{copy.aiInsights.settings}</a>
         {/if}
       </div>
     </details>

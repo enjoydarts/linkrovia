@@ -920,7 +920,8 @@
     },
     "maxCost": "每次请求的最高费用",
     "budgetReached": "已达到本月预算。",
-    "statusUnavailable": "无法加载 AI 设置，请刷新页面重试。"
+    "statusUnavailable": "无法加载 AI 设置，请刷新页面重试。",
+    "settingsIntro": "管理报告和链接建议共用的 AI 设置与预算。"
   },
   "aiCreate": {
     "title": "建议链接详情",
@@ -929,7 +930,7 @@
     "generate": "生成建议",
     "use": "使用建议",
     "suggestions": "建议",
-    "unavailable": "请在洞察中启用 AI 辅助以生成建议。",
+    "unavailable": "AI 辅助已停用。你可以查看相关设置。",
     "applied": "建议已应用到表单。请保存链接以保留更改。",
     "descriptionPlaceholder": "例如：夏季活动指南"
   }

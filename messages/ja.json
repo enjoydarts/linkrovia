@@ -920,7 +920,8 @@
     },
     "maxCost": "1回の最大費用",
     "budgetReached": "今月の予算に達しました。",
-    "statusUnavailable": "AI設定を読み込めませんでした。ページを再読み込みしてください。"
+    "statusUnavailable": "AI設定を読み込めませんでした。ページを再読み込みしてください。",
+    "settingsIntro": "レポートとリンク候補で共通の AI 設定と予算を管理します。"
   },
   "aiCreate": {
     "title": "リンク情報を提案",
@@ -929,7 +930,7 @@
     "generate": "候補を生成",
     "use": "候補を使う",
     "suggestions": "提案された候補",
-    "unavailable": "候補を生成するには、インサイトでAI支援を有効にしてください。",
+    "unavailable": "AI アシスタントは無効です。設定を確認できます。",
     "applied": "候補をフォームに反映しました。保存するにはリンクを作成してください。",
     "descriptionPlaceholder": "例：夏のイベント案内"
   }

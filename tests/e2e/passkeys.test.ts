@@ -145,6 +145,19 @@ test('registers and signs in with a discoverable passkey', async ({
     expect(denied?.status()).toBe(403);
     const healthDenied = await page.goto('/admin/settings/health');
     expect(healthDenied?.status()).toBe(403);
+    const aiSettings = await page.goto('/admin/settings/ai');
+    expect(aiSettings?.status()).toBe(200);
+    await expect(
+      page.getByRole('checkbox', { name: 'Enable AI assistance' }),
+    ).toHaveCount(0);
+    const csrfToken = await page
+      .locator('form[action="/logout"] [name="csrfToken"]')
+      .inputValue();
+    const aiChange = await page.request.post('/admin/settings/ai', {
+      headers: { origin: new URL(page.url()).origin },
+      form: { csrfToken, revision: '0', enabled: 'yes', monthlyBudget: '1' },
+    });
+    expect(aiChange.status()).toBe(403);
     await page.goto('/admin');
     await signOut(page);
     await page.goto(invite);

@@ -40,6 +40,10 @@
     {
       label: settingsGroups.operations,
       entries: [
+        {
+          href: '/admin/settings/ai',
+          label: uiMessages(data.locale).aiInsights.settings,
+        },
         { href: '/admin/domains', label: domainMessages(data.locale).domains },
         ...(data.isOwner
           ? [

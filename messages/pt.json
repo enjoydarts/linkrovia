@@ -920,7 +920,8 @@
     },
     "maxCost": "Custo máximo por solicitação",
     "budgetReached": "O orçamento mensal foi atingido.",
-    "statusUnavailable": "Não foi possível carregar as configurações de IA. Atualize a página para tentar novamente."
+    "statusUnavailable": "Não foi possível carregar as configurações de IA. Atualize a página para tentar novamente.",
+    "settingsIntro": "Gerencie as configurações e o orçamento de IA compartilhados por relatórios e sugestões de links."
   },
   "aiCreate": {
     "title": "Sugerir detalhes do link",
@@ -929,7 +930,7 @@
     "generate": "Gerar sugestões",
     "use": "Usar sugestões",
     "suggestions": "Sugestões",
-    "unavailable": "Ative a assistência de IA em Insights para gerar sugestões.",
+    "unavailable": "A assistência de IA está desativada. Pode consultar as respetivas configurações.",
     "applied": "Sugestões aplicadas ao formulário. Salve o link para mantê-las.",
     "descriptionPlaceholder": "Exemplo: Guia de eventos de verão"
   }

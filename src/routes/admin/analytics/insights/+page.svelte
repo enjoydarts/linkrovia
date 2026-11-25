@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import { brand } from '$lib/brand';
+  import AiUsageSummary from '$lib/components/ai/AiUsageSummary.svelte';
   import ReportNavigation from '$lib/components/analytics/ReportNavigation.svelte';
   import { uiMessages } from '$lib/i18n/locale';
   import type { PageProps } from './$types';
@@ -9,16 +10,7 @@
   let { data, form }: PageProps = $props();
   let m = $derived(uiMessages(data.locale).aiInsights);
   let generating = $state(false);
-  let saving = $state(false);
   let number = $derived(new Intl.NumberFormat(data.locale));
-  let money = $derived(
-    new Intl.NumberFormat(data.locale, {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6,
-    }),
-  );
   let signal = $derived(data.insights.anomalies[0]);
   let canGenerate = $derived(
     data.assistance.statusAvailable &&
@@ -122,25 +114,19 @@
   </section>
 
   <section class="workspace-panel section" aria-labelledby="report-title">
-    <div class="section-heading">
-      <h2 id="report-title">{m.aiTitle}</h2>
-      <p>{m.aiIntro}</p>
+    <div class="section-heading report-heading">
+      <div>
+        <h2 id="report-title">{m.aiTitle}</h2>
+        <p>{m.aiIntro}</p>
+      </div>
+      <a class="admin-button" href="/admin/settings/ai">{m.settings}</a>
     </div>
     {#if !data.assistance.statusAvailable}
       <p role="status" class="notice">{m.statusUnavailable}</p>
     {:else}
       <p><strong>{data.assistance.enabled ? m.enabled : m.disabled}</strong></p>
       {#if !data.assistance.providerAvailable}
-        <p class="notice">
-          <strong>{m.providerUnavailable}</strong><br />{m.providerHelp}
-          <a
-            href="https://developers.cloudflare.com/workers-ai/configuration/bindings/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {m.docs} ↗
-          </a>
-        </p>
+        <p class="notice">{m.providerUnavailable}</p>
       {/if}
       {#if !data.assistance.enabled && data.user.role !== 'owner'}<p>
           {m.askOwner}
@@ -152,10 +138,7 @@
           {m.results.blocked}
         </p>{/if}
       {#if data.assistance.busy}<p class="notice">{m.results.busy}</p>{/if}
-      {#if data.assistance.monthlyBudgetMicrousd === 0}<p
-          id="budget-help"
-          class="notice"
-        >
+      {#if data.assistance.monthlyBudgetMicrousd === 0}<p class="notice">
           {m.budgetHelp}
         </p>{/if}
       {#if data.assistance.monthlyBudgetMicrousd > 0 && data.assistance.monthCostMicrousd >= data.assistance.monthlyBudgetMicrousd}
@@ -164,19 +147,7 @@
       {#if data.assistance.dayCalls >= 10 || data.assistance.monthCalls >= 100}
         <p class="notice">{m.results.limit}</p>
       {/if}
-      <div class="usage" aria-label={m.usage}>
-        <p><strong>{m.usage}</strong></p>
-        <p>
-          {m.calls}: {number.format(data.assistance.monthCalls)} · {m.budget}: {money.format(
-            data.assistance.monthCostMicrousd / 1_000_000,
-          )} / {money.format(data.assistance.monthlyBudgetMicrousd / 1_000_000)}
-        </p>
-        <p>
-          {m.maxCost}: {money.format(
-            data.assistance.maxRunCostMicrousd / 1_000_000,
-          )}
-        </p>
-      </div>
+      <AiUsageSummary locale={data.locale} usage={data.assistance} />
       <p class="muted">{m.privacy}</p>
       <form
         method="POST"
@@ -225,64 +196,6 @@
       {:else}<p class="muted">{m.reportEmpty}</p>{/if}
     {/if}
   </section>
-
-  {#if data.assistance.statusAvailable && data.user.role === 'owner'}
-    <section class="workspace-panel section" aria-labelledby="settings-title">
-      <div class="section-heading">
-        <h2 id="settings-title">{m.settings}</h2>
-        <p>{m.settingsHelp}</p>
-      </div>
-      <form
-        method="POST"
-        action="?/updateSettings"
-        class="settings-form"
-        use:enhance={() => {
-          saving = true;
-          return async ({ update }) => {
-            try {
-              await update();
-            } finally {
-              saving = false;
-            }
-          };
-        }}
-      >
-        <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <input type="hidden" name="revision" value={data.assistance.revision} />
-        <label class="checkbox">
-          <input
-            type="checkbox"
-            name="enabled"
-            value="yes"
-            checked={data.assistance.enabled}
-          />
-          {m.enable}
-        </label>
-        <label class="budget">
-          {m.budgetLabel}<input
-            class="admin-control"
-            type="number"
-            name="monthlyBudget"
-            min="0"
-            step="0.01"
-            value={(data.assistance.monthlyBudgetMicrousd / 1_000_000).toFixed(
-              2,
-            )}
-            required
-            aria-describedby={data.assistance.monthlyBudgetMicrousd === 0
-              ? 'budget-help'
-              : undefined}
-          />
-        </label>
-        <button class="admin-button" disabled={saving}>
-          {saving ? m.saving : m.save}
-        </button>
-      </form>
-      {#if form?.operation === 'settings'}<p role="status" class="notice">
-          {m.results[form.code]}
-        </p>{/if}
-    </section>
-  {/if}
 </div>
 
 <style>
@@ -339,7 +252,6 @@
   }
   .notice,
   .notes,
-  .usage,
   .report {
     border-left: 3px solid var(--ui-primary);
     padding: 0.65rem 1rem;
@@ -350,29 +262,12 @@
     margin: 0.3rem 0 0;
     padding-left: 1.25rem;
   }
-  .usage p:first-child {
-    margin-top: 0;
-  }
-  .usage p:last-child {
-    margin-bottom: 0;
-  }
-  .settings-form {
-    display: grid;
-    gap: 0.75rem;
-    justify-items: start;
-  }
-  .checkbox {
+  .report-heading {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 2.75rem;
-  }
-  .budget {
-    display: grid;
-    gap: 0.35rem;
-  }
-  a {
-    text-decoration: underline;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
   @media (min-width: 840px) {
     .periods {

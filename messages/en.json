@@ -920,7 +920,8 @@
     },
     "maxCost": "Maximum cost per request",
     "budgetReached": "The monthly budget has been reached.",
-    "statusUnavailable": "AI settings could not be loaded. Refresh this page to try again."
+    "statusUnavailable": "AI settings could not be loaded. Refresh this page to try again.",
+    "settingsIntro": "Manage the AI settings and budget shared by reports and link suggestions."
   },
   "aiCreate": {
     "title": "Suggest link details",
@@ -929,7 +930,7 @@
     "generate": "Generate suggestions",
     "use": "Use suggestions",
     "suggestions": "Suggestions",
-    "unavailable": "Enable AI assistance in Insights to generate suggestions.",
+    "unavailable": "AI assistance is disabled. You can check its settings.",
     "applied": "Suggestions applied to the form. Save the link to keep them.",
     "descriptionPlaceholder": "For example: A guide to summer events"
   }

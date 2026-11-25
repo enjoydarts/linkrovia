@@ -920,7 +920,8 @@
     },
     "maxCost": "Coste máximo por solicitud",
     "budgetReached": "Se alcanzó el presupuesto mensual.",
-    "statusUnavailable": "No se pudo cargar la configuración de IA. Actualiza la página para volver a intentarlo."
+    "statusUnavailable": "No se pudo cargar la configuración de IA. Actualiza la página para volver a intentarlo.",
+    "settingsIntro": "Administra la configuración y el presupuesto de IA que comparten los informes y las sugerencias de enlaces."
   },
   "aiCreate": {
     "title": "Sugerir detalles del enlace",
@@ -929,7 +930,7 @@
     "generate": "Generar sugerencias",
     "use": "Usar sugerencias",
     "suggestions": "Sugerencias",
-    "unavailable": "Activa la asistencia de IA en Información para generar sugerencias.",
+    "unavailable": "La asistencia de IA está desactivada. Puedes consultar su configuración.",
     "applied": "Sugerencias aplicadas al formulario. Guarda el enlace para conservarlas.",
     "descriptionPlaceholder": "Ejemplo: Guía de eventos de verano"
   }

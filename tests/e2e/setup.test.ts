@@ -73,7 +73,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     path: '/',
   });
 
-  await test.step('opens insights and explains why AI is unavailable by default', async () => {
+  await test.step('finds shared AI settings from Insights and the settings directory', async () => {
     await page.goto('/admin/analytics');
     await page.getByRole('link', { name: 'Insights', exact: true }).click();
     await expect(page).toHaveURL('/admin/analytics/insights');
@@ -91,7 +91,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     ).toBeDisabled();
     await expect(
       page.getByRole('checkbox', { name: 'Enable AI assistance' }),
-    ).not.toBeChecked();
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('link', { name: 'AI settings', exact: true }),
+    ).toHaveAttribute('href', '/admin/settings/ai');
     await expect(
       page.getByRole('link', { name: 'Insights', exact: true }),
     ).toHaveAttribute('aria-current', 'page');
@@ -113,12 +116,46 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       fullPage: true,
     });
     await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto('/admin/settings');
+    await page.getByRole('link', { name: 'AI settings', exact: true }).click();
+    await expect(page).toHaveURL('/admin/settings/ai');
+    await expect(
+      page.getByRole('heading', { name: 'AI settings', exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('checkbox', { name: 'Enable AI assistance' }),
+    ).not.toBeChecked();
+    await page.screenshot({
+      path: testInfo.outputPath('ai-settings.png'),
+      fullPage: true,
+    });
+    await page
+      .getByRole('spinbutton', { name: 'Monthly budget (USD)' })
+      .fill('0.25');
     await page.getByRole('checkbox', { name: 'Enable AI assistance' }).check();
-    await page.getByRole('button', { name: 'Save settings' }).click();
+    const [save] = await Promise.all([
+      page.waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          new URL(request.url()).pathname === '/admin/settings/ai',
+      ),
+      page.getByRole('button', { name: 'Save settings' }).click(),
+    ]);
+    expect(
+      new URLSearchParams(save.postData() ?? '').get('monthlyBudget'),
+    ).toBe('0.25');
     await expect(page.getByText('Settings saved.')).toBeVisible();
+    await page.goto('/admin/analytics/insights');
+    await expect(page.getByText('Enabled', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Monthly budget: .*\$0\.25/)).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Generate report' }),
     ).toBeDisabled();
+    await page.getByRole('link', { name: 'AI settings', exact: true }).click();
+    await expect(page).toHaveURL('/admin/settings/ai');
+    await page
+      .getByRole('spinbutton', { name: 'Monthly budget (USD)' })
+      .fill('0');
     await page
       .getByRole('checkbox', { name: 'Enable AI assistance' })
       .uncheck();
@@ -130,6 +167,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
 
   await test.step('create a short link on the deployment hostname', async () => {
     await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
+    await page.getByText('Suggest link details', { exact: true }).click();
+    await expect(
+      page.getByRole('link', { name: 'AI settings', exact: true }),
+    ).toHaveAttribute('href', '/admin/settings/ai');
     await page.locator('.link-options > summary').click();
     const redirectStatus = page.locator('select[name=status]');
     const cacheWarning = page.getByText(/may cache this redirect/);

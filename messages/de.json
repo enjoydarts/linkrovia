@@ -920,7 +920,8 @@
     },
     "maxCost": "Maximale Kosten pro Anfrage",
     "budgetReached": "Das Monatsbudget ist erreicht.",
-    "statusUnavailable": "Die KI-Einstellungen konnten nicht geladen werden. Laden Sie die Seite erneut."
+    "statusUnavailable": "Die KI-Einstellungen konnten nicht geladen werden. Laden Sie die Seite erneut.",
+    "settingsIntro": "KI-Einstellungen und Budget für Berichte und Linkvorschläge verwalten."
   },
   "aiCreate": {
     "title": "Linkdetails vorschlagen",
@@ -929,7 +930,7 @@
     "generate": "Vorschläge erstellen",
     "use": "Vorschläge übernehmen",
     "suggestions": "Vorschläge",
-    "unavailable": "Aktivieren Sie KI-Unterstützung unter Insights, um Vorschläge zu erstellen.",
+    "unavailable": "KI-Unterstützung ist deaktiviert. Sie können die Einstellungen überprüfen.",
     "applied": "Vorschläge auf das Formular angewendet. Speichern Sie den Link, um sie zu behalten.",
     "descriptionPlaceholder": "Beispiel: Übersicht der Sommerveranstaltungen"
   }

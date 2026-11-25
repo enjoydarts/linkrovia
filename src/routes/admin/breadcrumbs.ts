@@ -93,6 +93,7 @@ export function adminBreadcrumbs(
   }
 
   const settingsPages: Record<string, string> = {
+    '/admin/settings/ai': uiMessages(locale).aiInsights.settings,
     '/admin/settings/admins': adminInviteMessages[locale].title,
     '/admin/settings/health': healthMessages(locale).title,
     '/admin/settings/security': messages['admin.security'],
