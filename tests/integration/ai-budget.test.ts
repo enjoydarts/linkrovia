@@ -24,7 +24,11 @@ beforeAll(async () => {
     persist: false,
   });
   db = platform.env.DB;
-  for (const name of ['0001_initial.sql', '0015_ai.sql']) {
+  for (const name of [
+    '0001_initial.sql',
+    '0015_ai.sql',
+    '0016_ai_weekly.sql',
+  ]) {
     const sql = await readFile(
       new URL(`../../migrations/${name}`, import.meta.url),
       'utf8',
@@ -45,7 +49,7 @@ beforeEach(async () => {
     db.prepare('DELETE FROM ai_usage'),
     db.prepare('DELETE FROM ai_cache'),
     db.prepare(
-      'UPDATE ai_settings SET enabled = 0, monthly_budget_microusd = 0, revision = 0',
+      'UPDATE ai_settings SET enabled = 0, monthly_budget_microusd = 0, weekly_enabled = 0, revision = 0',
     ),
   ]);
 });
@@ -73,6 +77,7 @@ it('starts disabled with a zero monthly budget', async () => {
   expect(await getAiSettings(db)).toEqual({
     enabled: false,
     monthlyBudgetMicrousd: 0,
+    weeklyEnabled: false,
     revision: 0,
   });
   expect(await reserveAiUsage(db, quote('first', 0))).toEqual({
@@ -350,6 +355,7 @@ it('rolls back a settings change when its audit event cannot be recorded', async
   expect(await getAiSettings(db)).toEqual({
     enabled: false,
     monthlyBudgetMicrousd: 0,
+    weeklyEnabled: false,
     revision: 0,
   });
 });
@@ -476,5 +482,64 @@ it('surfaces an abandoned reservation as unknown without releasing its concurren
   ).toEqual({
     ok: false,
     reason: 'busy',
+  });
+});
+
+it('preserves weekly consent when a settings update omits it', async () => {
+  expect((await getAiSettings(db)).weeklyEnabled).toBe(false);
+  const enabled = await setAiSettings(db, {
+    enabled: true,
+    weeklyEnabled: true,
+    monthlyBudgetMicrousd: 100,
+  });
+  const unchanged = await setAiSettings(db, {
+    enabled: true,
+    monthlyBudgetMicrousd: 100,
+  });
+  expect(unchanged).toEqual(enabled);
+  const disabled = await setAiSettings(db, {
+    enabled: true,
+    weeklyEnabled: false,
+    monthlyBudgetMicrousd: 100,
+  });
+  expect(disabled).toMatchObject({
+    weeklyEnabled: false,
+    revision: enabled.revision + 1,
+  });
+});
+
+it('admits only opted-in automatic reservations for their scheduled UTC Monday', async () => {
+  const monday = new Date('2026-11-30T04:15:00.000Z');
+  const automaticQuote = (revision: number) => ({
+    ...quote('ai-weekly:2026-11-30', revision),
+    feature: 'insights' as const,
+    automatic: true,
+    now: monday,
+  });
+  const base = { enabled: true, monthlyBudgetMicrousd: 100 };
+  const initial = await setAiSettings(db, base);
+  expect(await reserveAiUsage(db, automaticQuote(initial.revision))).toEqual({
+    ok: false,
+    reason: 'disabled',
+  });
+  const consent = await setAiSettings(db, { ...base, weeklyEnabled: true });
+  expect(
+    await reserveAiUsage(db, {
+      ...automaticQuote(consent.revision),
+      now: nextMonth,
+    }),
+  ).toEqual({ ok: false, reason: 'limit' });
+  const reservation = automaticQuote(consent.revision);
+  expect(await reserveAiUsage(db, reservation)).toEqual({ ok: true });
+  await settleAiUsage(db, reservation.id, {
+    status: 'failed',
+    inputTokens: 0,
+    outputTokens: 0,
+    neurons: 0,
+    costMicrousd: 0,
+  });
+  expect(await reserveAiUsage(db, reservation)).toEqual({
+    ok: false,
+    reason: 'duplicate',
   });
 });

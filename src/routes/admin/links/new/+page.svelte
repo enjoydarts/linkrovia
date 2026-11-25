@@ -74,7 +74,11 @@
       <summary>{ai.title}<ChevronDown size={17} aria-hidden="true" /></summary>
       <div class="suggestion-fields">
         {#if suggestion && !result && suggestion.code !== 'generated' && suggestion.code !== 'cached'}
-          <p role="alert">{copy.aiInsights.results[suggestion.code]}</p>
+          <p role="alert">
+            {suggestion.code === 'missing_destination'
+              ? ai.missingDestination
+              : copy.aiInsights.results[suggestion.code]}
+          </p>
         {/if}
         {#if result}
           <div class="suggestion-preview">
@@ -102,7 +106,7 @@
             </button>
           </div>
         {:else if !blockedReason}
-          <p id="ai-description-help">{ai.description}</p>
+          <p id="ai-description-help">{ai.destinationDescription}</p>
           <label for="ai-description">{ai.inputDescription}</label>
           <textarea
             id="ai-description"

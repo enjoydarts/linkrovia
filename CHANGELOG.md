@@ -4,6 +4,10 @@ This changelog records Linkrovia releases. See the [deployment guide](docs/deplo
 
 ## Unreleased
 
+- Expose AI settings in the main navigation and chart daily usage estimates.
+- Add opt-in weekly AI reports, Guardian checks for saved redirects and public DNS, and draft routing tools for MCP.
+- Accept structured Workers AI responses and suggest link details from the destination address.
+
 - Add Insights for weekly click comparisons and aggregate read-only MCP tools.
 - Add opt-in, budget-capped Workers AI assistance for manual reports and link drafting.
 

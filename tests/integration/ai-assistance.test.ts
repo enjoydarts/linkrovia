@@ -17,11 +17,23 @@ vi.mock('../../src/lib/server/ai/provider', async (importOriginal) => {
 
 let platform: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
 let db: D1Database;
-const call = vi.fn(async (_model: string, _request: AiTextGenerationInput) => ({
-  response:
-    '{"title":"Release notes","slug":"release-notes","tags":["release"]}',
-  usage: { prompt_tokens: 120, completion_tokens: 20, total_tokens: 140 },
-}));
+const call = vi.fn(
+  async (
+    _model: string,
+    _request: AiTextGenerationInput,
+  ): Promise<{
+    response: string | Record<string, unknown>;
+    usage: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens?: number;
+    };
+  }> => ({
+    response:
+      '{"title":"Release notes","slug":"release-notes","tags":["release"]}',
+    usage: { prompt_tokens: 120, completion_tokens: 20, total_tokens: 140 },
+  }),
+);
 const ai = { run: call } as unknown as Ai;
 
 beforeAll(async () => {
@@ -30,13 +42,15 @@ beforeAll(async () => {
     persist: false,
   });
   db = platform.env.DB;
-  const sql = await readFile(
-    new URL('../../migrations/0015_ai.sql', import.meta.url),
-    'utf8',
-  );
-  await db.batch(
-    unstable_splitSqlQuery(sql).map((statement) => db.prepare(statement)),
-  );
+  for (const name of ['0015_ai.sql', '0016_ai_weekly.sql']) {
+    const sql = await readFile(
+      new URL(`../../migrations/${name}`, import.meta.url),
+      'utf8',
+    );
+    await db.batch(
+      unstable_splitSqlQuery(sql).map((statement) => db.prepare(statement)),
+    );
+  }
 }, 15_000);
 
 afterAll(async () => platform?.dispose());
@@ -73,6 +87,31 @@ it('runs AI only after opt-in and budget approval, redacts input, and reuses cac
   await setAiSettings(db, { enabled: false, monthlyBudgetMicrousd: 0 });
   expect(await suggest()).toEqual({ code: 'cached', result: generated.result });
   expect(call).toHaveBeenCalledTimes(1);
+});
+
+it('accepts an object response and derives candidates from a destination without sending its query or fragment', async () => {
+  call.mockClear().mockResolvedValueOnce({
+    response: { title: '夏祭り', slug: '夏祭り', tags: ['夏'] },
+    usage: { prompt_tokens: 120, completion_tokens: 20 },
+  });
+  await setAiSettings(db, { enabled: true, monthlyBudgetMicrousd: 10_000 });
+  expect(
+    await suggestLinkDetails(
+      db,
+      ai,
+      'owner',
+      'ja',
+      '',
+      '',
+      'https://www.example.com/summer-festival?token=private#fragment',
+    ),
+  ).toEqual({
+    code: 'generated',
+    result: { title: '夏祭り', slug: 'summer-festival', tags: ['夏'] },
+  });
+  const prompt = call.mock.calls[0][1].prompt;
+  expect(prompt).toContain('summer festival');
+  expect(prompt).not.toMatch(/token|private|fragment/);
 });
 
 it('keeps the reservation and sends no follow-up after an ambiguous provider error', async () => {

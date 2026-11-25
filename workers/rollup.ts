@@ -1,3 +1,4 @@
+import { runWeeklyAiReport } from '../src/lib/server/ai/weekly';
 import { processClickRepair } from '../src/lib/server/analytics/click-repair';
 import { runDailyClickRollup } from '../src/lib/server/analytics/click-rollup';
 import {
@@ -9,7 +10,9 @@ import { rollupConversions } from '../src/lib/server/conversions/rollup';
 const daySeconds = 86_400;
 const schedule = '15,45 * * * *';
 
-type RollupEnv = Pick<Cloudflare.Env, 'DB'> & ClickAnalyticsEnv;
+type RollupEnv = Pick<Cloudflare.Env, 'DB'> &
+  Partial<Pick<Cloudflare.Env, 'AI'>> &
+  ClickAnalyticsEnv;
 type ClickRollupJob = 'daily' | 'reconcile';
 
 async function reconciliationDate(
@@ -69,7 +72,12 @@ export default {
     if (cron !== schedule) return;
     const scheduledAt = new Date(scheduledTime);
     const minute = scheduledAt.getUTCMinutes();
-    const daily = minute === 15 && scheduledAt.getUTCHours() === 3;
+    const hour = scheduledAt.getUTCHours();
+    if (minute === 15 && hour === 4 && scheduledAt.getUTCDay() === 1) {
+      await runWeeklyAiReport(env, scheduledAt);
+      return;
+    }
+    const daily = minute === 15 && hour === 3;
     if (!daily && minute !== 45) return;
     const now = Math.floor(scheduledTime / 1000);
 

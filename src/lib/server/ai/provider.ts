@@ -75,7 +75,7 @@ export function readWorkersAiUsage(
     output < 0 ||
     input > caps.inputTokens ||
     output > caps.outputTokens ||
-    total !== input + output
+    (total !== undefined && total !== input + output)
   )
     return null;
   return quoteWorkersAi(input, output);

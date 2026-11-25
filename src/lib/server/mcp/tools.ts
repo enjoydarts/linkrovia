@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { loadTrafficInsights } from '../analytics/insights';
 import type { ApiKeyScope, authorizeApiKey } from '../auth/api-keys';
 import { uuidV7 } from '../auth/crypto';
+import { parseRule, type FieldErrors } from '../links/api-input';
+import { parseSimulationInput, simulateTarget } from '../links/simulation';
 import { listDomains } from '../links/store';
+import { parseDestinationUrl } from '../security/url-policy';
 import { deviceTypes, operatingSystems } from '../targeting/visitor';
 import { utmKeys } from '../utm';
 import { listUtmTemplates } from '../utm/templates';
@@ -32,6 +35,8 @@ export const mcpToolScopes = {
   update_link: 'links:write',
   disable_link: 'links:write',
   simulate_redirect: 'links:read',
+  validate_routing_rule: 'links:read',
+  simulate_routing_rule: 'links:read',
   get_link_analytics: 'analytics:read',
   get_analytics_summary: 'analytics:read',
   list_anomalies: 'analytics:read',
@@ -75,6 +80,14 @@ const rule = z.union([
     operator: condition.shape.operator.optional(),
   }),
 ]);
+const visitorFields = {
+  os: z.enum(operatingSystems).optional(),
+  device: z.enum(deviceTypes).optional(),
+  country: z.string().max(7).optional(),
+  region: z.string().max(16).optional(),
+  language: z.string().max(128).optional(),
+};
+const invalidRule = ['Enter valid conditions, priority and destination.'];
 const linkFields = {
   domainId: id,
   destinationUrl: destination,
@@ -267,11 +280,7 @@ export function registerMcpTools(
     'Preview which redirect rule applies to a visitor context.',
     z.strictObject({
       id,
-      os: z.enum(operatingSystems).optional(),
-      device: z.enum(deviceTypes).optional(),
-      country: z.string().max(7).optional(),
-      region: z.string().max(16).optional(),
-      language: z.string().max(128).optional(),
+      ...visitorFields,
       referrer: destination.nullable().optional(),
       at: epochSecond.optional(),
     }),
@@ -284,6 +293,77 @@ export function registerMcpTools(
         signal,
         { body },
       ),
+  );
+  register(
+    'validate_routing_rule',
+    'Validate and normalize an unsaved redirect rule.',
+    z.strictObject({ rule }),
+    async ({ rule }) => {
+      const draft = parseRule(rule);
+      return toolResult(
+        draft
+          ? { valid: true, rule: draft }
+          : { valid: false, fieldErrors: { rule: invalidRule } },
+      );
+    },
+  );
+  register(
+    'simulate_routing_rule',
+    'Preview an unsaved redirect rule and fallback URL for a hypothetical visitor.',
+    z.strictObject({
+      rule,
+      destinationUrl: destination.describe('Default destination URL'),
+      visitor: z.strictObject(visitorFields).optional(),
+    }),
+    async ({ rule, destinationUrl, visitor }) => {
+      const draft = parseRule(rule);
+      const fallback = parseDestinationUrl(destinationUrl);
+      const simulation = parseSimulationInput(visitor ?? {});
+      if (!draft || !fallback || 'fieldErrors' in simulation) {
+        const fieldErrors: FieldErrors = {};
+        if (!draft) fieldErrors.rule = invalidRule;
+        if (!fallback)
+          fieldErrors.destinationUrl = ['Enter a public HTTP or HTTPS URL.'];
+        if ('fieldErrors' in simulation) {
+          for (const [field, errors] of Object.entries(
+            simulation.fieldErrors,
+          )) {
+            fieldErrors[`visitor.${field}`] = errors;
+          }
+        }
+        return toolError('Linkrovia rejected the tool request.', {
+          fieldErrors,
+        });
+      }
+      const [firstCondition] = draft.conditions;
+      return toolResult(
+        simulateTarget(
+          {
+            destinationUrl: fallback.href,
+            isActive: 1,
+            domainActive: 1,
+            connectionStatus: 'active',
+            startsAt: null,
+            expiresAt: null,
+            consumedAt: null,
+            protectionMode: 'none',
+          },
+          [
+            {
+              id: 'draft',
+              priority: draft.priority,
+              isActive: Number(draft.isActive),
+              conditionsJson: JSON.stringify(draft.conditions),
+              ruleType: firstCondition.type,
+              operator: firstCondition.operator,
+              ruleValue: firstCondition.value,
+              destinationUrl: draft.destinationUrl,
+            },
+          ],
+          simulation.input,
+        ),
+      );
+    },
   );
   register(
     'get_link_analytics',

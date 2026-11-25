@@ -1,7 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { brand } from '$lib/brand';
-  import AiUsageSummary from '$lib/components/ai/AiUsageSummary.svelte';
+  import AiCostChart from '$lib/components/ai/AiCostChart.svelte';
   import { uiMessages } from '$lib/i18n/locale';
   import '../../admin-context.css';
   import type { PageProps } from './$types';
@@ -23,6 +23,30 @@
     <p class="text-muted">{m.settingsIntro}</p>
   </header>
 
+  {#if data.assistance.statusAvailable}
+    <AiCostChart
+      locale={data.locale}
+      history={data.costHistory}
+      usage={data.assistance}
+    />
+  {/if}
+
+  {#if data.assistance.statusAvailable}
+    <section
+      class="context-panel admin-section-stack"
+      aria-label={m.modelTitle}
+    >
+      <h2>{m.modelTitle}</h2>
+      <p>
+        <strong>{m.modelLabel}:</strong> <code>{data.assistance.model}</code>
+      </p>
+      <p>
+        <strong>{m.neuronsToday}:</strong>
+        {new Intl.NumberFormat(data.locale).format(data.assistance.dayNeurons)}
+      </p>
+      <p class="text-muted">{m.neuronsHelp}</p>
+    </section>
+  {/if}
   <section class="context-panel admin-section-stack" aria-label={m.settings}>
     {#if !data.assistance.statusAvailable}
       <p role="status">{m.statusUnavailable}</p>
@@ -80,6 +104,18 @@
             />
             {m.enable}
           </label>
+          <div class="grid gap-1">
+            <label class="flex min-h-11 items-center gap-2">
+              <input
+                type="checkbox"
+                name="weeklyEnabled"
+                value="yes"
+                checked={data.weeklyEnabled}
+              />
+              {m.weeklyEnable}
+            </label>
+            <p class="text-sm text-muted">{m.weeklyHelp}</p>
+          </div>
           <label class="grid gap-1">
             {m.budgetLabel}
             <input
@@ -112,7 +148,6 @@
         </p>
         <p class="text-muted">{m.settingsHelp}</p>
       {/if}
-      <AiUsageSummary locale={data.locale} usage={data.assistance} />
     {/if}
   </section>
 </div>

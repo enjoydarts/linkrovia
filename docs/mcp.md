@@ -38,12 +38,20 @@ The endpoint accepts stateless Streamable HTTP and requires the `Authorization: 
 
 ChatGPT custom plugins require OAuth for authenticated MCP connections. Linkrovia's endpoint uses a scoped API key, so direct connection through ChatGPT's custom plugin setup is unavailable. [ChatGPT MCP authentication](https://developers.openai.com/plugins/build/auth)
 
-| Scope            | Tools                                                                               |
-| ---------------- | ----------------------------------------------------------------------------------- |
-| `links:read`     | `list_links`, `get_link`, `simulate_redirect`, `list_domains`, `list_utm_templates` |
-| `analytics:read` | `get_link_analytics`, `get_analytics_summary`, `list_anomalies`                     |
-| `links:write`    | `create_link`, `update_link`, `disable_link`, `create_utm_template`                 |
+| Scope            | Tools                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `links:read`     | `list_links`, `get_link`, `simulate_redirect`, `validate_routing_rule`, `simulate_routing_rule`, `list_domains`, `list_utm_templates` |
+| `analytics:read` | `get_link_analytics`, `get_analytics_summary`, `list_anomalies`                                                                       |
+| `links:write`    | `create_link`, `update_link`, `disable_link`, `create_utm_template`                                                                   |
 
 The tools use the same link validation and permissions as the REST API. `update_link` and `disable_link` require the current `updatedAt` value. DNS changes, backup restores, and one-time redemptions stay outside MCP. The admin audit records the key ID and tool name for tool calls.
 
 `get_analytics_summary` compares two completed seven-day periods in UTC. `list_anomalies` returns large changes from that comparison. Both tools use aggregate analytics and can run with Linkrovia AI disabled. For a client that only reads reports, issue a key with `mcp:connect` and `analytics:read`.
+
+## Draft routing
+
+Use `validate_routing_rule` with a `rule` object to check and normalize one unsaved rule. Provide its `destinationUrl`, integer `priority`, and one to five `conditions` with `type`, `operator`, and `value`. The optional `isActive` defaults to true. A valid result includes `valid: true` and the normalized `rule`. If the arguments match the input schema but the rule fails validation, the result includes `valid: false` and `fieldErrors`.
+
+Use `simulate_routing_rule` with the same `rule`, a top-level `destinationUrl` for the fallback, and an optional `visitor` with `os`, `device`, `country`, `region`, or `language`. The result includes the selected `destinationUrl`, `fallbackUsed`, and `reasonCodes`. The `matchedRuleId` is `draft` when the rule matches and null when the fallback applies.
+
+Both tools accept public HTTP or HTTPS destinations and run without contacting those URLs or invoking Linkrovia AI. Use `simulate_redirect` with a saved link ID to include its current configuration.

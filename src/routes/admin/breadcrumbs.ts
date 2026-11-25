@@ -93,7 +93,6 @@ export function adminBreadcrumbs(
   }
 
   const settingsPages: Record<string, string> = {
-    '/admin/settings/ai': uiMessages(locale).aiInsights.settings,
     '/admin/settings/admins': adminInviteMessages[locale].title,
     '/admin/settings/health': healthMessages(locale).title,
     '/admin/settings/security': messages['admin.security'],
@@ -111,10 +110,12 @@ export function adminBreadcrumbs(
     '/admin/analytics': analytics.title,
     '/admin/import': csvMessages(locale).title,
     '/admin/utm': utmMessages(locale).title,
+    '/admin/guardian': uiMessages(locale).guardian.title,
     '/admin/domains': domains.domains,
     '/admin/backup': backupMessages(locale).title,
     '/admin/integrations/mcp': 'MCP',
     '/admin/settings': settings,
+    '/admin/settings/ai': uiMessages(locale).aiInsights.settings,
     '/admin/api-keys': apiKeyMessages(locale).title,
   };
   const primaryPage = route && primaryPages[route];

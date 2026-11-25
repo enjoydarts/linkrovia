@@ -4,6 +4,7 @@ export const MAX_AI_MONTHLY_BUDGET_MICROUSD = 1_000_000_000;
 
 export type AiSettings = {
   enabled: boolean;
+  weeklyEnabled: boolean;
   monthlyBudgetMicrousd: number;
   revision: number;
 };
@@ -14,17 +15,27 @@ export class AiSettingsConflictError extends Error {
   }
 }
 
-type SettingsRow = Omit<AiSettings, 'enabled'> & { enabled: 0 | 1 };
+type SettingsRow = Omit<AiSettings, 'enabled' | 'weeklyEnabled'> & {
+  enabled: 0 | 1;
+  weeklyEnabled: 0 | 1;
+};
+
+const settingsColumns = `enabled, weekly_enabled AS weeklyEnabled,
+                         monthly_budget_microusd AS monthlyBudgetMicrousd, revision`;
 
 function settingsFromRow(row: SettingsRow | null): AiSettings {
   if (!row) throw new Error('AI settings unavailable');
-  return { ...row, enabled: row.enabled === 1 };
+  return {
+    ...row,
+    enabled: row.enabled === 1,
+    weeklyEnabled: row.weeklyEnabled === 1,
+  };
 }
 
 export async function getAiSettings(db: D1Database): Promise<AiSettings> {
   const row = await db
     .prepare(
-      `SELECT enabled, monthly_budget_microusd AS monthlyBudgetMicrousd, revision
+      `SELECT ${settingsColumns}
        FROM ai_settings WHERE singleton = 1`,
     )
     .first<SettingsRow>();
@@ -36,12 +47,15 @@ export async function setAiSettings(
   {
     enabled,
     monthlyBudgetMicrousd,
-  }: Pick<AiSettings, 'enabled' | 'monthlyBudgetMicrousd'>,
+    weeklyEnabled,
+  }: Pick<AiSettings, 'enabled' | 'monthlyBudgetMicrousd'> &
+    Partial<Pick<AiSettings, 'weeklyEnabled'>>,
   actorId?: string,
   expectedRevision?: number,
 ): Promise<AiSettings> {
   if (
     typeof enabled !== 'boolean' ||
+    (weeklyEnabled !== undefined && typeof weeklyEnabled !== 'boolean') ||
     !Number.isSafeInteger(monthlyBudgetMicrousd) ||
     monthlyBudgetMicrousd < 0 ||
     monthlyBudgetMicrousd > MAX_AI_MONTHLY_BUDGET_MICROUSD
@@ -53,11 +67,18 @@ export async function setAiSettings(
     .prepare(
       `UPDATE ai_settings
        SET enabled = ?1, monthly_budget_microusd = ?2,
-           revision = revision + (enabled <> ?1 OR monthly_budget_microusd <> ?2)
+           weekly_enabled = COALESCE(?4, weekly_enabled),
+           revision = revision + (enabled <> ?1 OR monthly_budget_microusd <> ?2
+             OR weekly_enabled <> COALESCE(?4, weekly_enabled))
        WHERE singleton = 1 AND (?3 IS NULL OR revision = ?3)
-       RETURNING enabled, monthly_budget_microusd AS monthlyBudgetMicrousd, revision`,
+       RETURNING ${settingsColumns}`,
     )
-    .bind(Number(enabled), monthlyBudgetMicrousd, expectedRevision ?? null);
+    .bind(
+      Number(enabled),
+      monthlyBudgetMicrousd,
+      expectedRevision ?? null,
+      weeklyEnabled === undefined ? null : Number(weeklyEnabled),
+    );
 
   const [result] = await db.batch<SettingsRow>(
     actorId === undefined
@@ -72,7 +93,7 @@ export async function setAiSettings(
             .bind(
               uuidV7(),
               actorId,
-              JSON.stringify({ enabled, monthlyBudgetMicrousd }),
+              JSON.stringify({ enabled, monthlyBudgetMicrousd, weeklyEnabled }),
             ),
         ],
   );

@@ -73,7 +73,8 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     path: '/',
   });
 
-  await test.step('finds shared AI settings from Insights and the settings directory', async () => {
+  await test.step('finds shared AI settings and a usage chart directly from the menu', async () => {
+    const main = page.getByRole('main');
     await page.goto('/admin/analytics');
     await page.getByRole('link', { name: 'Insights', exact: true }).click();
     await expect(page).toHaveURL('/admin/analytics/insights');
@@ -93,7 +94,7 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       page.getByRole('checkbox', { name: 'Enable AI assistance' }),
     ).toHaveCount(0);
     await expect(
-      page.getByRole('link', { name: 'AI settings', exact: true }),
+      main.getByRole('link', { name: 'AI settings', exact: true }),
     ).toHaveAttribute('href', '/admin/settings/ai');
     await expect(
       page.getByRole('link', { name: 'Insights', exact: true }),
@@ -116,14 +117,34 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       fullPage: true,
     });
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto('/admin/settings');
-    await page.getByRole('link', { name: 'AI settings', exact: true }).click();
+    const aiMenu = page
+      .locator('aside')
+      .getByRole('link', { name: 'AI settings', exact: true });
+    await aiMenu.click();
     await expect(page).toHaveURL('/admin/settings/ai');
+    await expect(aiMenu).toHaveAttribute('aria-current', 'page');
     await expect(
       page.getByRole('heading', { name: 'AI settings', exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole('checkbox', { name: 'Enable AI assistance' }),
+    ).not.toBeChecked();
+    const cost = main.getByRole('region', { name: 'AI costs' });
+    await expect(cost).toContainText('$0.000132');
+    await expect
+      .poll(async () =>
+        cost.locator('canvas').evaluate((canvas: HTMLCanvasElement) => {
+          const pixels = canvas
+            .getContext('2d')
+            ?.getImageData(0, 0, canvas.width, canvas.height).data;
+          return pixels?.some((byte, index) => index % 4 === 3 && byte > 0);
+        }),
+      )
+      .toBe(true);
+    await expect(
+      main.getByRole('checkbox', {
+        name: 'Generate a weekly report automatically',
+      }),
     ).not.toBeChecked();
     await page.screenshot({
       path: testInfo.outputPath('ai-settings.png'),
@@ -133,6 +154,9 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       .getByRole('spinbutton', { name: 'Monthly budget (USD)' })
       .fill('0.25');
     await page.getByRole('checkbox', { name: 'Enable AI assistance' }).check();
+    await main
+      .getByRole('checkbox', { name: 'Generate a weekly report automatically' })
+      .check();
     const [save] = await Promise.all([
       page.waitForRequest(
         (request) =>
@@ -151,8 +175,16 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(
       page.getByRole('button', { name: 'Generate report' }),
     ).toBeDisabled();
-    await page.getByRole('link', { name: 'AI settings', exact: true }).click();
+    await main.getByRole('link', { name: 'AI settings', exact: true }).click();
     await expect(page).toHaveURL('/admin/settings/ai');
+    await expect(
+      main.getByRole('checkbox', {
+        name: 'Generate a weekly report automatically',
+      }),
+    ).toBeChecked();
+    await main
+      .getByRole('checkbox', { name: 'Generate a weekly report automatically' })
+      .uncheck();
     await page
       .getByRole('spinbutton', { name: 'Monthly budget (USD)' })
       .fill('0');
@@ -163,13 +195,23 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(
       page.getByRole('button', { name: 'Save settings' }),
     ).toBeEnabled();
+    await page
+      .locator('aside')
+      .getByRole('link', { name: 'Guardian', exact: true })
+      .click();
+    await expect(page).toHaveURL('/admin/guardian');
+    await expect(
+      main.getByRole('heading', { name: 'Check a link' }),
+    ).toBeVisible();
   });
 
   await test.step('create a short link on the deployment hostname', async () => {
     await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
     await page.getByText('Suggest link details', { exact: true }).click();
     await expect(
-      page.getByRole('link', { name: 'AI settings', exact: true }),
+      page
+        .getByRole('main')
+        .getByRole('link', { name: 'AI settings', exact: true }),
     ).toHaveAttribute('href', '/admin/settings/ai');
     await page.locator('.link-options > summary').click();
     const redirectStatus = page.locator('select[name=status]');

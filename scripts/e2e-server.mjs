@@ -60,29 +60,32 @@ try {
   if (migration.status !== 0)
     throw new Error('Could not initialize the isolated test database.');
 
-  if (host === 'localhost') {
-    const domain = spawnSync(
-      process.execPath,
-      [
-        wrangler,
-        'd1',
-        'execute',
-        'DB',
-        '--local',
-        '--config',
-        config,
-        '--persist-to',
-        state,
-        '--command',
-        `INSERT INTO domains (id, hostname, provider_mode, connection_status, verified_at)
-         VALUES ('passkey-custom-host', '127.0.0.1', 'cloudflare_custom_domain', 'active', unixepoch())`,
-      ],
-      { stdio: 'inherit' },
-    );
-    if (domain.error) throw domain.error;
-    if (domain.status !== 0)
-      throw new Error('Could not seed the isolated custom domain.');
-  }
+  const fixture =
+    host === 'localhost'
+      ? `INSERT INTO domains (id, hostname, provider_mode, connection_status, verified_at)
+       VALUES ('passkey-custom-host', '127.0.0.1', 'cloudflare_custom_domain', 'active', unixepoch())`
+      : `INSERT INTO ai_usage (id, feature, provider, model, started_at, status, input_tokens, output_tokens, neurons, cost_microusd)
+       VALUES ('browser-ai-cost', 'smart-create', 'fixture', 'fixture', unixepoch(), 'succeeded', 120, 40, 12, 132)`;
+  const seeded = spawnSync(
+    process.execPath,
+    [
+      wrangler,
+      'd1',
+      'execute',
+      'DB',
+      '--local',
+      '--config',
+      config,
+      '--persist-to',
+      state,
+      '--command',
+      fixture,
+    ],
+    { stdio: 'inherit' },
+  );
+  if (seeded.error) throw seeded.error;
+  if (seeded.status !== 0)
+    throw new Error('Could not seed the isolated test data.');
 
   const server = spawn(
     process.execPath,

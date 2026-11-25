@@ -12,6 +12,7 @@ import {
   requireForm,
   requireSession,
 } from '$lib/server/links/form';
+import { parseDestinationUrl } from '$lib/server/security/url-policy';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
@@ -45,6 +46,15 @@ export const actions = {
     const { env, locale } = event.locals;
     const values = formValues(form);
     const description = form.get('aiDescription') ?? '';
+    const destination = values.destinationUrl.trim();
+    if (!parseDestinationUrl(destination))
+      return fail(400, {
+        values,
+        suggestion: {
+          code: 'missing_destination' as const,
+          description: description.slice(0, 700),
+        },
+      });
     try {
       const { code, result } = await suggestLinkDetails(
         db,
@@ -53,6 +63,7 @@ export const actions = {
         locale,
         form.get('title') ?? '',
         description,
+        destination,
       );
       const suggestion = {
         code,

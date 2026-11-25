@@ -30,6 +30,7 @@ type Quote = Metering & {
   model: string;
   settingsRevision: number;
   zeroCostGuaranteed?: boolean;
+  automatic?: boolean;
   cacheKey?: string;
   now?: Date;
 };
@@ -78,6 +79,9 @@ const eligibility = `
            COALESCE(SUM(cost_microusd), 0) AS month_cost,
            COUNT(*) FILTER (WHERE started_at >= unixepoch(period.quoted_at, 'unixepoch', 'start of day'))
              AS day_calls,
+           COUNT(*) FILTER (WHERE automatic = 1
+             AND started_at >= unixepoch(period.quoted_at, 'unixepoch', 'start of day'))
+             AS automatic_day_calls,
            COALESCE(SUM(input_tokens + output_tokens) FILTER (
              WHERE started_at >= unixepoch(period.quoted_at, 'unixepoch', 'start of day')
            ), 0) AS day_tokens,
@@ -89,9 +93,15 @@ const eligibility = `
       AND started_at < unixepoch(period.quoted_at, 'unixepoch', 'start of month', '+1 month')
   ), decision AS (
     SELECT period.quoted_at AS started_at, CASE
-      WHEN enabled <> 1 THEN 'disabled'
+      WHEN enabled <> 1 OR (?12 = 1 AND weekly_enabled <> 1) THEN 'disabled'
       WHEN revision <> ?2 THEN 'settings_changed'
       WHEN EXISTS (SELECT 1 FROM ai_usage WHERE id = ?3) THEN 'duplicate'
+      WHEN ?12 = 1 AND (
+        strftime('%w', period.quoted_at, 'unixepoch') <> '1'
+        OR ?3 <> 'ai-weekly:' || date(period.quoted_at, 'unixepoch')
+        OR automatic_day_calls > 0
+      ) THEN 'limit'
+      WHEN ?12 = 1 AND monthly_budget_microusd = 0 THEN 'budget'
       WHEN EXISTS (
         SELECT 1 FROM ai_cache WHERE cache_key = ?8 AND expires_at > period.quoted_at * 1000
       ) THEN 'cached'
@@ -112,7 +122,11 @@ export async function reserveAiUsage(
   db: D1Database,
   quote: Quote,
 ): Promise<Reservation> {
-  if (!validMetering(quote)) return { ok: false, reason: 'limit' };
+  if (
+    !validMetering(quote) ||
+    (quote.automatic && quote.feature !== 'insights')
+  )
+    return { ok: false, reason: 'limit' };
   if (quote.costMicrousd === 0 && quote.zeroCostGuaranteed !== true) {
     return { ok: false, reason: 'budget' };
   }
@@ -127,16 +141,20 @@ export async function reserveAiUsage(
     quote.neurons,
     quote.costMicrousd,
     quote.cacheKey ?? null,
+    quote.feature,
+    quote.provider,
+    quote.model,
+    Number(quote.automatic === true),
   ];
   const insert = db
     .prepare(
       `${eligibility}
        INSERT INTO ai_usage (id, feature, provider, model, started_at, status,
-                             input_tokens, output_tokens, neurons, cost_microusd)
-       SELECT ?3, ?9, ?10, ?11, started_at, 'reserved', ?4, ?5, ?6, ?7
+                             input_tokens, output_tokens, neurons, cost_microusd, automatic)
+       SELECT ?3, ?9, ?10, ?11, started_at, 'reserved', ?4, ?5, ?6, ?7, ?12
        FROM decision WHERE reason IS NULL RETURNING id`,
     )
-    .bind(...bindings, quote.feature, quote.provider, quote.model);
+    .bind(...bindings);
 
   // Reclaim completed metadata in bounded batches, only after a successful insert.
   // Keep active records indefinitely until the provider outcome can be reconciled.

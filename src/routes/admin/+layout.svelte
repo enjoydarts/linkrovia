@@ -10,6 +10,8 @@
   import Route from '@lucide/svelte/icons/route';
   import Globe from '@lucide/svelte/icons/globe';
   import Settings from '@lucide/svelte/icons/settings';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import Shield from '@lucide/svelte/icons/shield';
   import KeyRound from '@lucide/svelte/icons/key-round';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -46,6 +48,11 @@
       icon: Upload,
     },
     { href: '/admin/utm', label: 'UTM', icon: Route },
+    {
+      href: '/admin/guardian',
+      label: uiMessages(data.locale).guardian.title,
+      icon: ShieldCheck,
+    },
     { href: '/admin/domains', label: links.domains, icon: Globe },
     ...(data.user.role === 'owner'
       ? [
@@ -57,6 +64,11 @@
           { href: '/admin/integrations/mcp', label: 'MCP', icon: Route },
         ]
       : []),
+    {
+      href: '/admin/settings/ai',
+      label: uiMessages(data.locale).aiInsights.settings,
+      icon: Sparkles,
+    },
     { href: '/admin/settings', label: preferences.settings, icon: Settings },
     ...(data.user.role === 'owner'
       ? [
@@ -83,7 +95,12 @@
       href === '/admin/analytics'
     )
       return 'workspace';
-    if (href === '/admin/import' || href === '/admin/utm') return 'tools';
+    if (
+      href === '/admin/import' ||
+      href === '/admin/utm' ||
+      href === '/admin/guardian'
+    )
+      return 'tools';
     return 'instance';
   }
   let groups = $derived(
@@ -108,6 +125,8 @@
       return (
         path === href ||
         (path.startsWith(`${href}/`) &&
+          path !== `${href}/ai` &&
+          !path.startsWith(`${href}/ai/`) &&
           path !== `${href}/security` &&
           !path.startsWith(`${href}/security/`))
       );

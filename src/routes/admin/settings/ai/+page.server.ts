@@ -1,4 +1,5 @@
 import { getAssistanceStatus } from '$lib/server/ai/assistance';
+import { getAiCostHistory } from '$lib/server/ai/cost-history';
 import {
   AiSettingsConflictError,
   MAX_AI_MONTHLY_BUDGET_MICROUSD,
@@ -11,8 +12,14 @@ import type { Actions, PageServerLoad } from './$types';
 export const load = (async (event) => {
   const { db } = requireSession(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
+  const [assistance, costHistory] = await Promise.all([
+    getAssistanceStatus(db, event.locals.env.AI),
+    getAiCostHistory(db),
+  ]);
   return {
-    assistance: await getAssistanceStatus(db, event.locals.env.AI),
+    assistance,
+    costHistory,
+    weeklyEnabled: assistance.weeklyEnabled,
     maxBudgetUsd: MAX_AI_MONTHLY_BUDGET_MICROUSD / 1_000_000,
   };
 }) satisfies PageServerLoad;
@@ -43,6 +50,7 @@ export const actions = {
         db,
         {
           enabled: form.get('enabled') === 'yes',
+          weeklyEnabled: form.get('weeklyEnabled') === 'yes',
           monthlyBudgetMicrousd,
         },
         session.user.id,

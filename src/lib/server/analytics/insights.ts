@@ -65,7 +65,7 @@ function summarizePeriod(
 }
 
 export async function loadTrafficInsights(
-  env: App.Locals['env'],
+  env: Pick<App.Locals['env'], 'ANALYTICS_SQL' | 'LINKROVIA_CLICKS_DATASET'>,
   {
     now = new Date(),
     development = false,

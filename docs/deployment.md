@@ -47,7 +47,7 @@ If the error returns immediately after authorization and there is no build log, 
 
 ## Keep analytics history
 
-Under **Settings → Triggers** on the application Worker, confirm the single Cron Trigger `15,45 * * * *`. It runs daily aggregation at 03:15 UTC and reconciles recent days one at a time at minute 45 of each hour. The other minute-15 invocations skip processing. The jobs store click and conversion history in the application's D1 database. Check run outcomes in **Observability**. [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+Under **Settings → Triggers** on the application Worker, confirm the single Cron Trigger `15,45 * * * *`. It runs daily aggregation at 03:15 UTC and reconciles recent days one at a time at minute 45 of each hour. An optional weekly AI report runs on Monday at 04:15 UTC when enabled in **AI settings**. The other minute-15 invocations skip processing. The jobs store click and conversion history in the application's D1 database. Check run outcomes in **Observability**. [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
 
 If Cloudflare reports `10072`, the account has reached its Cron Trigger limit. Linkrovia needs one slot. Check the trigger list for a retired rollup Worker before retrying. [Workers account limits](https://developers.cloudflare.com/workers/platform/limits/#account-plan-limits)
 

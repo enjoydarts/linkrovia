@@ -12,6 +12,12 @@
   let generating = $state(false);
   let number = $derived(new Intl.NumberFormat(data.locale));
   let signal = $derived(data.insights.anomalies[0]);
+  let matchesWeeklyReport = $derived(
+    data.weeklyReport?.locale === data.locale &&
+      data.weeklyReport.startDate === data.insights.periods.current.startDate &&
+      data.weeklyReport.headline === data.assistance.report?.headline &&
+      data.weeklyReport.summary === data.assistance.report?.summary,
+  );
   let canGenerate = $derived(
     data.assistance.statusAvailable &&
       data.assistance.dayCalls < 10 &&
@@ -175,7 +181,7 @@
       {#if form?.operation === 'generate'}<p role="status" class="notice">
           {m.results[form.code]}
         </p>{/if}
-      {#if data.assistance.report}
+      {#if data.assistance.report && !matchesWeeklyReport}
         <article class="report">
           <h3>{data.assistance.report.headline}</h3>
           <p>{data.assistance.report.summary}</p>
@@ -193,9 +199,33 @@
             </time>
           </p>
         </article>
-      {:else}<p class="muted">{m.reportEmpty}</p>{/if}
+      {:else if !data.weeklyReport}<p class="muted">{m.reportEmpty}</p>{/if}
     {/if}
   </section>
+
+  {#if data.weeklyReport}
+    <section
+      class="workspace-panel section"
+      aria-labelledby="weekly-report-title"
+    >
+      <div class="section-heading">
+        <h2 id="weekly-report-title">{m.weeklyReport}</h2>
+        <p class="dates">
+          <time datetime={data.weeklyReport.startDate}>
+            {data.weeklyReport.startDate}
+          </time>
+          –
+          <time datetime={data.weeklyReport.endDate}>
+            {data.weeklyReport.endDate}
+          </time> UTC
+        </p>
+      </div>
+      <article lang={data.weeklyReport.locale} class="report">
+        <h3>{data.weeklyReport.headline}</h3>
+        <p>{data.weeklyReport.summary}</p>
+      </article>
+    </section>
+  {/if}
 </div>
 
 <style>
