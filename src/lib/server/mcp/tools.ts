@@ -1,6 +1,7 @@
 import type { CallToolResult, McpServer } from '@modelcontextprotocol/server';
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
 import { z } from 'zod';
+import { loadTrafficInsights } from '../analytics/insights';
 import type { ApiKeyScope, authorizeApiKey } from '../auth/api-keys';
 import { uuidV7 } from '../auth/crypto';
 import { listDomains } from '../links/store';
@@ -32,6 +33,8 @@ export const mcpToolScopes = {
   disable_link: 'links:write',
   simulate_redirect: 'links:read',
   get_link_analytics: 'analytics:read',
+  get_analytics_summary: 'analytics:read',
+  list_anomalies: 'analytics:read',
   list_domains: 'links:read',
   list_utm_templates: 'links:read',
   create_utm_template: 'links:write',
@@ -326,6 +329,23 @@ export function registerMcpTools(
         signal,
         { query },
       ),
+  );
+  register(
+    'get_analytics_summary',
+    'Compare aggregate clicks in the last seven completed UTC days with the preceding seven.',
+    z.strictObject({}),
+    async () =>
+      toolResult({ ...(await loadTrafficInsights(event.locals.env)) }),
+  );
+  register(
+    'list_anomalies',
+    'List severe instance-wide click changes across the two most recent completed seven-day UTC windows.',
+    z.strictObject({}),
+    async () => {
+      const { status, periods, anomalies, warnings } =
+        await loadTrafficInsights(event.locals.env);
+      return toolResult({ status, periods, anomalies, warnings });
+    },
   );
   register(
     'list_domains',

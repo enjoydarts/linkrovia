@@ -41,7 +41,9 @@ ChatGPT custom plugins require OAuth for authenticated MCP connections. Linkrovi
 | Scope            | Tools                                                                               |
 | ---------------- | ----------------------------------------------------------------------------------- |
 | `links:read`     | `list_links`, `get_link`, `simulate_redirect`, `list_domains`, `list_utm_templates` |
-| `analytics:read` | `get_link_analytics`                                                                |
+| `analytics:read` | `get_link_analytics`, `get_analytics_summary`, `list_anomalies`                     |
 | `links:write`    | `create_link`, `update_link`, `disable_link`, `create_utm_template`                 |
 
 The tools use the same link validation and permissions as the REST API. `update_link` and `disable_link` require the current `updatedAt` value. DNS changes, backup restores, and one-time redemptions stay outside MCP. The admin audit records the key ID and tool name for tool calls.
+
+`get_analytics_summary` compares two completed seven-day periods in UTC. `list_anomalies` returns large changes from that comparison. Both tools use aggregate analytics and can run with Linkrovia AI disabled. For a client that only reads reports, issue a key with `mcp:connect` and `analytics:read`.

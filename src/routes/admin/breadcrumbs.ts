@@ -1,7 +1,7 @@
 import { analyticsMessages } from '$lib/components/analytics/messages';
 import { adminInviteMessages } from '$lib/i18n/admin-invites';
 import { linkMessages } from '$lib/i18n/links';
-import { messagesFor, type Locale } from '$lib/i18n/locale';
+import { messagesFor, uiMessages, type Locale } from '$lib/i18n/locale';
 import { preferenceMessages } from '$lib/i18n/preferences';
 import { protectionMessages } from '$lib/i18n/protection';
 import { apiKeyMessages } from './api-keys/messages';
@@ -77,6 +77,12 @@ export function adminBreadcrumbs(
         ...trail,
         { label: analytics.title, href: '/admin/analytics' },
         { label: analytics.conversions },
+      ];
+    case '/admin/analytics/insights':
+      return [
+        ...trail,
+        { label: analytics.title, href: '/admin/analytics' },
+        { label: uiMessages(locale).aiInsights.title },
       ];
     case '/admin/domains/[id]/connect':
       return [

@@ -4,6 +4,9 @@ This changelog records Linkrovia releases. See the [deployment guide](docs/deplo
 
 ## Unreleased
 
+- Add Insights for weekly click comparisons and aggregate read-only MCP tools.
+- Add opt-in, budget-capped Workers AI assistance for manual reports and link drafting.
+
 ## v1.1.0 - 2026-11-24
 
 - Add German, Korean, and Portuguese to the public pages, setup, admin interface, and CSV exports.

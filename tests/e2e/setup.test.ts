@@ -73,6 +73,61 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     path: '/',
   });
 
+  await test.step('opens insights and explains why AI is unavailable by default', async () => {
+    await page.goto('/admin/analytics');
+    await page.getByRole('link', { name: 'Insights', exact: true }).click();
+    await expect(page).toHaveURL('/admin/analytics/insights');
+    await expect(
+      page.getByRole('heading', { name: 'Insights', exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'AI report' }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('A $0 budget prevents model calls.'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Generate report' }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole('checkbox', { name: 'Enable AI assistance' }),
+    ).not.toBeChecked();
+    await expect(
+      page.getByRole('link', { name: 'Insights', exact: true }),
+    ).toHaveAttribute('aria-current', 'page');
+    const navigation = await page.locator('main .context-nav').boundingBox();
+    const comparison = await page
+      .getByRole('region', { name: 'Insights', exact: true })
+      .boundingBox();
+    expect(comparison?.width).toBe(navigation?.width);
+    await page.screenshot({
+      path: testInfo.outputPath('insights-desktop.png'),
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.locator('body').evaluate((body) => body.scrollWidth),
+    ).toBeLessThanOrEqual(390);
+    await page.screenshot({
+      path: testInfo.outputPath('insights-mobile.png'),
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.getByRole('checkbox', { name: 'Enable AI assistance' }).check();
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect(page.getByText('Settings saved.')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Generate report' }),
+    ).toBeDisabled();
+    await page
+      .getByRole('checkbox', { name: 'Enable AI assistance' })
+      .uncheck();
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Save settings' }),
+    ).toBeEnabled();
+  });
+
   await test.step('create a short link on the deployment hostname', async () => {
     await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
     await page.locator('.link-options > summary').click();

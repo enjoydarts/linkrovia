@@ -1,7 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
+import {
+  getAssistanceStatus,
+  readLinkSuggestions,
+  suggestLinkDetails,
+} from '$lib/server/ai/assistance';
 import { createLink, listDomains } from '$lib/server/links/store';
 import {
   effectiveTimeZone,
+  formValues,
   parseLinkForm,
   requireForm,
   requireSession,
@@ -16,10 +22,11 @@ export const load = (async (event) => {
     domains: await listDomains(db),
     link: null,
     timeZone: await effectiveTimeZone(db, session.user.timezone),
+    assistance: await getAssistanceStatus(db, event.locals.env.AI),
   };
 }) satisfies PageServerLoad;
 export const actions = {
-  default: async (event) => {
+  create: async (event) => {
     const { db, session, form } = await requireForm(event);
     const parsed = await parseLinkForm(
       form,
@@ -32,5 +39,51 @@ export const actions = {
     if (!result.ok)
       return fail(400, { code: result.code, values: parsed.values });
     redirect(303, `/admin/links/${result.id}`);
+  },
+  suggest: async (event) => {
+    const { db, session, form } = await requireForm(event);
+    const { env, locale } = event.locals;
+    const values = formValues(form);
+    const description = form.get('aiDescription') ?? '';
+    try {
+      const { code, result } = await suggestLinkDetails(
+        db,
+        env.AI,
+        session.user.id,
+        locale,
+        form.get('title') ?? '',
+        description,
+      );
+      const suggestion = {
+        code,
+        result,
+        description: description.slice(0, 700),
+      };
+      if (result) return { values, suggestion };
+      return fail(409, { values, suggestion });
+    } catch {
+      return fail(503, {
+        values,
+        suggestion: {
+          code: 'failed' as const,
+          description: description.slice(0, 700),
+        },
+      });
+    }
+  },
+  applySuggestions: async (event) => {
+    const { form } = await requireForm(event);
+    const values = formValues(form);
+    const result = readLinkSuggestions(form.get('aiSuggestions'));
+    if (!result)
+      return fail(400, {
+        values,
+        suggestion: { code: 'failed' as const, description: '' },
+      });
+    const { title, slug, tags } = result;
+    return {
+      values: { ...values, title, slug, tags: tags.join(', ') },
+      applied: true,
+    };
   },
 } satisfies Actions;

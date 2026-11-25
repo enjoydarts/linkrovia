@@ -10,6 +10,16 @@ The [scheduled Worker](deployment.md#keep-analytics-history) saves daily UTC cli
 
 Custom dates support up to 366 days. Choose **All saved history** for monthly UTC totals from the first saved day through yesterday. The archive supports a single breakdown filter on its matching dimension. Domain reports group saved link totals using each link's current domain. Charts and tables identify the UTC date basis, CSV shows gaps as empty click counts, and combined reports use `archive-and-live` as their data source.
 
+## Compare traffic in Insights
+
+Open **Analytics → Insights** to compare the latest two completed seven-day periods in UTC. Insights flags missing days and estimated data, withholds period totals below 20 clicks or with missing days, and highlights large changes when both periods have enough data. The same comparison is available through [MCP](mcp.md).
+
+Owners can enable optional Workers AI assistance and set a monthly budget on the same page. With a verified price, an available binding, and sufficient budget, an admin can select **Generate report** to request a short explanation. Workers AI receives the dates and aggregate statistics. **Suggest link details** on the new link form uses the entered title and description to suggest a title, slug, and tags. Review the suggestions before applying and saving the link.
+
+The initial monthly budget is $0 and blocks new model calls. After opting in, the usage panel shows the configured limit, the reserved or settled cost, and the upper estimate for a new request. Inference is limited to 10 calls per UTC day and 100 per UTC month, subject to token, cost, and concurrency limits. An unconfirmed provider response retains its full reservation and pauses new model calls. The limits apply to this Linkrovia installation. See [Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) for Cloudflare account charges.
+
+Standard deployments include the Workers AI binding. Requests use the `@cf/meta/llama-3.3-70b-instruct-fp8-fast` model and pause if the bundled pricing catalog expires. If a custom Worker configuration does not connect it, follow the [Workers AI binding instructions](https://developers.cloudflare.com/workers-ai/configuration/bindings/) and use the binding name `AI`.
+
 ## Recover missing click history
 
 An owner can open **Restore missing click history** on the **Analytics** page and request a completed UTC day within the live retention window. The recovery panel shows eligible gaps from the known daily history and the status of the latest request. You can request one missing day per 24 hours. A saved day with zero clicks requires no recovery.
