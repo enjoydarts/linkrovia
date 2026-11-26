@@ -660,6 +660,14 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     );
     await row.getByRole('link', { name: /Link analytics/ }).click();
     await expect(page).toHaveURL(/\/admin\/links\/[^/]+\/analytics$/);
+    await expect(page.locator('.record-url')).toHaveAttribute(
+      'href',
+      new URL('/ci-link', page.url()).href,
+    );
+    await expect(page.locator('.record-destination')).toHaveAttribute(
+      'href',
+      'https://example.org/path?fixed=1#target',
+    );
   });
 
   await test.step('queue a missing click day as the owner', async () => {

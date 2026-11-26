@@ -6,7 +6,7 @@ import { parseDestinationUrl } from '$lib/server/security/url-policy';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async (event) => {
-  const id = 'id' in event.params ? event.params.id : undefined;
+  const { id } = event.params;
   if (typeof id !== 'string') return { linkContext: null };
   const { db, unprotectedOnly } = requireDemoView(event);
   const link = await getLink(db, id, { unprotectedOnly });
