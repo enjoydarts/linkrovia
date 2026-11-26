@@ -22,3 +22,12 @@ The demo starts on loopback port 4187 and opens Chromium. Use the **Local demo**
 Each launch creates a fresh local D1 database and a temporary browser session. Closing Chromium stops the local server and removes its temporary state. Sample clicks come from Linkrovia’s local analytics provider. The demo browser permits the listed screens, the simulator, and the inactive-link Guardian check. Save actions, API and MCP calls, and navigation to external URLs are blocked in that browser. Application requests use local bindings and the demo fixtures throughout.
 
 Use `npm run demo:check` for the headless smoke test that CI runs. Keep the demo runner on loopback and use the browser it opens. For an internet-facing Linkrovia instance, follow the [deployment guide](deployment.md).
+
+## Verify the hosted demo package
+
+```sh
+npm run build
+npm run deploy:demo -- --dry-run
+```
+
+The hosted demo deploys the same application bundle with its own Worker, D1 database, click dataset, and authentication rate limiter. Its deployment target stays on Workers Free. Visitors who receive an administrator invitation can sign in with a passkey and work with that demo instance. The optional page metadata companion requires Workers Paid and is outside this configuration. [Cloudflare plans and costs](cloudflare-plans.md)

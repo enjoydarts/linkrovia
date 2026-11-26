@@ -25,6 +25,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "deploy": "node scripts/deploy.mjs",
+    "deploy:demo": "node scripts/deploy-demo.mjs",
     "preview": "vite preview",
     "types": "wrangler types --config wrangler.jsonc --include-main-module false --env-file .dev.vars.example",
     "check": "npm run types && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
