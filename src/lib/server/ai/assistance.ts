@@ -165,48 +165,54 @@ async function cacheKey(task: Task<unknown>) {
   });
 }
 
-export async function getAssistanceStatus(db: D1Database, ai: Ai | undefined) {
+export async function getAssistanceStatus(
+  db: D1Database | undefined,
+  ai: Ai | undefined,
+) {
   const providerDetails = {
     providerAvailable: Boolean(ai),
     model: WORKERS_AI_MODEL,
     priceVerified: validWorkersAiPricing(new Date()),
     maxRunCostMicrousd: maxWorkersAiCostMicrousd,
   };
-  try {
-    const [settings, usage] = await Promise.all([
-      getAiSettings(db),
-      getAiUsage(db),
-    ]);
-    return {
-      ...providerDetails,
-      statusAvailable: true,
-      enabled: settings.enabled,
-      weeklyEnabled: settings.weeklyEnabled,
-      revision: settings.revision,
-      monthlyBudgetMicrousd: settings.monthlyBudgetMicrousd,
-      monthCostMicrousd: usage.month.costMicrousd,
-      dayCalls: usage.day.calls,
-      monthCalls: usage.month.calls,
-      dayNeurons: usage.day.neurons,
-      blocked: usage.activeStatus === 'unknown_charge',
-      busy: usage.activeStatus === 'reserved',
-    };
-  } catch {
-    return {
-      ...providerDetails,
-      statusAvailable: false,
-      enabled: false,
-      weeklyEnabled: false,
-      revision: 0,
-      monthlyBudgetMicrousd: 0,
-      monthCostMicrousd: 0,
-      dayCalls: 0,
-      monthCalls: 0,
-      dayNeurons: 0,
-      blocked: false,
-      busy: false,
-    };
+  if (db) {
+    try {
+      const [settings, usage] = await Promise.all([
+        getAiSettings(db),
+        getAiUsage(db),
+      ]);
+      return {
+        ...providerDetails,
+        statusAvailable: true,
+        enabled: settings.enabled,
+        weeklyEnabled: settings.weeklyEnabled,
+        revision: settings.revision,
+        monthlyBudgetMicrousd: settings.monthlyBudgetMicrousd,
+        monthCostMicrousd: usage.month.costMicrousd,
+        dayCalls: usage.day.calls,
+        monthCalls: usage.month.calls,
+        dayNeurons: usage.day.neurons,
+        blocked: usage.activeStatus === 'unknown_charge',
+        busy: usage.activeStatus === 'reserved',
+      };
+    } catch {
+      // Reports can still be shown if settings or usage are unavailable.
+    }
   }
+  return {
+    ...providerDetails,
+    statusAvailable: false,
+    enabled: false,
+    weeklyEnabled: false,
+    revision: 0,
+    monthlyBudgetMicrousd: 0,
+    monthCostMicrousd: 0,
+    dayCalls: 0,
+    monthCalls: 0,
+    dayNeurons: 0,
+    blocked: false,
+    busy: false,
+  };
 }
 
 export async function cachedInsights(

@@ -1,9 +1,6 @@
 import { dev } from '$app/env';
-import {
-  requireSession,
-  requireForm,
-  effectiveTimeZone,
-} from '$lib/server/links/form';
+import { requireDemoView } from '$lib/server/demo/view';
+import { requireForm, effectiveTimeZone } from '$lib/server/links/form';
 import { listDomains } from '$lib/server/links/store';
 import {
   AnalyticsInputError,
@@ -18,11 +15,11 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
-  const { db, session } = requireSession(event);
+  const { db, session } = requireDemoView(event);
   const [timezone, domains, repair] = await Promise.all([
-    effectiveTimeZone(db, session.user.timezone),
+    effectiveTimeZone(db, session?.user.timezone ?? null),
     listDomains(db),
-    session.user.role === 'owner' ? loadClickRepair(db) : null,
+    session?.user.role === 'owner' ? loadClickRepair(db) : null,
   ]);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   const requestedFilters = Object.fromEntries(event.url.searchParams);

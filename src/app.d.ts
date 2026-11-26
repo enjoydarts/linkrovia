@@ -7,8 +7,10 @@ declare global {
       env: Omit<Env, 'CLICKS' | 'ANALYTICS_SQL' | 'AI'> &
         Partial<Pick<Env, 'CLICKS' | 'ANALYTICS_SQL' | 'AI'>> & {
           LINKROVIA_CLICKS_DATASET?: string;
+          LINKROVIA_DEMO_MODE?: string;
           PAGE_METADATA?: Fetcher;
         };
+      demoGuest?: boolean;
       locale: Locale;
       session: Awaited<ReturnType<typeof getSession>>;
     }

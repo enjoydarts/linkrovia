@@ -6,17 +6,20 @@ import {
 } from '$lib/server/ai/assistance';
 import { loadLatestWeeklyReport } from '$lib/server/ai/weekly';
 import { loadTrafficInsights } from '$lib/server/analytics/insights';
-import { requireForm, requireSession } from '$lib/server/links/form';
+import { requireDemoView } from '$lib/server/demo/view';
+import { requireForm } from '$lib/server/links/form';
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
-  const { db } = requireSession(event);
-  const { env, locale } = event.locals;
+  const { db } = requireDemoView(event);
+  const { demoGuest, env, locale } = event.locals;
   event.setHeaders({ 'cache-control': 'private, no-store' });
   const [insights, assistance, weeklyReport] = await Promise.all([
     loadTrafficInsights(env, { development: dev }),
-    getAssistanceStatus(db, env.AI),
+    demoGuest
+      ? getAssistanceStatus(undefined, undefined)
+      : getAssistanceStatus(db, env.AI),
     loadLatestWeeklyReport(db).catch(() => null),
   ]);
   const report = await cachedInsights(db, insights, locale).catch(() => null);

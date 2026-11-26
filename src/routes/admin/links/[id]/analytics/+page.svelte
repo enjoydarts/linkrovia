@@ -16,6 +16,7 @@
     failed={data.failed}
     filters={data.filters}
     analyticsDeferred={data.analyticsDeferred}
+    allowExport={!data.demoGuest}
     canConfigureAnalytics={data.user.role === 'owner'}
     base={`/admin/links/${data.linkId}/analytics`}
     linkScoped

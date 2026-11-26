@@ -1,4 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import { requireDemoView } from '$lib/server/demo/view';
 import {
   getLink,
   listDomains,
@@ -9,21 +10,20 @@ import {
   effectiveTimeZone,
   parseLinkForm,
   requireForm,
-  requireSession,
   shortUrl,
 } from '$lib/server/links/form';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
-  const { db, session } = requireSession(event);
-  const link = await getLink(db, event.params.id);
+  const { db, session, unprotectedOnly } = requireDemoView(event);
+  const link = await getLink(db, event.params.id, { unprotectedOnly });
   if (!link) error(404, 'Not found');
   event.setHeaders({ 'cache-control': 'private, no-store' });
   return {
     locale: event.locals.locale,
     domains: await listDomains(db),
     link: { ...link, shortUrl: shortUrl(link, event.url) },
-    timeZone: await effectiveTimeZone(db, session.user.timezone),
+    timeZone: await effectiveTimeZone(db, session?.user.timezone ?? null),
   };
 }) satisfies PageServerLoad;
 function expected(value: string | null) {

@@ -175,7 +175,7 @@
       <p>{hasFilters ? detailNavigation[data.locale].noMatches : m.empty}</p>
       {#if hasFilters}
         <a class="workspace-link" href="/admin/links">{copy.clear}</a>
-      {:else}
+      {:else if !data.demoGuest}
         <a class="workspace-link" href="/admin/links/new">
           {m.create}
           <ArrowRight size={16} aria-hidden="true" />

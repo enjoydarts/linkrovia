@@ -860,6 +860,14 @@
     "deleted": "Plantilla eliminada."
   },
   "aiInsights": {
+    "pageMetadata": {
+      "title": "Información de la página",
+      "enable": "Obtener la información de la página automáticamente",
+      "help": "Al generar sugerencias para un enlace, se pueden usar el título y la descripción de páginas HTTPS públicas.",
+      "docs": "Guía para configurar la información de la página",
+      "unconfigured": "La obtención automática requiere un Worker opcional en el plan de pago de Cloudflare Workers. Aún puedes generar sugerencias a partir de la dirección de destino y el texto que escribas.",
+      "save": "Guardar la configuración de la información de la página"
+    },
     "title": "Información",
     "intro": "Compara los dos últimos periodos completos de 7 días (UTC).",
     "current": "Últimos 7 días",

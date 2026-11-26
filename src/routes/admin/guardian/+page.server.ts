@@ -1,17 +1,18 @@
 import { fail } from '@sveltejs/kit';
 import { loadTrafficInsights } from '$lib/server/analytics/insights';
-import { requireForm, requireSession } from '$lib/server/links/form';
+import { requireDemoView } from '$lib/server/demo/view';
+import { requireForm } from '$lib/server/links/form';
 import { checkGuardianLink } from '$lib/server/links/guardian';
 import { getLink, listLinks } from '$lib/server/links/store';
 import { allowAuthAttempt } from '$lib/server/security/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
-  const { db, session } = requireSession(event);
+  const { db, session, unprotectedOnly } = requireDemoView(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   const cursor = event.url.searchParams.get('cursor')?.slice(0, 100);
   const [{ links, nextCursor }, traffic] = await Promise.all([
-    listLinks(db, { cursor }),
+    listLinks(db, { cursor, unprotectedOnly }),
     loadTrafficInsights(event.locals.env),
   ]);
   return {
@@ -23,7 +24,7 @@ export const load = (async (event) => {
     })),
     nextCursor,
     traffic,
-    csrfToken: session.csrfToken,
+    csrfToken: session?.csrfToken ?? '',
   };
 }) satisfies PageServerLoad;
 

@@ -1,20 +1,21 @@
 import { dev } from '$app/env';
-import { error, redirect } from '@sveltejs/kit';
+import { requireDemoView } from '$lib/server/demo/view';
 import { getDb } from '$lib/server/db/client';
 import { getEffectiveTimeZone } from '$lib/server/db/preferences';
-import { messagesFor } from '$lib/i18n/locale';
 import type { LayoutServerLoad } from './$types';
 
-export const load = (async ({ locals }) => {
-  if (!locals.session) redirect(303, '/login');
-  if (!locals.env.DB)
-    error(503, messagesFor(locals.locale)['error.unavailable']);
-  const { user, csrfToken } = locals.session;
+export const load = (async (event) => {
+  const { session, db } = requireDemoView(event);
+  const { locals } = event;
+  const user = session?.user;
   return {
     locale: locals.locale,
-    user: { email: user.email, role: user.role },
-    csrfToken,
-    timeZone: await getEffectiveTimeZone(getDb(locals.env.DB), user.timezone),
+    demoGuest: locals.demoGuest === true,
+    user: user
+      ? { email: user.email, role: user.role }
+      : { email: '', role: 'guest' as const },
+    csrfToken: session?.csrfToken ?? '',
+    timeZone: await getEffectiveTimeZone(getDb(db), user?.timezone ?? null),
     analyticsDeferred: !dev && !locals.env.CLICKS && !locals.env.ANALYTICS_SQL,
   };
 }) satisfies LayoutServerLoad;

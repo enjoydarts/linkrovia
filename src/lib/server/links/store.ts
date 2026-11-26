@@ -48,7 +48,8 @@ type MutationResult =
 type UpdateMutationResult =
   MutationResult | { ok: false; code: 'temporary_redirect' };
 
-export type LinkFilter = {
+export type LinkVisibility = { unprotectedOnly?: boolean };
+export type LinkFilter = LinkVisibility & {
   q?: string;
   domain?: string;
   tag?: string;
@@ -88,10 +89,12 @@ function mapLink(row: LinkRow): LinkSummary {
 export async function getLink(
   db: D1Database,
   id: string,
+  { unprotectedOnly }: LinkVisibility = {},
 ): Promise<LinkSummary | null> {
   const row = await db
     .prepare(
-      `SELECT ${linkFields} ${linkSource} WHERE l.id = ? AND l.deleted_at IS NULL`,
+      `SELECT ${linkFields} ${linkSource} WHERE l.id = ? AND l.deleted_at IS NULL
+       ${unprotectedOnly ? "AND l.protection_mode = 'none'" : ''}`,
     )
     .bind(id)
     .first<LinkRow>();
@@ -104,6 +107,7 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
       ? Math.min(filter.limit!, 100)
       : defaultPageSize;
   const clauses = ['l.deleted_at IS NULL'];
+  if (filter.unprotectedOnly) clauses.push("l.protection_mode = 'none'");
   const parameters: (number | string)[] = [];
   if (filter.q) {
     const term = '%' + filter.q.slice(0, 200).replace(/[!%_]/g, '!$&') + '%';
@@ -241,6 +245,7 @@ function tagStatements(
 export async function listLinkRulesForLinks(
   db: D1Database,
   ids: readonly string[],
+  { unprotectedOnly }: LinkVisibility = {},
 ): Promise<(TargetingRule & { linkId: string })[]> {
   const uniqueIds = [...new Set(ids)];
   if (!uniqueIds.length) return [];
@@ -251,7 +256,9 @@ export async function listLinkRulesForLinks(
     .prepare(
       `SELECT link_id AS linkId, id, priority, is_active AS isActive, conditions_json AS conditionsJson,
       rule_type AS ruleType, operator, rule_value AS ruleValue, destination_url AS destinationUrl
-      FROM redirect_rules WHERE link_id IN (${placeholders}) ORDER BY link_id, priority, id`,
+      FROM redirect_rules WHERE link_id IN (${placeholders})
+      ${unprotectedOnly ? "AND link_id IN (SELECT id FROM links WHERE deleted_at IS NULL AND protection_mode = 'none')" : ''}
+      ORDER BY link_id, priority, id`,
     )
     .bind(...uniqueIds)
     .all<TargetingRule & { linkId: string }>();
@@ -261,8 +268,9 @@ export async function listLinkRulesForLinks(
 export async function listLinkRules(
   db: D1Database,
   linkId: string,
+  visibility?: LinkVisibility,
 ): Promise<TargetingRule[]> {
-  return listLinkRulesForLinks(db, [linkId]);
+  return listLinkRulesForLinks(db, [linkId], visibility);
 }
 
 function writeRule(

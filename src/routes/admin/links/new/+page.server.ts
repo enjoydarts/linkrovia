@@ -4,6 +4,7 @@ import {
   readLinkSuggestions,
   suggestLinkDetails,
 } from '$lib/server/ai/assistance';
+import { isPageMetadataEnabled } from '$lib/server/db/preferences';
 import { createLink, listDomains } from '$lib/server/links/store';
 import {
   effectiveTimeZone,
@@ -20,7 +21,9 @@ export const load = (async (event) => {
   const { db, session } = requireSession(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   return {
-    metadataAvailable: Boolean(event.locals.env.PAGE_METADATA),
+    metadataAvailable:
+      Boolean(event.locals.env.PAGE_METADATA) &&
+      (await isPageMetadataEnabled(db)),
     locale: event.locals.locale,
     domains: await listDomains(db),
     link: null,
@@ -60,6 +63,7 @@ export const actions = {
     try {
       const metadata =
         env.PAGE_METADATA &&
+        (await isPageMetadataEnabled(db)) &&
         (await allowAuthAttempt(event, `page-metadata:${session.user.id}`, {
           byAddress: false,
         }))

@@ -55,47 +55,57 @@
       </p>{/if}
     <a class="text-link" href="/admin/analytics/insights">{ai.title} →</a>
   </section>
-  <section class="context-panel section" aria-labelledby="guardian-check">
-    <h2 id="guardian-check">{m.checkTitle}</h2>
-    <p class="text-muted">{m.checkHelp}</p>
-    {#if data.links.length}
-      <form method="POST" action="?/check" class="check-form">
-        <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <label for="guardian-link">{m.chooseLink}</label>
-        <select id="guardian-link" class="admin-control" name="linkId" required>
-          {#each data.links as link (link.id)}<option
-              value={link.id}
-              selected={form?.code === 'checked' && form.linkId === link.id}
-            >
-              {link.title ? `${link.title} · ` : ''}{link.hostname}/{link.slug}
-            </option>{/each}
-        </select>
-        <button class="admin-button admin-button-primary" type="submit">
-          {m.check}
-        </button>
-      </form>
-    {:else}<p>{m.empty}</p>{/if}
-    {#if data.nextCursor}<a
-        class="text-link"
-        href={`?cursor=${encodeURIComponent(data.nextCursor)}`}
-      >
-        {m.next} →
-      </a>{/if}
-    {#if form?.code === 'checked'}
-      <div class="result" role="status">
-        <h3>{m.result}</h3>
-        <p><strong>{m[form.result.status]}</strong></p>
-        <p>{m.hops}: {number.format(form.result.checkedHops)}</p>
-        {#if form.result.loop.length}<ol>
-            {#each form.result.loop as hop (`${hop.hostname}/${hop.slug}`)}<li>
-                <code>{hop.hostname}/{hop.slug}</code>
-              </li>{/each}
-          </ol>{/if}
-        {#if form.result.dns}<p>{m[form.result.dns]}</p>
-          <p class="text-muted">{m.dnsHelp}</p>{/if}
-      </div>
-    {:else if form}<p class="result" role="alert">{m[form.code]}</p>{/if}
-  </section>
+  {#if !data.demoGuest}<section
+      class="context-panel section"
+      aria-labelledby="guardian-check"
+    >
+      <h2 id="guardian-check">{m.checkTitle}</h2>
+      <p class="text-muted">{m.checkHelp}</p>
+      {#if data.links.length}
+        <form method="POST" action="?/check" class="check-form">
+          <input type="hidden" name="csrfToken" value={data.csrfToken} />
+          <label for="guardian-link">{m.chooseLink}</label>
+          <select
+            id="guardian-link"
+            class="admin-control"
+            name="linkId"
+            required
+          >
+            {#each data.links as link (link.id)}<option
+                value={link.id}
+                selected={form?.code === 'checked' && form.linkId === link.id}
+              >
+                {link.title
+                  ? `${link.title} · `
+                  : ''}{link.hostname}/{link.slug}
+              </option>{/each}
+          </select>
+          <button class="admin-button admin-button-primary" type="submit">
+            {m.check}
+          </button>
+        </form>
+      {:else}<p>{m.empty}</p>{/if}
+      {#if data.nextCursor}<a
+          class="text-link"
+          href={`?cursor=${encodeURIComponent(data.nextCursor)}`}
+        >
+          {m.next} →
+        </a>{/if}
+      {#if form?.code === 'checked'}
+        <div class="result" role="status">
+          <h3>{m.result}</h3>
+          <p><strong>{m[form.result.status]}</strong></p>
+          <p>{m.hops}: {number.format(form.result.checkedHops)}</p>
+          {#if form.result.loop.length}<ol>
+              {#each form.result.loop as hop (`${hop.hostname}/${hop.slug}`)}<li>
+                  <code>{hop.hostname}/{hop.slug}</code>
+                </li>{/each}
+            </ol>{/if}
+          {#if form.result.dns}<p>{m[form.result.dns]}</p>
+            <p class="text-muted">{m.dnsHelp}</p>{/if}
+        </div>
+      {:else if form}<p class="result" role="alert">{m[form.code]}</p>{/if}
+    </section>{/if}
 </div>
 
 <style>

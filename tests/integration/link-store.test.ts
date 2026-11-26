@@ -16,6 +16,7 @@ import {
   resolveShortLink,
   unlockLinkGate,
 } from '../../src/lib/server/links/redirect';
+import { simulateLink } from '../../src/lib/server/links/simulation';
 import { setLinkProtection } from '../../src/lib/server/links/protection';
 
 let platform: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
@@ -68,6 +69,63 @@ beforeAll(async () => {
 afterAll(async () => platform?.dispose());
 
 describe('link management and delivery', () => {
+  it('excludes protected links and redirect destinations from guest queries', async () => {
+    const db = platform.env.DB;
+    const created = await createLink(db, null, {
+      ...draft,
+      slug: 'guest-visibility',
+      destinationUrl: 'https://example.com/guest-visibility-private',
+      rules: [
+        {
+          conditions: [{ type: 'country', operator: 'eq', value: 'JP' }],
+          priority: 1,
+          destinationUrl: 'https://example.com/guest-visibility-rule-private',
+          isActive: true,
+        },
+      ],
+    });
+    if (!created.ok) throw new Error(created.code);
+    await db
+      .prepare("UPDATE links SET protection_mode = 'one_time' WHERE id = ?")
+      .bind(created.id)
+      .run();
+
+    const visibility = { unprotectedOnly: true };
+    expect(
+      (await listLinks(db, { q: 'guest-visibility-private', ...visibility }))
+        .links,
+    ).toEqual([]);
+    expect(await getLink(db, created.id, visibility)).toBeNull();
+    expect(await listLinkRules(db, created.id, visibility)).toEqual([]);
+    expect(
+      await simulateLink(
+        db,
+        created.id,
+        {
+          at: Date.now() / 1000,
+          visitor: {
+            os: 'other',
+            device: 'other',
+            country: 'JP',
+            region: 'unknown',
+            language: 'unknown',
+            trafficKind: 'unknown',
+          },
+        },
+        visibility,
+      ),
+    ).toBeNull();
+
+    expect(await getLink(db, created.id)).toMatchObject({
+      destinationUrl: 'https://example.com/guest-visibility-private',
+    });
+    expect(await listLinkRules(db, created.id)).toMatchObject([
+      {
+        destinationUrl: 'https://example.com/guest-visibility-rule-private',
+      },
+    ]);
+  });
+
   it('hides archived domains and rejects new or edited links on those domains', async () => {
     const db = platform.env.DB;
     await db

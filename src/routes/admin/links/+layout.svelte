@@ -21,7 +21,15 @@
     detailId ? `/admin/links/${encodeURIComponent(detailId)}` : '',
   );
 
-  let sectionsList = $derived(Object.entries(linkSectionLabels(data.locale)));
+  let sectionsList = $derived(
+    Object.entries(linkSectionLabels(data.locale)).filter(
+      ([suffix]) =>
+        !data.demoGuest ||
+        ['', '/rules', '/analytics', '/conversions', '/simulate'].includes(
+          suffix,
+        ),
+    ),
+  );
   let active = $derived(sectionsList.find(([suffix]) => isCurrent(suffix)));
   let sectionTitle = $derived(
     active?.[0] === '/analytics'
@@ -126,7 +134,7 @@
   <div class="link-workspace admin-page">
     <header class="workspace-intro">
       <h1>{isNew ? m.create : m.links}</h1>
-      {#if !isNew}
+      {#if !isNew && !data.demoGuest}
         <a href="/admin/links/new" class="admin-button admin-button-primary">
           <Plus size={17} aria-hidden="true" />{m.create}
         </a>

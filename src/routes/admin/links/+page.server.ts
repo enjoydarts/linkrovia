@@ -1,9 +1,10 @@
+import { requireDemoView } from '$lib/server/demo/view';
 import { listDomains, listLinks, type LinkSort } from '$lib/server/links/store';
-import { requireSession, shortUrl } from '$lib/server/links/form';
+import { shortUrl } from '$lib/server/links/form';
 import type { PageServerLoad } from './$types';
 
 export const load = (async (event) => {
-  const { db } = requireSession(event);
+  const { db, unprotectedOnly } = requireDemoView(event);
   const filters = Object.fromEntries(
     ['q', 'domain', 'tag', 'status'].map((key) => [
       key,
@@ -18,6 +19,7 @@ export const load = (async (event) => {
   const [result, domains] = await Promise.all([
     listLinks(db, {
       ...filters,
+      unprotectedOnly,
       sort,
       cursor: event.url.searchParams.get('cursor') ?? '',
     }),

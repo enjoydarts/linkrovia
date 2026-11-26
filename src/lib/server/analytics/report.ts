@@ -9,6 +9,7 @@ import {
   type ClickAnalyticsEnv,
 } from './cloudflare';
 import { hourSeconds, utcHourLabel, utcHourStart } from './date-buckets';
+import { demoAnalyticsRepository } from './demo';
 import { MockAnalyticsRepository } from './mock';
 import { loadArchivedClickReport } from './stored-report';
 import {
@@ -369,7 +370,14 @@ export async function loadAnalyticsReport(
   }: AnalyticsQuery,
   { development }: { development: boolean },
 ): Promise<AnalyticsReport> {
-  if (archived) {
+  const demo = development
+    ? null
+    : await demoAnalyticsRepository(env, query, now);
+  if (demo && range === 'all') {
+    from = demo.firstDay;
+    query = { ...query, from: Date.parse(from) / 1000 };
+  }
+  if (archived && !demo) {
     if (!env.DB) throw new Error('D1 binding is unavailable');
     if (range === 'all') {
       from =
@@ -405,14 +413,16 @@ export async function loadAnalyticsReport(
       granularity,
     );
   }
-  const repository = development
-    ? new MockAnalyticsRepository()
-    : env.ANALYTICS_SQL
-      ? new CloudflareAnalyticsRepository(
-          env.ANALYTICS_SQL,
-          env.LINKROVIA_CLICKS_DATASET,
-        )
-      : null;
+  const repository =
+    demo?.repository ??
+    (development
+      ? new MockAnalyticsRepository()
+      : env.ANALYTICS_SQL
+        ? new CloudflareAnalyticsRepository(
+            env.ANALYTICS_SQL,
+            env.LINKROVIA_CLICKS_DATASET,
+          )
+        : null);
   if (!repository) throw new Error('Analytics SQL binding is unavailable');
   const hourly = granularity === 'hour';
   const [trend, result] = await Promise.all([

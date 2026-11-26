@@ -860,6 +860,14 @@
     "deleted": "Vorlage gelöscht."
   },
   "aiInsights": {
+    "pageMetadata": {
+      "title": "Seiteninformationen",
+      "enable": "Seiteninformationen automatisch abrufen",
+      "help": "Beim Erstellen von Linkvorschlägen können Titel und Beschreibungen öffentlicher HTTPS-Seiten verwendet werden.",
+      "docs": "Anleitung zur Einrichtung des Abrufs von Seiteninformationen",
+      "unconfigured": "Für den automatischen Abruf ist ein optionaler Worker im kostenpflichtigen Cloudflare-Workers-Tarif erforderlich. Sie können weiterhin Vorschläge aus der Zieladresse und Ihren Eingaben erstellen.",
+      "save": "Einstellungen für Seiteninformationen speichern"
+    },
     "title": "Insights",
     "intro": "Vergleichen Sie die letzten zwei abgeschlossenen 7-Tage-Zeiträume (UTC).",
     "current": "Letzte 7 Tage",

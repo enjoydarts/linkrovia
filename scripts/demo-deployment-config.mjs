@@ -87,7 +87,10 @@ export function createDemoConfig(source, databaseId) {
     ],
     analytics_engine_datasets: [{ binding: 'CLICKS', dataset }],
     analytics: { binding: 'ANALYTICS_SQL' },
-    vars: { LINKROVIA_CLICKS_DATASET: dataset },
+    vars: {
+      LINKROVIA_CLICKS_DATASET: dataset,
+      LINKROVIA_DEMO_MODE: 'true',
+    },
     triggers: { crons: ['15,45 * * * *'] },
     ai: { binding: 'AI' },
     observability: { enabled: false },

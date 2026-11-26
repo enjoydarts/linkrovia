@@ -1,16 +1,14 @@
 import { dev } from '$app/env';
 import { Temporal } from '@js-temporal/polyfill';
+import { requireDemoView } from '$lib/server/demo/view';
 import { CloudflareAnalyticsRepository } from '$lib/server/analytics/cloudflare';
+import { demoAnalyticsRepository } from '$lib/server/analytics/demo';
 import { MockAnalyticsRepository } from '$lib/server/analytics/mock';
 import type {
   AnalyticsDimension,
   BreakdownResult,
 } from '$lib/server/analytics/repository';
-import {
-  requireSession,
-  shortUrl,
-  effectiveTimeZone,
-} from '$lib/server/links/form';
+import { shortUrl, effectiveTimeZone } from '$lib/server/links/form';
 import { getLink, listLinks } from '$lib/server/links/store';
 import {
   loadAnalyticsReport,
@@ -20,10 +18,10 @@ import {
 import type { PageServerLoad } from './$types';
 
 export const load = (async (event) => {
-  const { db, session } = requireSession(event);
+  const { db, session, unprotectedOnly } = requireDemoView(event);
   const [{ links }, timezone] = await Promise.all([
-    listLinks(db, { limit: 5 }),
-    effectiveTimeZone(db, session.user.timezone),
+    listLinks(db, { limit: 5, unprotectedOnly }),
+    effectiveTimeZone(db, session?.user.timezone ?? null),
   ]);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   let report: AnalyticsReport | null = null;
@@ -45,13 +43,13 @@ export const load = (async (event) => {
     result: BreakdownResult | null;
   }> = [];
   try {
-    const { ANALYTICS_SQL: binding, LINKROVIA_CLICKS_DATASET: dataset } =
-      event.locals.env;
+    const env = event.locals.env;
+    const { ANALYTICS_SQL: binding, LINKROVIA_CLICKS_DATASET: dataset } = env;
+    const sample = dev ? null : await demoAnalyticsRepository(env);
     const repository = dev
       ? new MockAnalyticsRepository()
-      : binding
-        ? new CloudflareAnalyticsRepository(binding, dataset)
-        : null;
+      : (sample?.repository ??
+        (binding ? new CloudflareAnalyticsRepository(binding, dataset) : null));
     if (!repository) throw new Error('Analytics SQL binding is unavailable');
     const parsed = parseAnalyticsQuery(
       new URLSearchParams({ dimension: 'link' }),
@@ -99,10 +97,9 @@ export const load = (async (event) => {
     });
     popularLinks = await Promise.all(
       report.breakdown.slice(0, 5).map(async (row) => {
-        // Sample identifiers must never be presented as real links.
         const link =
-          report?.meta.source === 'analytics-engine'
-            ? await getLink(db, row.key)
+          report?.meta.source === 'analytics-engine' || sample
+            ? await getLink(db, row.key, { unprotectedOnly })
             : null;
         return {
           ...row,

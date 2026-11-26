@@ -1,4 +1,8 @@
-import { CloudflareAnalyticsRepository } from './cloudflare';
+import {
+  CloudflareAnalyticsRepository,
+  type ClickAnalyticsEnv,
+} from './cloudflare';
+import { demoAnalyticsRepository } from './demo';
 import { MockAnalyticsRepository } from './mock';
 
 const daySeconds = 86_400;
@@ -65,7 +69,7 @@ function summarizePeriod(
 }
 
 export async function loadTrafficInsights(
-  env: Pick<App.Locals['env'], 'ANALYTICS_SQL' | 'LINKROVIA_CLICKS_DATASET'>,
+  env: ClickAnalyticsEnv,
   {
     now = new Date(),
     development = false,
@@ -97,14 +101,18 @@ export async function loadTrafficInsights(
   };
 
   try {
+    const demo = development
+      ? null
+      : await demoAnalyticsRepository(env, {}, end);
     const repository = development
       ? new MockAnalyticsRepository(end)
-      : env.ANALYTICS_SQL
-        ? new CloudflareAnalyticsRepository(
-            env.ANALYTICS_SQL,
-            env.LINKROVIA_CLICKS_DATASET,
-          )
-        : null;
+      : (demo?.repository ??
+        (env.ANALYTICS_SQL
+          ? new CloudflareAnalyticsRepository(
+              env.ANALYTICS_SQL,
+              env.LINKROVIA_CLICKS_DATASET,
+            )
+          : null));
     if (!repository) return unavailable;
     const { meta, series } = await repository.getClickTrend({
       from: previousStart,

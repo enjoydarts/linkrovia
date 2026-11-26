@@ -860,6 +860,14 @@
     "deleted": "模板已删除。"
   },
   "aiInsights": {
+    "pageMetadata": {
+      "title": "页面信息",
+      "enable": "自动获取页面信息",
+      "help": "生成链接建议时，可以使用公开 HTTPS 页面的标题和描述。",
+      "docs": "页面信息配置指南",
+      "unconfigured": "自动获取需要在 Cloudflare Workers 付费方案上部署可选的 Worker。你仍然可以根据目标网址和输入的文字生成链接建议。",
+      "save": "保存页面信息设置"
+    },
     "title": "洞察",
     "intro": "比较最近两个已结束的 7 天周期（UTC）。",
     "current": "最近 7 天",

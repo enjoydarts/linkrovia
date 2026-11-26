@@ -7,6 +7,7 @@ import {
   managementDomainEnabled,
   managementHostname,
 } from '$lib/server/domains/connection';
+import { publicDemoHost } from '$lib/server/demo/access';
 import { normalizeHostname } from '$lib/server/security/url-policy';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -43,6 +44,12 @@ export const load: PageServerLoad = async ({ locals, setHeaders, url }) => {
     (db && hostname && (dev || url.protocol === 'https:')
       ? await managementDomainEnabled(db, hostname)
       : false);
+  if (
+    initialized &&
+    canSignIn &&
+    publicDemoHost(url, locals.env.LINKROVIA_DEMO_MODE)
+  )
+    redirect(302, '/admin');
   return {
     locale: locals.locale,
     origin: url.origin,

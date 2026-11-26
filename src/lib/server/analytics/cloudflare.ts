@@ -20,6 +20,8 @@ export type ClickAnalyticsEnv = Partial<
   Pick<Cloudflare.Env, 'ANALYTICS_SQL'>
 > & {
   LINKROVIA_CLICKS_DATASET?: string;
+  LINKROVIA_DEMO_MODE?: string;
+  DB?: D1Database;
 };
 
 const columns = {

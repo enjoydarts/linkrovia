@@ -13,6 +13,7 @@
     data.assistance.monthlyBudgetMicrousd / 1_000_000,
   );
   let saving = $state(false);
+  let savingMetadata = $state(false);
 </script>
 
 <svelte:head><title>{m.settings} · {brand.name}</title></svelte:head>
@@ -139,7 +140,7 @@
             {saving ? m.saving : m.save}
           </button>
         </form>
-        {#if form}<p role={form.code === 'saved' ? 'status' : 'alert'}>
+        {#if form?.code}<p role={form.code === 'saved' ? 'status' : 'alert'}>
             {m.results[form.code]}
           </p>{/if}
       {:else}
@@ -148,6 +149,67 @@
         </p>
         <p class="text-muted">{m.settingsHelp}</p>
       {/if}
+    {/if}
+  </section>
+  <section
+    class="context-panel admin-section-stack"
+    aria-label={m.pageMetadata.title}
+  >
+    <h2>{m.pageMetadata.title}</h2>
+    {#if !data.metadataConnected}
+      <p class="text-muted">{m.pageMetadata.unconfigured}</p>
+      <a
+        class="text-link underline"
+        href={`${brand.repository}/blob/main/docs/analytics.md#retrieve-page-information-automatically`}
+      >
+        {m.pageMetadata.docs}
+      </a>
+    {:else}
+      <p class="text-muted">{m.pageMetadata.help}</p>
+      {#if data.user.role === 'owner'}
+        <form
+          method="POST"
+          class="grid justify-items-start gap-3"
+          use:enhance={() => {
+            savingMetadata = true;
+            return async ({ update }) => {
+              try {
+                await update({ reset: false });
+              } finally {
+                savingMetadata = false;
+              }
+            };
+          }}
+        >
+          <input type="hidden" name="csrfToken" value={data.csrfToken} />
+          <input type="hidden" name="intent" value="pageMetadata" />
+          <label class="flex min-h-11 items-center gap-2">
+            <input
+              type="checkbox"
+              name="metadataEnabled"
+              value="yes"
+              checked={data.metadataEnabled}
+              autocomplete="off"
+            />
+            {m.pageMetadata.enable}
+          </label>
+          <button
+            type="submit"
+            class="admin-button admin-button-primary"
+            disabled={savingMetadata}
+          >
+            {savingMetadata ? m.saving : m.pageMetadata.save}
+          </button>
+        </form>
+      {:else}
+        <p><strong>{data.metadataEnabled ? m.enabled : m.disabled}</strong></p>
+        <p class="text-muted">{m.settingsHelp}</p>
+      {/if}
+    {/if}
+    {#if form?.metadataCode}
+      <p role={form.metadataCode === 'saved' ? 'status' : 'alert'}>
+        {form.metadataCode === 'saved' ? m.results.saved : m.results.failed}
+      </p>
     {/if}
   </section>
 </div>

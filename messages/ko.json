@@ -860,6 +860,14 @@
     "deleted": "템플릿을 삭제했습니다."
   },
   "aiInsights": {
+    "pageMetadata": {
+      "title": "페이지 정보",
+      "enable": "페이지 정보 자동 가져오기",
+      "help": "링크 추천을 생성할 때 공개 HTTPS 페이지의 제목과 설명을 사용할 수 있습니다.",
+      "docs": "페이지 정보 설정 가이드",
+      "unconfigured": "자동으로 가져오려면 Cloudflare Workers 유료 요금제에서 선택 사항인 Worker를 배포해야 합니다. 대상 주소와 입력한 텍스트로 링크 추천을 생성할 수 있습니다.",
+      "save": "페이지 정보 설정 저장"
+    },
     "title": "인사이트",
     "intro": "완료된 최근 두 개의 7일 기간을 비교합니다 (UTC).",
     "current": "최근 7일",

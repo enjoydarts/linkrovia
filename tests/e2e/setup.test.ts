@@ -129,6 +129,19 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await expect(
       page.getByRole('checkbox', { name: 'Enable AI assistance' }),
     ).not.toBeChecked();
+    const pageInformation = main.getByRole('region', {
+      name: 'Page information',
+    });
+    await expect(pageInformation).toContainText('Cloudflare Workers Paid');
+    await expect(pageInformation.getByRole('checkbox')).toHaveCount(0);
+    await expect(
+      pageInformation.getByRole('link', {
+        name: 'Page information setup guide',
+      }),
+    ).toHaveAttribute(
+      'href',
+      /docs\/analytics\.md#retrieve-page-information-automatically$/,
+    );
     const cost = main.getByRole('region', { name: 'AI costs' });
     await expect(cost).toContainText('$0.000132');
     await expect
@@ -1321,7 +1334,16 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       'Français',
     );
     await personal.locator('[name=locale]').selectOption('fr');
-    await personal.locator('[name=timezone]').fill('Europe/Paris');
+    const timeZoneInput = personal.getByRole('combobox', {
+      name: /time zone/i,
+    });
+    await timeZoneInput.fill('Paris');
+    await expect(
+      page.getByRole('option', { name: 'Europe · Paris' }),
+    ).toBeVisible();
+    await timeZoneInput.press('ArrowDown');
+    await timeZoneInput.press('Enter');
+    await expect(timeZoneInput).toHaveValue('Europe/Paris');
     await expect(page.locator('#user-zone-example')).toContainText(
       /(?:GMT|UTC)\+1.*(?:GMT|UTC)\+2/,
     );

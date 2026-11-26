@@ -22,6 +22,7 @@
     analyticsDeferred = false,
     canConfigureAnalytics = false,
     repair,
+    allowExport = true,
   }: {
     locale: Locale;
     report: Awaited<ReturnType<typeof loadAnalyticsReport>> | null;
@@ -33,6 +34,7 @@
     analyticsDeferred?: boolean;
     canConfigureAnalytics?: boolean;
     repair?: Snippet;
+    allowExport?: boolean;
   } = $props();
   let m = $derived(analyticsMessages(locale));
   let archive = $derived(analyticsArchiveMessages(locale));
@@ -275,9 +277,12 @@
           {report.totalClicks?.toLocaleString(locale) ?? '—'}
         </strong>
       </div>
-      <a class="admin-button export" href={`${base}/export?${exportQuery}`}>
-        {m.export}
-      </a>
+      {#if allowExport}<a
+          class="admin-button export"
+          href={`${base}/export?${exportQuery}`}
+        >
+          {m.export}
+        </a>{/if}
     </div>
     <p class="meta">
       {m.timezone}: {report.meta

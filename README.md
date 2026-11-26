@@ -13,7 +13,9 @@ Use your own domain, route visitors to the right destination, and see how each l
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fenjoydarts%2Flinkrovia)
 [![CI](https://github.com/enjoydarts/linkrovia/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/enjoydarts/linkrovia/actions/workflows/ci.yml)
 
-[Latest release](https://github.com/enjoydarts/linkrovia/releases/latest) · [Changelog](CHANGELOG.md) · [Deployment guide](docs/deployment.md)
+[Live demo](https://demo.linkrovia.com/) · [Latest release](https://github.com/enjoydarts/linkrovia/releases/latest) · [Changelog](CHANGELOG.md) · [Deployment guide](docs/deployment.md)
+
+Open the live demo to browse 180 sample links, compare traffic reports, and try the rule simulator without signing in. Sample short links lead to public documentation.
 
 Start on Workers Free with a passkey and one D1 database. Check the limits for click analytics, password features, and optional AI before choosing a plan. [Cloudflare plans and costs](docs/cloudflare-plans.md)
 
@@ -58,7 +60,7 @@ Explore click trends and traffic breakdowns across your instance or for an indiv
 
 In **AI settings**, owners can opt in to budget-capped Workers AI for link suggestions, Insights reports, and optional weekly reports. The cost chart shows model usage estimates before Cloudflare’s account-wide free allocation. [AI setup](docs/analytics.md#enable-ai-assistance)
 
-**Generate suggestions** uses the destination address. With the optional private metadata service connected, that action also reads the destination page’s Open Graph title and description. The companion service requires Workers Paid. [Metadata setup](docs/analytics.md#retrieve-page-information-automatically)
+**Generate suggestions** uses the destination address. In **AI settings**, owners can turn automatic Open Graph title and description retrieval on or off after connecting the optional private service. The companion service requires Workers Paid. [Metadata setup](docs/analytics.md#retrieve-page-information-automatically)
 
 ![AI settings with the instance budget and daily cost chart](docs/screenshots/ai-settings.webp)
 

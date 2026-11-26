@@ -5,6 +5,8 @@ import { localeCookie } from '$lib/i18n/cookie';
 import { preferredLocale } from '$lib/i18n/locale';
 import { getDefaultLocale } from '$lib/server/db/preferences';
 import { getSession, sessionCookie } from '$lib/server/auth/session';
+import { setupComplete } from '$lib/server/auth/setup';
+import { demoAdminRequest, publicDemoHost } from '$lib/server/demo/access';
 import { publicLinkHeaders } from '$lib/server/links/public-response';
 import { managementDomainEnabled } from '$lib/server/domains/connection';
 import { normalizeHostname } from '$lib/server/security/url-policy';
@@ -70,6 +72,26 @@ export const handle: Handle = async ({ event, resolve }) => {
   const token = management ? event.cookies.get(sessionCookie) : undefined;
   const db = token && event.locals.env.DB;
   event.locals.session = db ? await getSession(db, token) : null;
+  if (
+    !event.locals.session &&
+    event.locals.env.DB &&
+    publicDemoHost(event.url, event.locals.env.LINKROVIA_DEMO_MODE)
+  ) {
+    const decision = demoAdminRequest(
+      id,
+      event.request.method,
+      event.url.search,
+    );
+    if (decision !== 'outside' && (await setupComplete(event.locals.env.DB))) {
+      if (decision !== 'view') {
+        return new Response(null, {
+          status: decision === 'forbidden' ? 403 : 404,
+          headers: { 'cache-control': 'private, no-store' },
+        });
+      }
+      event.locals.demoGuest = true;
+    }
+  }
   const preferred = preferredLocale(
     event.locals.session?.user.locale,
     event.cookies.get(localeCookie),

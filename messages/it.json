@@ -860,6 +860,14 @@
     "deleted": "Modello eliminato."
   },
   "aiInsights": {
+    "pageMetadata": {
+      "title": "Informazioni sulla pagina",
+      "enable": "Recupera automaticamente le informazioni sulla pagina",
+      "help": "Quando generi suggerimenti per un link, puoi usare il titolo e la descrizione delle pagine HTTPS pubbliche.",
+      "docs": "Guida alla configurazione delle informazioni sulla pagina",
+      "unconfigured": "Il recupero automatico richiede un Worker opzionale sul piano a pagamento di Cloudflare Workers. Puoi comunque generare suggerimenti dall’indirizzo di destinazione e dal testo che inserisci.",
+      "save": "Salva le impostazioni delle informazioni sulla pagina"
+    },
     "title": "Analisi",
     "intro": "Confronta gli ultimi due periodi completi di 7 giorni (UTC).",
     "current": "Ultimi 7 giorni",

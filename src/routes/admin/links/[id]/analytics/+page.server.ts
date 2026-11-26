@@ -1,7 +1,8 @@
 import { dev } from '$app/env';
 import { error } from '@sveltejs/kit';
+import { requireDemoView } from '$lib/server/demo/view';
 import { getLink } from '$lib/server/links/store';
-import { requireSession, effectiveTimeZone } from '$lib/server/links/form';
+import { effectiveTimeZone } from '$lib/server/links/form';
 import {
   AnalyticsInputError,
   parseAnalyticsQuery,
@@ -9,9 +10,10 @@ import {
 } from '$lib/server/analytics/report';
 import type { PageServerLoad } from './$types';
 export const load = (async (event) => {
-  const { db, session } = requireSession(event);
-  if (!(await getLink(db, event.params.id))) error(404, 'Not found');
-  const timezone = await effectiveTimeZone(db, session.user.timezone);
+  const { db, session, unprotectedOnly } = requireDemoView(event);
+  if (!(await getLink(db, event.params.id, { unprotectedOnly })))
+    error(404, 'Not found');
+  const timezone = await effectiveTimeZone(db, session?.user.timezone ?? null);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   const requestedFilters = Object.fromEntries(event.url.searchParams);
   let filters: Record<string, string> = { ...requestedFilters, tz: timezone };

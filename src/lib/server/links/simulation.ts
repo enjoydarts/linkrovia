@@ -13,7 +13,7 @@ import {
 } from '../targeting/visitor';
 import { applyUtmConfig } from '../utm';
 import { isEpochSecond, isObject, type FieldErrors } from './api-input';
-import { listLinkRules } from './store';
+import { listLinkRules, type LinkVisibility } from './store';
 
 type SimulationInput = { visitor: VisitorContext; at: number };
 type SimulationLink = {
@@ -153,6 +153,7 @@ export async function simulateLink(
   db: D1Database,
   id: string,
   input: SimulationInput,
+  visibility?: LinkVisibility,
 ) {
   const link = await db
     .prepare(
@@ -162,9 +163,12 @@ export async function simulateLink(
             l.starts_at AS startsAt, l.expires_at AS expiresAt,
             l.consumed_at AS consumedAt, l.protection_mode AS protectionMode
      FROM links l JOIN domains d ON d.id = l.domain_id
-     WHERE l.id = ? AND l.deleted_at IS NULL`,
+     WHERE l.id = ? AND l.deleted_at IS NULL
+       ${visibility?.unprotectedOnly ? "AND l.protection_mode = 'none'" : ''}`,
     )
     .bind(id)
     .first<SimulationLink>();
-  return link ? simulateTarget(link, await listLinkRules(db, id), input) : null;
+  return link
+    ? simulateTarget(link, await listLinkRules(db, id, visibility), input)
+    : null;
 }

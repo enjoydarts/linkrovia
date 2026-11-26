@@ -19,7 +19,27 @@
     <p role="status" class="text-sm text-positive">{m.saved}</p>
   {/if}
 
-  {#key `${data.linkId}:${data.updatedAt}`}
-    <RuleEditor {data} {form} />
-  {/key}
+  {#if data.demoGuest}
+    {#if data.rules.length}
+      {#each data.rules as rule, index (rule.id)}
+        <section class="context-panel">
+          <h2>
+            {m.rule.replace('{position}', String(index + 1))} · {rule.active
+              ? m.enabled
+              : m.disabled}
+          </h2>
+          <p>{m.destination}: {rule.destinationUrl}</p>
+          <ul>
+            {#each rule.conditions as condition}<li>
+                {m[condition.type]}: {condition.value}
+              </li>{/each}
+          </ul>
+        </section>
+      {/each}
+    {:else}<p>{m.empty}</p>{/if}
+  {:else}
+    {#key `${data.linkId}:${data.updatedAt}`}
+      <RuleEditor {data} {form} />
+    {/key}
+  {/if}
 </div>

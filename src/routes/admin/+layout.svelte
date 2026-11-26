@@ -30,61 +30,72 @@
   let messages = $derived(messagesFor(data.locale));
   let links = $derived(linkMessages(data.locale));
   let preferences = $derived(preferenceMessages(data.locale));
-  let nav = $derived([
-    {
-      href: '/admin',
-      label: messages['admin.overview'],
-      icon: LayoutDashboard,
-    },
-    { href: '/admin/links', label: links.links, icon: Link2 },
-    {
-      href: '/admin/analytics',
-      label: analyticsMessages(data.locale).title,
-      icon: ChartNoAxesCombined,
-    },
-    {
-      href: '/admin/import',
-      label: csvMessages(data.locale).title,
-      icon: Upload,
-    },
-    { href: '/admin/utm', label: 'UTM', icon: Route },
-    {
-      href: '/admin/guardian',
-      label: uiMessages(data.locale).guardian.title,
-      icon: ShieldCheck,
-    },
-    { href: '/admin/domains', label: links.domains, icon: Globe },
-    ...(data.user.role === 'owner'
-      ? [
-          {
-            href: '/admin/backup',
-            label: backupMessages(data.locale).title,
-            icon: Archive,
-          },
-          { href: '/admin/integrations/mcp', label: 'MCP', icon: Route },
-        ]
-      : []),
-    {
-      href: '/admin/settings/ai',
-      label: uiMessages(data.locale).aiInsights.settings,
-      icon: Sparkles,
-    },
-    { href: '/admin/settings', label: preferences.settings, icon: Settings },
-    ...(data.user.role === 'owner'
-      ? [
-          {
-            href: '/admin/settings/security',
-            label: messages['admin.security'],
-            icon: Shield,
-          },
-        ]
-      : []),
-    {
-      href: '/admin/api-keys',
-      label: messages['admin.apiKeys'],
-      icon: KeyRound,
-    },
-  ]);
+  let nav = $derived(
+    [
+      {
+        href: '/admin',
+        label: messages['admin.overview'],
+        icon: LayoutDashboard,
+      },
+      { href: '/admin/links', label: links.links, icon: Link2 },
+      {
+        href: '/admin/analytics',
+        label: analyticsMessages(data.locale).title,
+        icon: ChartNoAxesCombined,
+      },
+      {
+        href: '/admin/import',
+        label: csvMessages(data.locale).title,
+        icon: Upload,
+      },
+      { href: '/admin/utm', label: 'UTM', icon: Route },
+      {
+        href: '/admin/guardian',
+        label: uiMessages(data.locale).guardian.title,
+        icon: ShieldCheck,
+      },
+      { href: '/admin/domains', label: links.domains, icon: Globe },
+      ...(data.user.role === 'owner'
+        ? [
+            {
+              href: '/admin/backup',
+              label: backupMessages(data.locale).title,
+              icon: Archive,
+            },
+            { href: '/admin/integrations/mcp', label: 'MCP', icon: Route },
+          ]
+        : []),
+      {
+        href: '/admin/settings/ai',
+        label: uiMessages(data.locale).aiInsights.settings,
+        icon: Sparkles,
+      },
+      { href: '/admin/settings', label: preferences.settings, icon: Settings },
+      ...(data.user.role === 'owner'
+        ? [
+            {
+              href: '/admin/settings/security',
+              label: messages['admin.security'],
+              icon: Shield,
+            },
+          ]
+        : []),
+      {
+        href: '/admin/api-keys',
+        label: messages['admin.apiKeys'],
+        icon: KeyRound,
+      },
+    ].filter(
+      (item) =>
+        !data.demoGuest ||
+        [
+          '/admin',
+          '/admin/links',
+          '/admin/analytics',
+          '/admin/guardian',
+        ].includes(item.href),
+    ),
+  );
   let navigationCopy = $derived(uiMessages(data.locale).navigation);
   const groupKeys = ['workspace', 'tools', 'instance'] as const;
   type GroupKey = (typeof groupKeys)[number];
@@ -226,34 +237,44 @@
             {/each}
           </ol>
         </nav>
-        <div class="account">
-          <button
-            class="account-trigger"
-            type="button"
-            aria-label={navigationCopy.account}
-            popovertarget="admin-account"
-          >
-            <span class="account-mark" aria-hidden="true">
-              {data.user.email.slice(0, 1).toUpperCase()}
-            </span>
-            <span class="account-summary-email">{data.user.email}</span>
-            <span class="account-chevron">
-              <ChevronDown size={15} aria-hidden="true" />
-            </span>
-          </button>
-          <div class="account-menu" id="admin-account" popover="auto">
-            <span class="account-email">{data.user.email}</span>
-            <span class="account-zone">
-              {preferences.effective}: {data.timeZone}
-            </span>
-            <form method="POST" action="/logout">
-              <input type="hidden" name="csrfToken" value={data.csrfToken} />
-              <button type="submit" class="signout">
-                {messages['admin.signOut']}
-              </button>
-            </form>
+        {#if data.demoGuest}
+          <div class="demo-account">
+            <span>Demo · {analyticsMessages(data.locale).sample}</span><a
+              href="/login"
+            >
+              {messages['login.submit']}
+            </a>
           </div>
-        </div>
+        {:else}
+          <div class="account">
+            <button
+              class="account-trigger"
+              type="button"
+              aria-label={navigationCopy.account}
+              popovertarget="admin-account"
+            >
+              <span class="account-mark" aria-hidden="true">
+                {data.user.email.slice(0, 1).toUpperCase()}
+              </span>
+              <span class="account-summary-email">{data.user.email}</span>
+              <span class="account-chevron">
+                <ChevronDown size={15} aria-hidden="true" />
+              </span>
+            </button>
+            <div class="account-menu" id="admin-account" popover="auto">
+              <span class="account-email">{data.user.email}</span>
+              <span class="account-zone">
+                {preferences.effective}: {data.timeZone}
+              </span>
+              <form method="POST" action="/logout">
+                <input type="hidden" name="csrfToken" value={data.csrfToken} />
+                <button type="submit" class="signout">
+                  {messages['admin.signOut']}
+                </button>
+              </form>
+            </div>
+          </div>
+        {/if}
       </div>
     </header>
     <main class="main-content">{@render children()}</main>
@@ -406,6 +427,18 @@
     color: var(--ui-link);
     text-decoration: underline;
   }
+  .demo-account {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--ui-text-muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .demo-account a {
+    color: var(--ui-link);
+    font-weight: 650;
+  }
   .account {
     flex: none;
   }
@@ -557,6 +590,7 @@
     .menu-button {
       order: 0;
     }
+    .demo-account,
     .account {
       order: 1;
       margin-left: auto;

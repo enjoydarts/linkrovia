@@ -30,4 +30,8 @@ npm run build
 npm run deploy:demo -- --dry-run
 ```
 
-The hosted demo deploys the same application bundle with its own Worker, D1 database, click dataset, and authentication rate limiter. Its deployment target stays on Workers Free. Visitors who receive an administrator invitation can sign in with a passkey and work with that demo instance. The optional page metadata companion requires Workers Paid and is outside this configuration. [Cloudflare plans and costs](cloudflare-plans.md)
+The [hosted demo](https://demo.linkrovia.com/) uses the same application bundle with a dedicated Worker, D1 database, click dataset, and authentication rate limiter. The demo deploy command sets `LINKROVIA_DEMO_MODE` for that hostname. Visitors can browse the read-only demo and run the redirect simulator. Demo administrators sign in with a passkey to make changes.
+
+The sample workspace contains 180 example links and 72 redirect rules. Short URLs lead to public documentation, while dashboard and sample-link click reports and the seeded conversion history use simulated activity. Link analytics for links created by administrators use the configured click dataset. The optional page information service is separate from the demo profile. [Cloudflare plans and costs](cloudflare-plans.md)
+
+Generate an import for the hosted demo with `node scripts/demo-sample-data.mjs demo.linkrovia.com`. Run it against the dedicated demo database after the owner finishes setup. The import preserves existing rows and leaves owner and authentication settings alone.

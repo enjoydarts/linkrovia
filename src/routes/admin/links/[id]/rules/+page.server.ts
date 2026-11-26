@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
+import { requireDemoView } from '$lib/server/demo/view';
 import { parseRule } from '$lib/server/links/api-input';
-import { requireForm, requireSession } from '$lib/server/links/form';
+import { requireForm } from '$lib/server/links/form';
 import {
   getLink,
   listLinkRules,
@@ -17,10 +18,10 @@ const maxConditions = 5;
 const maxFormBytes = 1_600_000;
 
 export const load = (async (event) => {
-  const { db } = requireSession(event);
-  const link = await getLink(db, event.params.id);
+  const { db, unprotectedOnly } = requireDemoView(event);
+  const link = await getLink(db, event.params.id, { unprotectedOnly });
   if (!link) error(404, 'Not found');
-  const rules = await listLinkRules(db, link.id);
+  const rules = await listLinkRules(db, link.id, { unprotectedOnly });
   return {
     locale: event.locals.locale,
     linkId: link.id,

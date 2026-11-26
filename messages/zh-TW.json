@@ -860,6 +860,14 @@
     "deleted": "範本已刪除。"
   },
   "aiInsights": {
+    "pageMetadata": {
+      "title": "網頁資訊",
+      "enable": "自動取得網頁資訊",
+      "help": "產生連結建議時，可以使用公開 HTTPS 網頁的標題和描述。",
+      "docs": "網頁資訊設定指南",
+      "unconfigured": "自動取得功能需要在 Cloudflare Workers 付費方案中部署選用的 Worker。你仍可以依據目的地網址和輸入的文字產生連結建議。",
+      "save": "儲存網頁資訊設定"
+    },
     "title": "洞察",
     "intro": "比較最近兩個已結束的 7 天週期（UTC）。",
     "current": "最近 7 天",

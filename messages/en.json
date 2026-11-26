@@ -860,6 +860,14 @@
     "deleted": "Template deleted."
   },
   "aiInsights": {
+    "pageMetadata": {
+      "title": "Page information",
+      "enable": "Retrieve page information automatically",
+      "help": "Link suggestions can use the title and description from public HTTPS pages when you generate them.",
+      "docs": "Page information setup guide",
+      "unconfigured": "Automatic retrieval requires an optional Worker on Cloudflare Workers Paid. You can still generate link suggestions from the destination address and the text you enter.",
+      "save": "Save page information settings"
+    },
     "title": "Insights",
     "intro": "Compare the last two completed 7-day periods (UTC).",
     "current": "Most recent 7 days",

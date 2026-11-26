@@ -22,11 +22,12 @@
   filters={data.filters}
   domains={data.domains}
   analyticsDeferred={data.analyticsDeferred}
+  allowExport={!data.demoGuest}
   canConfigureAnalytics={data.user.role === 'owner'}
   base="/admin/analytics"
 >
   {#snippet repair()}
-    {#if data.repair && !data.analyticsDeferred}
+    {#if data.repair && !data.analyticsDeferred && !data.demoGuest}
       <section
         id="click-history-recovery"
         class="workspace-panel repair"

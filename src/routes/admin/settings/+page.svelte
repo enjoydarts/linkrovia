@@ -12,6 +12,7 @@
   import { preferenceMessages } from '$lib/i18n/preferences';
   import { themes } from '$lib/theme/theme';
   import type { PageProps } from './$types';
+  import TimeZoneInput from '$lib/components/settings/TimeZoneInput.svelte';
   let { data, form }: PageProps = $props();
   let m = $derived(preferenceMessages(data.locale));
   let userZone = $derived(data.userZone);
@@ -93,12 +94,6 @@
   <header class="context-header">
     <h1>{m.settings}</h1>
   </header>
-  <datalist id="time-zones">
-    {#each data.timeZones as zone (zone)}<option
-        value={zone}
-        label={zone.replaceAll('_', ' ').replaceAll('/', ' · ')}
-      ></option>{/each}
-  </datalist>
   <div class="admin-section-stack">
     <form
       id="personal-preferences"
@@ -131,15 +126,12 @@
       <div class="space-y-2">
         <label for="timezone" class="block font-medium">
           {m.userZone}
-        </label><input
+        </label><TimeZoneInput
           id="timezone"
           name="timezone"
-          type="text"
-          list="time-zones"
+          zones={data.timeZones}
           bind:value={userZone}
-          aria-describedby="user-zone-help user-zone-example"
-          autocomplete="off"
-          class="admin-control w-full"
+          describedby="user-zone-help user-zone-example"
         />
         <p id="user-zone-help" class="text-sm text-muted">
           {m.userHelp}
@@ -186,16 +178,13 @@
         <div class="space-y-2">
           <label for="default-timezone" class="block font-medium">
             {m.defaultZone}
-          </label><input
+          </label><TimeZoneInput
             id="default-timezone"
             name="timezone"
-            type="text"
             required
-            list="time-zones"
+            zones={data.timeZones}
             bind:value={defaultZone}
-            aria-describedby="default-zone-help default-zone-example"
-            autocomplete="off"
-            class="admin-control w-full"
+            describedby="default-zone-help default-zone-example"
           />
           <p id="default-zone-help" class="text-sm text-muted">
             {m.defaultHelp}

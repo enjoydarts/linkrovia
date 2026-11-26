@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { isLocale, type Locale } from '../../i18n/locale';
 import { resolveTimeZone } from '../../timezone/timezone';
+import { uuidV7 } from '../auth/crypto';
 import { getDb } from './client';
 import { appSettings } from './schema';
 
@@ -40,4 +41,38 @@ export async function getDefaultLocale(db: D1Database): Promise<Locale> {
     .prepare("SELECT json_value FROM app_settings WHERE key = 'default_locale'")
     .first<string>('json_value');
   return parseDefaultLocale(value ?? undefined);
+}
+
+export async function isPageMetadataEnabled(db: D1Database): Promise<boolean> {
+  const value = await db
+    .prepare(
+      "SELECT json_value FROM app_settings WHERE key = 'page_metadata_enabled'",
+    )
+    .first<string>('json_value');
+  return value === null || value === 'true';
+}
+
+export async function setPageMetadataEnabled(
+  db: D1Database,
+  actorId: string,
+  enabled: boolean,
+): Promise<void> {
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO app_settings (key, json_value) VALUES ('page_metadata_enabled', ?)
+         ON CONFLICT(key) DO UPDATE SET json_value = excluded.json_value, updated_at = unixepoch()`,
+      )
+      .bind(JSON.stringify(enabled)),
+    db
+      .prepare(
+        `INSERT INTO audit_events (id, user_id, action, entity_type)
+         VALUES (?, ?, ?, 'integration')`,
+      )
+      .bind(
+        uuidV7(),
+        actorId,
+        enabled ? 'page_metadata.enabled' : 'page_metadata.disabled',
+      ),
+  ]);
 }

@@ -73,6 +73,7 @@ describe('createDemoConfig', () => {
       vars: {
         LINKROVIA_CLICKS_DATASET:
           'linkrovia_demo_clicks_2d6998af6f014219be93bc1c288dc019',
+        LINKROVIA_DEMO_MODE: 'true',
       },
     });
   });
@@ -96,7 +97,10 @@ describe('createDemoConfig', () => {
     expect(config.ai).toEqual({ binding: 'AI' });
     expect(config.analytics).toEqual({ binding: 'ANALYTICS_SQL' });
     expect(config.observability).toEqual({ enabled: false });
-    expect(Object.keys(config.vars)).toEqual(['LINKROVIA_CLICKS_DATASET']);
+    expect(Object.keys(config.vars)).toEqual([
+      'LINKROVIA_CLICKS_DATASET',
+      'LINKROVIA_DEMO_MODE',
+    ]);
     expect(config).not.toHaveProperty('containers');
     expect(config).not.toHaveProperty('services');
     expect(config).not.toHaveProperty('secrets_store_secrets');

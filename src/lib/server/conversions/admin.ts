@@ -12,7 +12,8 @@ import {
 } from '$lib/server/conversions/goals';
 import { getDb } from '$lib/server/db/client';
 import { getEffectiveTimeZone } from '$lib/server/db/preferences';
-import { requireForm, requireSession } from '$lib/server/links/form';
+import { requireDemoView } from '$lib/server/demo/view';
+import { requireForm } from '$lib/server/links/form';
 import { listLinks } from '$lib/server/links/store';
 
 export async function requestedLinkConversions(
@@ -31,9 +32,12 @@ export async function requestedLinkConversions(
 }
 
 export async function loadConversions(event: RequestEvent, linkId?: string) {
-  const { db, session } = requireSession(event);
+  const { db, session, unprotectedOnly } = requireDemoView(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
-  const timezone = await getEffectiveTimeZone(getDb(db), session.user.timezone);
+  const timezone = await getEffectiveTimeZone(
+    getDb(db),
+    session?.user.timezone ?? null,
+  );
   const dates = new URLSearchParams(
     [...event.url.searchParams].filter(
       ([key]) => key === 'from' || key === 'to',
@@ -51,7 +55,7 @@ export async function loadConversions(event: RequestEvent, linkId?: string) {
   const { from, to, query } = period;
   const [goals, { links }, tracking, summary] = await Promise.all([
     listGoals(db, linkId),
-    linkId ? { links: [] } : listLinks(db, { limit: 60 }),
+    linkId ? { links: [] } : listLinks(db, { limit: 60, unprotectedOnly }),
     linkId ? getLinkTracking(db, linkId) : null,
     conversionSummary(db, query.from, query.to, linkId),
   ]);
@@ -70,14 +74,15 @@ export async function loadConversions(event: RequestEvent, linkId?: string) {
       .prepare(
         `SELECT l.id, l.title, l.slug, d.hostname
       FROM links l JOIN domains d ON d.id = l.domain_id
-      WHERE l.deleted_at IS NULL AND l.id IN (SELECT value FROM json_each(?))`,
+      WHERE l.deleted_at IS NULL AND l.id IN (SELECT value FROM json_each(?))
+      ${unprotectedOnly ? "AND l.protection_mode = 'none'" : ''}`,
       )
       .bind(JSON.stringify([...targets]))
       .all<(typeof linkChoices)[number]>();
     linkChoices.push(...extra.results);
   }
   return {
-    isOwner: session.user.role === 'owner',
+    isOwner: session?.user.role === 'owner',
     goals,
     links: linkChoices,
     tracking,

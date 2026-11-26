@@ -125,7 +125,9 @@
         <h2 id="report-title">{m.aiTitle}</h2>
         <p>{m.aiIntro}</p>
       </div>
-      <a class="admin-button" href="/admin/settings/ai">{m.settings}</a>
+      {#if !data.demoGuest}<a class="admin-button" href="/admin/settings/ai">
+          {m.settings}
+        </a>{/if}
     </div>
     {#if !data.assistance.statusAvailable}
       <p role="status" class="notice">{m.statusUnavailable}</p>
@@ -155,29 +157,29 @@
       {/if}
       <AiUsageSummary locale={data.locale} usage={data.assistance} />
       <p class="muted">{m.privacy}</p>
-      <form
-        method="POST"
-        action="?/generate"
-        use:enhance={() => {
-          generating = true;
-          return async ({ update, result }) => {
-            try {
-              await update();
-              if (result.type === 'failure') await invalidateAll();
-            } finally {
-              generating = false;
-            }
-          };
-        }}
-      >
-        <input type="hidden" name="csrfToken" value={data.csrfToken} />
-        <button
-          class="admin-button admin-button-primary"
-          disabled={!canGenerate || generating}
+      {#if !data.demoGuest}<form
+          method="POST"
+          action="?/generate"
+          use:enhance={() => {
+            generating = true;
+            return async ({ update, result }) => {
+              try {
+                await update();
+                if (result.type === 'failure') await invalidateAll();
+              } finally {
+                generating = false;
+              }
+            };
+          }}
         >
-          {generating ? m.generating : m.generate}
-        </button>
-      </form>
+          <input type="hidden" name="csrfToken" value={data.csrfToken} />
+          <button
+            class="admin-button admin-button-primary"
+            disabled={!canGenerate || generating}
+          >
+            {generating ? m.generating : m.generate}
+          </button>
+        </form>{/if}
       {#if form?.operation === 'generate'}<p role="status" class="notice">
           {m.results[form.code]}
         </p>{/if}

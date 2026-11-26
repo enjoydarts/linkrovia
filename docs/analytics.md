@@ -31,6 +31,8 @@ Standard deployments include the Workers AI binding. Requests use the `@cf/meta/
 
 With the optional private companion Worker connected, **Generate suggestions** can retrieve the destination’s Open Graph title and description from a public HTTPS page. Linkrovia falls back to the page title and standard description for missing Open Graph fields. For each field, text you enter takes priority. The companion pins each DNS result used for a connection and validates each redirect. Request cookies and authorization headers stay on the caller’s side. When metadata is unavailable, suggestions use the information already in the form and hints from the destination address.
 
+One-click deployment includes AI link suggestions and leaves the optional companion unconnected. Under **AI settings → Page information**, owners can open setup instructions or use **Retrieve page information automatically** when the service is connected. The setting defaults to on with the service connected. Turning it off still allows suggestions based on the destination URL and form input.
+
 To enable the companion, use Workers Paid and a running Docker-compatible container engine. After installing the repository dependencies, authenticate Wrangler to the Cloudflare account that hosts Linkrovia and run this command from the repository root. It deploys a private Worker named `linkrovia-page-metadata`. [Cloudflare container deployment guide](https://developers.cloudflare.com/containers/guides/deploy/)
 
 ```sh
