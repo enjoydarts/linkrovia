@@ -952,10 +952,7 @@
     "descriptionPlaceholder": "Beispiel: Übersicht der Sommerveranstaltungen",
     "destinationDescription": "Verwende die Zieladresse, um Titel, Kurzpfad und Tags vorzuschlagen. Du kannst eine eigene Beschreibung hinzufügen.",
     "missingDestination": "Gib zuerst die Ziel-URL ein.",
-    "captureTitle": "Seiteninformationen importieren",
-    "captureHelp": "Ziehe diesen Link angemeldet in die Lesezeichenleiste und klicke ihn auf der gewünschten Seite an.",
-    "captureBookmark": "Zu Linkrovia hinzufügen",
-    "captureImported": "Seiteninformationen importiert. Prüfe die Felder, bevor du fortfährst."
+    "automaticDescription": "Verwendet Titel und Beschreibung der Zielseite, sofern verfügbar. Du kannst weitere Informationen hinzufügen."
   },
   "guardian": {
     "title": "Guardian",

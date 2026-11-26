@@ -952,10 +952,7 @@
     "descriptionPlaceholder": "例：夏のイベント案内",
     "destinationDescription": "リンク先のアドレスからタイトル、短縮パス、タグを提案します。説明を追加することもできます。",
     "missingDestination": "先にリンク先 URL を入力してください。",
-    "captureTitle": "ページ情報を取り込む",
-    "captureHelp": "サインインした状態でこのリンクをブックマークバーにドラッグし、追加したいページでクリックしてください。",
-    "captureBookmark": "Linkrovia に追加",
-    "captureImported": "ページ情報を取り込みました。内容を確認してから進んでください。"
+    "automaticDescription": "取得できる場合はリンク先ページのタイトルと説明を使います。補足情報を追加することもできます。"
   },
   "guardian": {
     "title": "Guardian",

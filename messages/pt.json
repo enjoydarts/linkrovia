@@ -952,10 +952,7 @@
     "descriptionPlaceholder": "Exemplo: Guia de eventos de verão",
     "destinationDescription": "Use o endereço de destino para sugerir título, caminho curto e etiquetas. Você pode adicionar sua própria descrição.",
     "missingDestination": "Insira primeiro a URL de destino.",
-    "captureTitle": "Importar informações da página",
-    "captureHelp": "Com a sessão iniciada, arraste este link para a barra de favoritos e clique nele na página que deseja adicionar.",
-    "captureBookmark": "Adicionar ao Linkrovia",
-    "captureImported": "Informações importadas. Confira os campos antes de continuar."
+    "automaticDescription": "Usa o título e a descrição da página de destino quando disponíveis. Você pode adicionar contexto."
   },
   "guardian": {
     "title": "Guardian",

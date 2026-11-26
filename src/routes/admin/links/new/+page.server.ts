@@ -13,13 +13,14 @@ import {
   requireSession,
 } from '$lib/server/links/form';
 import { parseDestinationUrl } from '$lib/server/security/url-policy';
+import { allowAuthAttempt } from '$lib/server/security/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
   const { db, session } = requireSession(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   return {
-    origin: event.url.origin,
+    metadataAvailable: Boolean(event.locals.env.PAGE_METADATA),
     locale: event.locals.locale,
     domains: await listDomains(db),
     link: null,
@@ -57,6 +58,13 @@ export const actions = {
         },
       });
     try {
+      const metadata =
+        env.PAGE_METADATA &&
+        (await allowAuthAttempt(event, `page-metadata:${session.user.id}`, {
+          byAddress: false,
+        }))
+          ? env.PAGE_METADATA
+          : undefined;
       const { code, result } = await suggestLinkDetails(
         db,
         env.AI,
@@ -65,6 +73,7 @@ export const actions = {
         form.get('title') ?? '',
         description,
         destination,
+        metadata,
       );
       const suggestion = {
         code,

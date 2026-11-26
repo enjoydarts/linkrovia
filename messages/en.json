@@ -952,10 +952,7 @@
     "descriptionPlaceholder": "For example: A guide to summer events",
     "destinationDescription": "Use the destination address to suggest a title, slug and tags. You can add your own description.",
     "missingDestination": "Enter the destination URL first.",
-    "captureTitle": "Import page information",
-    "captureHelp": "While signed in, drag this link to your bookmarks bar, then click it on the page you want to add.",
-    "captureBookmark": "Add to Linkrovia",
-    "captureImported": "Page information imported. Review the fields before continuing."
+    "automaticDescription": "Use the destination page’s title and description when available. You can add your own context."
   },
   "guardian": {
     "title": "Guardian",

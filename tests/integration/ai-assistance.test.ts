@@ -114,6 +114,40 @@ it('accepts an object response and derives candidates from a destination without
   expect(prompt).not.toMatch(/token|private|fragment/);
 });
 
+it('retrieves page metadata on suggestion requests with consent and budget', async () => {
+  const fetch = vi.fn(async (_input: string | Request, _init?: RequestInit) =>
+    Response.json({
+      title: 'Public article title',
+      description: 'A useful summary of the source.',
+    }),
+  );
+  const destination = 'https://example.org/article?ref=routing-test#heading';
+  const suggest = () =>
+    suggestLinkDetails(db, ai, 'owner', 'en', '', '', destination, { fetch });
+  await setAiSettings(db, { enabled: true, monthlyBudgetMicrousd: 0 });
+  expect(await suggest()).toEqual({ code: 'budget' });
+  expect(fetch).not.toHaveBeenCalled();
+
+  await setAiSettings(db, { enabled: true, monthlyBudgetMicrousd: 10_000 });
+  call.mockClear();
+  expect((await suggest()).code).toBe('generated');
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch.mock.calls[0][0]).toBe('https://page-metadata.internal/head');
+  expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({
+    url: 'https://example.org/article?ref=routing-test',
+  });
+  const prompt = call.mock.calls[0][1].prompt;
+  expect(prompt).toContain('Public article title');
+  expect(prompt).toContain('A useful summary of the source.');
+  expect(prompt).not.toMatch(/routing-test|#heading/);
+
+  fetch.mockResolvedValueOnce(new Response(null, { status: 503 }));
+  call.mockClear();
+  expect((await suggest()).code).toBe('generated');
+  expect(call.mock.calls[0][1].prompt).toContain('example.org');
+  expect(call.mock.calls[0][1].prompt).not.toContain('Public article title');
+});
+
 it('keeps the reservation and sends no follow-up after an ambiguous provider error', async () => {
   call.mockClear().mockRejectedValueOnce(new Error('Connection lost'));
   await setAiSettings(db, { enabled: true, monthlyBudgetMicrousd: 10_000 });

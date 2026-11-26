@@ -3,7 +3,9 @@ import type { TrafficInsights } from '../analytics/insights';
 import { hex, sha256, uuidV7 } from '../auth/crypto';
 import { generateSlug, isValidSlug } from '../security/slug';
 import { parseDestinationUrl } from '../security/url-policy';
+import { readDestinationMetadata } from '../links/page-metadata';
 import {
+  AI_LIMITS,
   getAiUsage,
   reserveAiUsage,
   settleAiUsage,
@@ -354,7 +356,7 @@ function friendlyDestination(value: string | undefined) {
   return { hostname: url.hostname, label };
 }
 
-export function suggestLinkDetails(
+export async function suggestLinkDetails(
   db: D1Database,
   ai: Ai | undefined,
   actorId: string,
@@ -362,16 +364,37 @@ export function suggestLinkDetails(
   title: string,
   description: string,
   destination?: string,
+  metadataBinding?: Pick<Fetcher, 'fetch'>,
 ): Promise<Outcome<LinkSuggestions>> {
   if (title.length > 200 || description.length > 700)
-    return Promise.resolve({ code: 'input_too_long' });
+    return { code: 'input_too_long' };
+  let metadata = null;
+  if (
+    metadataBinding &&
+    destination &&
+    ai &&
+    validWorkersAiPricing(new Date())
+  ) {
+    const status = await getAssistanceStatus(db, ai);
+    if (
+      status.enabled &&
+      !status.busy &&
+      !status.blocked &&
+      status.monthCostMicrousd < status.monthlyBudgetMicrousd &&
+      status.dayCalls < AI_LIMITS.callsPerDay &&
+      status.monthCalls < AI_LIMITS.callsPerMonth
+    )
+      metadata = await readDestinationMetadata(metadataBinding, destination);
+  }
   const input = {
-    title: redactMetadata(title),
-    description: redactMetadata(description),
+    title: redactMetadata(title) || redactMetadata(metadata?.title ?? ''),
+    description:
+      redactMetadata(description) ||
+      redactMetadata(metadata?.description ?? ''),
     destination: friendlyDestination(destination),
   };
   if (!input.title && !input.description && !input.destination)
-    return Promise.resolve({ code: 'input_required' });
+    return { code: 'input_required' };
   return generate(db, ai, {
     feature: 'smart-create',
     locale,

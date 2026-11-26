@@ -205,41 +205,10 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     ).toBeVisible();
   });
 
-  await test.step('imports Open Graph metadata from the page open in the browser', async () => {
-    await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
-    await page.getByText('Suggest link details', { exact: true }).click();
-    await page.locator('#page-capture-setup > summary').click();
-    const bookmarklet = await page
-      .locator('#page-capture-bookmarklet')
-      .getAttribute('href');
-    expect(bookmarklet).toMatch(/^javascript:/);
-
-    const source = 'https://example.org/open-graph-fixture?filter=all';
-    await page.route(source, (route) =>
-      route.fulfill({
-        contentType: 'text/html',
-        body: `<!doctype html><title>Document title</title><meta property="og:title" content="Open Graph title"><meta property="og:description" content="Open Graph description"><a id="capture">Apply bookmarklet</a>`,
-      }),
-    );
-    await page.goto(source);
-    const fixtureLink = page.locator('#capture');
-    await fixtureLink.evaluate((element: HTMLAnchorElement, href) => {
-      element.href = href!;
-    }, bookmarklet);
-    await fixtureLink.click();
-    await expect(page).toHaveURL('/admin/links/new');
-    await expect(page.locator('#page-capture-imported')).toBeVisible();
-    await expect(page.locator('#destinationUrl')).toHaveValue(source);
-    await expect(page.locator('#title')).toHaveValue('Open Graph title');
-    await expect(page.locator('#ai-description')).toHaveValue(
-      'Open Graph description',
-    );
-    await page.unroute(source);
-  });
-
   await test.step('create a short link on the deployment hostname', async () => {
     await page.goto('/admin/links/new', { waitUntil: 'networkidle' });
     await page.getByText('Suggest link details', { exact: true }).click();
+    await expect(page.locator('main a[href^="javascript:"]')).toHaveCount(0);
     await expect(
       page
         .getByRole('main')

@@ -67,6 +67,21 @@ export default defineConfig({
           );
           const configPath = join(workerDir, 'wrangler.json');
           const config = JSON.parse(await readFile(configPath, 'utf8'));
+          const metadataService =
+            process.env.LINKROVIA_PAGE_METADATA_SERVICE?.trim();
+          if (metadataService) {
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,62})$/.test(metadataService))
+              throw new Error(
+                'Set LINKROVIA_PAGE_METADATA_SERVICE to a Worker service name.',
+              );
+            const services: { binding: string; service: string }[] =
+              (config.services ??= []);
+            if (!services.some(({ binding }) => binding === 'PAGE_METADATA'))
+              services.push({
+                binding: 'PAGE_METADATA',
+                service: metadataService,
+              });
+          }
           const web = JSON.stringify(`./${config.main}`);
 
           // The Deploy Button provisions DB before building. Scope click data to that installation.
