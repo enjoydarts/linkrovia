@@ -4,6 +4,8 @@
   import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
   import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined';
   import Check from '@lucide/svelte/icons/check';
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import Copy from '@lucide/svelte/icons/copy';
   import Link2 from '@lucide/svelte/icons/link-2';
   import Search from '@lucide/svelte/icons/search';
@@ -304,10 +306,12 @@
     <nav class="results-footer" aria-label={m.pagination}>
       {#if data.pagination.page > 1}
         <a
-          class="pagination-direction"
+          class="pagination-direction previous-page"
           href={filterHref({ page: data.pagination.page - 1 })}
+          aria-label={m.previous}
         >
-          {m.previous}
+          <ChevronLeft size={16} aria-hidden="true" />
+          <span>{m.previous}</span>
         </a>
       {/if}
       <div class="page-numbers">
@@ -327,10 +331,12 @@
       </div>
       {#if data.pagination.page < data.pagination.totalPages}
         <a
-          class="pagination-direction"
+          class="pagination-direction next-page"
           href={filterHref({ page: data.pagination.page + 1 })}
+          aria-label={m.next}
         >
-          {m.next}
+          <span>{m.next}</span>
+          <ChevronRight size={16} aria-hidden="true" />
         </a>
       {/if}
     </nav>
@@ -621,6 +627,9 @@
     color: var(--ui-link);
     text-decoration: none;
   }
+  .pagination-direction {
+    gap: 0.25rem;
+  }
   .page-number:hover,
   .pagination-direction:hover,
   .page-number[aria-current='page'] {
@@ -632,6 +641,39 @@
   .page-ellipsis {
     min-width: 1rem;
     color: var(--ui-text-muted);
+  }
+
+  @media (max-width: 600px) {
+    .results-footer {
+      display: grid;
+      grid-template-columns: 2.5rem minmax(0, max-content) 2.5rem;
+      gap: 0.2rem;
+    }
+    .results-footer > * {
+      grid-row: 1;
+    }
+    .previous-page {
+      grid-column: 1;
+    }
+    .page-numbers {
+      grid-column: 2;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.1rem;
+    }
+    .page-number {
+      min-width: 2rem;
+      padding-inline: 0.3rem;
+    }
+    .page-ellipsis {
+      padding-inline: 0.1rem;
+    }
+    .next-page {
+      grid-column: 3;
+    }
+    .pagination-direction span {
+      display: none;
+    }
   }
 
   @media (max-width: 900px) {
