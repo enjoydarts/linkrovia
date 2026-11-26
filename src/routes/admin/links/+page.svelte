@@ -10,12 +10,13 @@
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import { brand } from '$lib/brand';
   import { analyticsMessages } from '$lib/components/analytics/messages';
-  import { linkMessages } from '$lib/i18n/links';
+  import { linkExtra, linkMessages } from '$lib/i18n/links';
   import { detailNavigation, listMessages } from './messages';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();
   let m = $derived(linkMessages(data.locale));
+  let x = $derived(linkExtra(data.locale));
   let copy = $derived(listMessages[data.locale]);
   let analytics = $derived(analyticsMessages(data.locale));
   let hasFilters = $derived(
@@ -41,13 +42,22 @@
     canCopy = typeof navigator.clipboard?.writeText === 'function';
   });
 
-  function filterHref(options: { tag?: string; cursor?: string }) {
+  function filterHref(options: { tag?: string; page?: number }) {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries({ ...data.filters, ...options }))
-      if (value) params.set(key, value);
+      if (value && !(key === 'page' && value === 1))
+        params.set(key, String(value));
     if (data.sort !== 'created_desc') params.set('sort', data.sort);
     return `?${params}`;
   }
+
+  let pageNumbers = $derived.by(() => {
+    const { page, totalPages } = data.pagination;
+    const numbers = new Set([1, totalPages, page - 1, page, page + 1]);
+    return [...numbers]
+      .filter((number) => number >= 1 && number <= totalPages)
+      .sort((a, b) => a - b);
+  });
 
   async function copyUrl(id: string, url: string) {
     try {
@@ -191,7 +201,7 @@
     <ul class="context-panel context-list link-rows">
       {#each data.links as link (link.id)}
         {@const linkPage = `/admin/links/${encodeURIComponent(link.id)}`}
-        {@const linkLabel = link.title || link.shortUrl}
+        {@const linkLabel = link.title || link.slug}
         <li class="link-row">
           <div class="identity">
             <span class="link-icon">
@@ -199,16 +209,35 @@
             </span>
             <div class="link-title">
               <a href={linkPage}>{linkLabel}</a>
-              {#if link.title}<code title={link.shortUrl}>
-                  {link.shortUrl}
-                </code>{/if}
+              <a
+                class="short-url"
+                href={link.shortUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.shortUrl}
+                <ArrowUpRight size={13} aria-hidden="true" />
+                <span class="sr-only"> · {x.opensInNewTab}</span>
+              </a>
             </div>
           </div>
-          <div class="destination" title={link.destinationUrl}>
-            <ArrowUpRight size={14} aria-hidden="true" /><span>
-              {link.destinationUrl}
+          {#if link.destinationHref}
+            <a
+              class="destination"
+              href={link.destinationHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={link.destinationUrl}
+            >
+              <span class="destination-text">{link.destinationUrl}</span>
+              <ArrowUpRight size={14} aria-hidden="true" />
+              <span class="sr-only"> · {x.opensInNewTab}</span>
+            </a>
+          {:else}
+            <span class="destination">
+              <span class="destination-text">{link.destinationUrl}</span>
             </span>
-          </div>
+          {/if}
           <span class={['status', { enabled: link.isActive }]}>
             {link.isActive ? m.active : m.inactive}
           </span>
@@ -271,13 +300,40 @@
       {/each}
     </ul>
   {/if}
-  {#if data.nextCursor}
-    <footer class="results-footer">
-      <a href={filterHref({ cursor: data.nextCursor })} class="workspace-link">
-        {m.next}
-        <ArrowRight size={16} aria-hidden="true" />
-      </a>
-    </footer>
+  {#if data.pagination.totalPages > 1}
+    <nav class="results-footer" aria-label={m.pagination}>
+      {#if data.pagination.page > 1}
+        <a
+          class="pagination-direction"
+          href={filterHref({ page: data.pagination.page - 1 })}
+        >
+          {m.previous}
+        </a>
+      {/if}
+      <div class="page-numbers">
+        {#each pageNumbers as number, index (number)}
+          {#if index > 0 && number - pageNumbers[index - 1] > 1}
+            <span class="page-ellipsis" aria-hidden="true">…</span>
+          {/if}
+          <a
+            class="page-number"
+            href={filterHref({ page: number })}
+            aria-label={`${m.page} ${number}`}
+            aria-current={number === data.pagination.page ? 'page' : undefined}
+          >
+            {number}
+          </a>
+        {/each}
+      </div>
+      {#if data.pagination.page < data.pagination.totalPages}
+        <a
+          class="pagination-direction"
+          href={filterHref({ page: data.pagination.page + 1 })}
+        >
+          {m.next}
+        </a>
+      {/if}
+    </nav>
   {/if}
 </section>
 
@@ -419,11 +475,17 @@
     color: var(--ui-link);
     text-decoration: underline;
   }
-  .link-title code {
+  .link-title .short-url {
+    justify-self: start;
     font-family: var(--ui-mono);
     font-size: 0.74rem;
-    color: var(--ui-text-muted);
+    font-weight: 500;
+    color: var(--ui-link);
     overflow-wrap: anywhere;
+  }
+  .short-url :global(svg) {
+    display: inline;
+    vertical-align: -0.12em;
   }
   .destination {
     display: flex;
@@ -436,7 +498,14 @@
   .destination :global(svg) {
     flex: none;
   }
-  .destination span {
+  a.destination {
+    color: var(--ui-link);
+    text-underline-offset: 0.2em;
+  }
+  a.destination:hover {
+    text-decoration: underline;
+  }
+  .destination-text {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -523,9 +592,46 @@
     color: var(--ui-link);
   }
   .results-footer {
-    padding: 0.65rem 1.2rem;
-    border-top: 1px solid var(--ui-border);
-    text-align: end;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.9rem 0;
+  }
+  .page-numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+  .page-number,
+  .pagination-direction,
+  .page-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: var(--ui-radius-sm);
+    font-size: 0.85rem;
+  }
+  .page-number,
+  .pagination-direction {
+    color: var(--ui-link);
+    text-decoration: none;
+  }
+  .page-number:hover,
+  .pagination-direction:hover,
+  .page-number[aria-current='page'] {
+    background: var(--ui-accent-surface);
+  }
+  .page-number[aria-current='page'] {
+    font-weight: 700;
+  }
+  .page-ellipsis {
+    min-width: 1rem;
+    color: var(--ui-text-muted);
   }
 
   @media (max-width: 900px) {

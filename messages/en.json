@@ -488,6 +488,7 @@
     "noMatches": "No links match these filters."
   },
   "linkExtra": {
+    "opensInNewTab": "Opens in a new tab",
     "demoLimit": "The shared demo has reached its link limit. Please try again later.",
     "utcPreview": "UTC preview",
     "options": "Schedule, tags, and redirect type",
@@ -629,6 +630,9 @@
     "inactive": "Inactive",
     "tag": "Tag",
     "empty": "No links found.",
+    "pagination": "Pagination",
+    "previous": "Previous page",
+    "page": "Page",
     "next": "Next page",
     "destination": "Destination URL",
     "title": "Title",
@@ -892,6 +896,8 @@
     "analytics_unavailable": "Analytics could not be loaded.",
     "aiTitle": "AI report",
     "aiIntro": "Optional. Generate a short explanation of these totals when you need it.",
+    "demoIntro": "This report summarizes sample traffic.",
+    "reportPeriod": "Traffic period",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "providerUnavailable": "Workers AI is not connected.",

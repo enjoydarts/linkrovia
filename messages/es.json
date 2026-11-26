@@ -488,6 +488,7 @@
     "noMatches": "Ningún enlace coincide con estos filtros."
   },
   "linkExtra": {
+    "opensInNewTab": "Abre en una pestaña nueva",
     "demoLimit": "La demostración compartida ha alcanzado el límite de enlaces. Inténtalo de nuevo más tarde.",
     "utcPreview": "Vista previa en UTC",
     "options": "Programación, etiquetas y redirección",
@@ -629,6 +630,9 @@
     "inactive": "Inactivo",
     "tag": "Etiqueta",
     "empty": "No se encontraron enlaces.",
+    "pagination": "Paginación",
+    "previous": "Página anterior",
+    "page": "Página",
     "next": "Página siguiente",
     "destination": "URL de destino",
     "title": "Título",
@@ -892,6 +896,8 @@
     "analytics_unavailable": "No se pudieron cargar los análisis.",
     "aiTitle": "Informe de IA",
     "aiIntro": "Opcional. Genera una breve explicación de estos totales.",
+    "demoIntro": "Este informe resume datos de tráfico de muestra.",
+    "reportPeriod": "Periodo analizado",
     "enabled": "Activado",
     "disabled": "Desactivado",
     "providerUnavailable": "Workers AI no está conectado.",

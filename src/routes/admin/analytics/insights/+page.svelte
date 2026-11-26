@@ -15,11 +15,11 @@
   let matchesWeeklyReport = $derived(
     data.weeklyReport?.locale === data.locale &&
       data.weeklyReport.startDate === data.insights.periods.current.startDate &&
-      data.weeklyReport.headline === data.assistance.report?.headline &&
-      data.weeklyReport.summary === data.assistance.report?.summary,
+      data.weeklyReport.headline === data.assistance?.report?.headline &&
+      data.weeklyReport.summary === data.assistance?.report?.summary,
   );
   let canGenerate = $derived(
-    data.assistance.statusAvailable &&
+    data.assistance?.statusAvailable &&
       data.assistance.dayCalls < 10 &&
       data.assistance.monthCalls < 100 &&
       data.assistance.enabled &&
@@ -32,6 +32,19 @@
       data.assistance.monthCostMicrousd < data.assistance.monthlyBudgetMicrousd,
   );
 </script>
+
+{#snippet reportCreated(createdAt: number)}
+  {@const date = new Date(createdAt)}
+  <p class="muted">
+    {m.reportCreated}:
+    <time datetime={date.toISOString()}>
+      {new Intl.DateTimeFormat(data.locale, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(date)}
+    </time>
+  </p>
+{/snippet}
 
 <svelte:head><title>{m.title} · {brand.name}</title></svelte:head>
 <ReportNavigation locale={data.locale} current="insights" />
@@ -123,13 +136,34 @@
     <div class="section-heading report-heading">
       <div>
         <h2 id="report-title">{m.aiTitle}</h2>
-        <p>{m.aiIntro}</p>
+        <p>{data.demoGuest ? m.demoIntro : m.aiIntro}</p>
       </div>
       {#if !data.demoGuest}<a class="admin-button" href="/admin/settings/ai">
           {m.settings}
         </a>{/if}
     </div>
-    {#if !data.assistance.statusAvailable}
+    {#if data.demoGuest}
+      {#if data.demoReport}
+        <p class="dates">
+          {m.reportPeriod}
+          <time datetime={data.demoReport.startDate}>
+            {data.demoReport.startDate}
+          </time>
+          –
+          <time datetime={data.demoReport.endDate}>
+            {data.demoReport.endDate}
+          </time>
+          UTC
+        </p>
+        <article lang={data.demoReport.locale} class="report">
+          <h3>{data.demoReport.headline}</h3>
+          <p>{data.demoReport.summary}</p>
+        </article>
+        {@render reportCreated(data.demoReport.createdAt)}
+      {:else}
+        <p class="muted">{m.reportEmpty}</p>
+      {/if}
+    {:else if !data.assistance?.statusAvailable}
       <p role="status" class="notice">{m.statusUnavailable}</p>
     {:else}
       <p><strong>{data.assistance.enabled ? m.enabled : m.disabled}</strong></p>
@@ -157,29 +191,29 @@
       {/if}
       <AiUsageSummary locale={data.locale} usage={data.assistance} />
       <p class="muted">{m.privacy}</p>
-      {#if !data.demoGuest}<form
-          method="POST"
-          action="?/generate"
-          use:enhance={() => {
-            generating = true;
-            return async ({ update, result }) => {
-              try {
-                await update();
-                if (result.type === 'failure') await invalidateAll();
-              } finally {
-                generating = false;
-              }
-            };
-          }}
+      <form
+        method="POST"
+        action="?/generate"
+        use:enhance={() => {
+          generating = true;
+          return async ({ update, result }) => {
+            try {
+              await update();
+              if (result.type === 'failure') await invalidateAll();
+            } finally {
+              generating = false;
+            }
+          };
+        }}
+      >
+        <input type="hidden" name="csrfToken" value={data.csrfToken} />
+        <button
+          class="admin-button admin-button-primary"
+          disabled={!canGenerate || generating}
         >
-          <input type="hidden" name="csrfToken" value={data.csrfToken} />
-          <button
-            class="admin-button admin-button-primary"
-            disabled={!canGenerate || generating}
-          >
-            {generating ? m.generating : m.generate}
-          </button>
-        </form>{/if}
+          {generating ? m.generating : m.generate}
+        </button>
+      </form>
       {#if form?.operation === 'generate'}<p role="status" class="notice">
           {m.results[form.code]}
         </p>{/if}
@@ -187,19 +221,7 @@
         <article class="report">
           <h3>{data.assistance.report.headline}</h3>
           <p>{data.assistance.report.summary}</p>
-          <p class="muted">
-            {m.reportCreated}:
-            <time
-              datetime={new Date(
-                data.assistance.report.createdAt,
-              ).toISOString()}
-            >
-              {new Intl.DateTimeFormat(data.locale, {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              }).format(new Date(data.assistance.report.createdAt))}
-            </time>
-          </p>
+          {@render reportCreated(data.assistance.report.createdAt)}
         </article>
       {:else if !data.weeklyReport}<p class="muted">{m.reportEmpty}</p>{/if}
     {/if}

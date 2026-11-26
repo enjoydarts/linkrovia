@@ -488,6 +488,7 @@
     "noMatches": "条件に一致するリンクがありません。"
   },
   "linkExtra": {
+    "opensInNewTab": "別タブで開く",
     "demoLimit": "共有デモのリンク数が上限に達しました。しばらくしてからお試しください。",
     "utcPreview": "UTC プレビュー",
     "options": "公開期間・タグ・転送方式",
@@ -629,6 +630,9 @@
     "inactive": "無効",
     "tag": "タグ",
     "empty": "リンクが見つかりません。",
+    "pagination": "ページ送り",
+    "previous": "前のページ",
+    "page": "ページ",
     "next": "次のページ",
     "destination": "転送先 URL",
     "title": "タイトル",
@@ -892,6 +896,8 @@
     "analytics_unavailable": "分析データを取得できませんでした。",
     "aiTitle": "AIレポート",
     "aiIntro": "必要なときに、この集計の短い説明を生成できます。",
+    "demoIntro": "このレポートはサンプルのトラフィックを集計したものです。",
+    "reportPeriod": "集計期間",
     "enabled": "有効",
     "disabled": "無効",
     "providerUnavailable": "Workers AI が接続されていません。",

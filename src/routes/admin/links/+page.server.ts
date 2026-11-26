@@ -1,6 +1,11 @@
 import { requireDemoView } from '$lib/server/demo/view';
-import { listDomains, listLinks, type LinkSort } from '$lib/server/links/store';
+import {
+  listDomains,
+  listLinksPage,
+  type LinkSort,
+} from '$lib/server/links/store';
 import { shortUrl } from '$lib/server/links/form';
+import { parseDestinationUrl } from '$lib/server/security/url-policy';
 import type { PageServerLoad } from './$types';
 
 export const load = (async (event) => {
@@ -17,11 +22,11 @@ export const load = (async (event) => {
       ? requestedSort
       : 'created_desc';
   const [result, domains] = await Promise.all([
-    listLinks(db, {
+    listLinksPage(db, {
       ...filters,
       unprotectedOnly,
       sort,
-      cursor: event.url.searchParams.get('cursor') ?? '',
+      page: event.url.searchParams.get('page'),
     }),
     listDomains(db),
   ]);
@@ -34,7 +39,8 @@ export const load = (async (event) => {
     links: result.links.map((link) => ({
       ...link,
       shortUrl: shortUrl(link, event.url),
+      destinationHref: parseDestinationUrl(link.destinationUrl)?.href ?? null,
     })),
-    nextCursor: result.nextCursor,
+    pagination: result.pagination,
   };
 }) satisfies PageServerLoad;

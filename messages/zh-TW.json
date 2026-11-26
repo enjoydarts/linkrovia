@@ -488,6 +488,7 @@
     "noMatches": "沒有連結符合這些篩選條件。"
   },
   "linkExtra": {
+    "opensInNewTab": "在新分頁開啟",
     "demoLimit": "共享示範的連結數量已達上限。請稍後再試。",
     "utcPreview": "UTC 預覽",
     "options": "排程、標籤與重新導向類型",
@@ -629,6 +630,9 @@
     "inactive": "停用",
     "tag": "標籤",
     "empty": "找不到連結。",
+    "pagination": "分頁導覽",
+    "previous": "上一頁",
+    "page": "第",
     "next": "下一頁",
     "destination": "目標網址",
     "title": "標題",
@@ -892,6 +896,8 @@
     "analytics_unavailable": "無法載入分析資料。",
     "aiTitle": "AI 報告",
     "aiIntro": "選用。需要時為這些彙總數據產生簡短說明。",
+    "demoIntro": "此報告彙整了範例流量資料。",
+    "reportPeriod": "統計期間",
     "enabled": "已啟用",
     "disabled": "已停用",
     "providerUnavailable": "Workers AI 尚未連線。",

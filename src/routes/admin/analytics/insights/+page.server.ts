@@ -17,13 +17,22 @@ export const load = (async (event) => {
   event.setHeaders({ 'cache-control': 'private, no-store' });
   const [insights, assistance, weeklyReport] = await Promise.all([
     loadTrafficInsights(env, { development: dev }),
-    demoGuest
-      ? getAssistanceStatus(undefined, undefined)
-      : getAssistanceStatus(db, env.AI),
+    demoGuest ? null : getAssistanceStatus(db, env.AI),
     loadLatestWeeklyReport(db).catch(() => null),
   ]);
   const report = await cachedInsights(db, insights, locale).catch(() => null);
-  return { insights, weeklyReport, assistance: { ...assistance, report } };
+  if (!assistance) {
+    const demoReport = report
+      ? { ...report, ...insights.periods.current, locale }
+      : weeklyReport;
+    return { insights, demoReport, weeklyReport: null, assistance: null };
+  }
+  return {
+    insights,
+    demoReport: null,
+    weeklyReport,
+    assistance: { ...assistance, report },
+  };
 }) satisfies PageServerLoad;
 
 export const actions = {

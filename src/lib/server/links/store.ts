@@ -52,14 +52,16 @@ type DemoCreateMutationResult =
 
 export type DemoLinkScope = { hostname: string };
 export type LinkVisibility = { unprotectedOnly?: boolean };
-export type LinkFilter = LinkVisibility & {
+type LinkCriteria = LinkVisibility & {
   q?: string;
   domain?: string;
   tag?: string;
   status?: string;
+  sort?: LinkSort;
+};
+export type LinkFilter = LinkCriteria & {
   cursor?: string;
   limit?: number;
-  sort?: LinkSort;
 };
 export type LinkSort = 'created_desc' | 'created_asc' | 'updated_desc';
 export type DomainSummary = {
@@ -132,11 +134,7 @@ export async function isDemoEditableLink(
   );
 }
 
-export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
-  const pageSize =
-    Number.isSafeInteger(filter.limit) && filter.limit! > 0
-      ? Math.min(filter.limit!, 100)
-      : defaultPageSize;
+function linkConditions(filter: LinkCriteria) {
   const clauses = ['l.deleted_at IS NULL'];
   if (filter.unprotectedOnly) clauses.push("l.protection_mode = 'none'");
   const parameters: (number | string)[] = [];
@@ -161,10 +159,28 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
     clauses.push('l.is_active = ?');
     parameters.push(filter.status === 'active' ? 1 : 0);
   }
-  const sort: LinkSort =
-    filter.sort === 'created_asc' || filter.sort === 'updated_desc'
-      ? filter.sort
+  return { clauses, parameters };
+}
+
+function linkOrder(requestedSort: LinkSort | undefined) {
+  const sort =
+    requestedSort === 'created_asc' || requestedSort === 'updated_desc'
+      ? requestedSort
       : 'created_desc';
+  const ascending = sort === 'created_asc';
+  const direction = ascending ? 'ASC' : 'DESC';
+  const field = sort === 'updated_desc' ? 'l.updated_at' : 'l.created_at';
+  const resultField = sort === 'updated_desc' ? 'updatedAt' : 'createdAt';
+  return { sort, ascending, direction, field, resultField };
+}
+
+export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
+  const pageSize =
+    Number.isSafeInteger(filter.limit) && filter.limit! > 0
+      ? Math.min(filter.limit!, 100)
+      : defaultPageSize;
+  const { clauses, parameters } = linkConditions(filter);
+  const { sort, ascending, direction, field } = linkOrder(filter.sort);
   const cursorValue = filter.cursor ?? '';
   // Keep accepting the original cursor for API/MCP clients using the default order.
   const legacyCursor =
@@ -182,8 +198,6 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
     : sortedCursor?.[1] === sort
       ? { timestamp: Number(sortedCursor[2]), id: sortedCursor[3] }
       : null;
-  const ascending = sort === 'created_asc';
-  const field = sort === 'updated_desc' ? 'l.updated_at' : 'l.created_at';
   if (cursor) {
     clauses.push(`(${field}, l.id) ${ascending ? '>' : '<'} (?, ?)`);
     parameters.push(cursor.timestamp, cursor.id);
@@ -191,7 +205,7 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
   const result = await db
     .prepare(
       `SELECT ${linkFields} ${linkSource} WHERE ${clauses.join(' AND ')}
-     ORDER BY ${field} ${ascending ? 'ASC' : 'DESC'}, l.id ${ascending ? 'ASC' : 'DESC'} LIMIT ?`,
+     ORDER BY ${field} ${direction}, l.id ${direction} LIMIT ?`,
     )
     .bind(...parameters, pageSize + 1)
     .all<LinkRow>();
@@ -205,6 +219,47 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
           ? `${last.createdAt}:${last.id}`
           : `v1.${sort}.${sort === 'updated_desc' ? last.updatedAt : last.createdAt}.${last.id}`
         : null,
+  };
+}
+
+export async function listLinksPage(
+  db: D1Database,
+  filter: LinkCriteria & { page: string | null },
+) {
+  const { clauses, parameters } = linkConditions(filter);
+  const { field, direction, resultField } = linkOrder(filter.sort);
+  const requestedPage =
+    filter.page && /^\d+$/.test(filter.page)
+      ? Math.max(1, Math.min(Number(filter.page), Number.MAX_SAFE_INTEGER))
+      : 1;
+  const where = clauses.join(' AND ');
+
+  // Count and read the clamped page in the same database snapshot.
+  const { results } = await db
+    .prepare(
+      `WITH totals AS (
+        SELECT (COUNT(*) + ${defaultPageSize - 1}) / ${defaultPageSize} AS totalPages
+        ${linkSource} WHERE ${where}
+      ), pagination AS (
+        SELECT MIN(?, MAX(totalPages, 1)) AS page, totalPages FROM totals
+      ), pageLinks AS (
+        SELECT ${linkFields} ${linkSource} WHERE ${where}
+        ORDER BY ${field} ${direction}, l.id ${direction}
+        LIMIT ${defaultPageSize}
+        OFFSET ((SELECT page FROM pagination) - 1) * ${defaultPageSize}
+      )
+      SELECT pagination.*, pageLinks.* FROM pagination LEFT JOIN pageLinks ON TRUE
+      ORDER BY pageLinks.${resultField} ${direction}, pageLinks.id ${direction}`,
+    )
+    .bind(...parameters, requestedPage, ...parameters)
+    .all<{ page: number; totalPages: number } & (LinkRow | { id: null })>();
+  const { page, totalPages } = results[0];
+  return {
+    pagination: { page, totalPages },
+    links: results.flatMap(
+      ({ page: _page, totalPages: _totalPages, ...row }) =>
+        row.id === null ? [] : [mapLink(row)],
+    ),
   };
 }
 

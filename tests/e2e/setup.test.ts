@@ -255,7 +255,12 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
     await linkForm.locator('button[type=submit]').click();
     await expect(page).toHaveURL(/\/admin\/links\/[a-f0-9-]{36}$/);
     const shortUrl = new URL('/ci-link', page.url()).href;
-    await expect(page.locator(`a[href="${shortUrl}"]`)).toBeVisible();
+    for (const url of [shortUrl, 'https://example.org/path?fixed=1#target']) {
+      const externalLink = page.locator(`a[href="${url}"]`);
+      await expect(externalLink).toBeVisible();
+      await expect(externalLink).toHaveAttribute('target', '_blank');
+      await expect(externalLink).toHaveAttribute('rel', 'noopener noreferrer');
+    }
 
     const visit = await request.get('/ci-link?private=ignore', {
       maxRedirects: 0,
@@ -639,6 +644,14 @@ test('sets up an owner, manages a short link, scopes API access, and signs out',
       has: page.getByRole('link', { name: 'A fixture link', exact: true }),
     });
     await expect(row).toHaveCount(1);
+    for (const url of [
+      new URL('/ci-link', page.url()).href,
+      'https://example.org/path?fixed=1#target',
+    ])
+      await expect(row.locator(`a[href="${url}"]`)).toHaveAttribute(
+        'target',
+        '_blank',
+      );
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await row.getByRole('button', { name: /Copy short URL/ }).click();
     await expect(page.getByRole('status')).toHaveText('Short URL copied.');

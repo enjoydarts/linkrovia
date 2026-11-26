@@ -1,17 +1,19 @@
 <script lang="ts">
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
+  import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import Copy from '@lucide/svelte/icons/copy';
   import Plus from '@lucide/svelte/icons/plus';
   import { analyticsMessages } from '$lib/components/analytics/messages';
-  import { linkMessages } from '$lib/i18n/links';
+  import { linkExtra, linkMessages } from '$lib/i18n/links';
   import { linkSectionLabels } from '../breadcrumbs';
   import { detailNavigation, listMessages } from './messages';
   import type { LayoutProps } from './$types';
 
   let { data, children }: LayoutProps = $props();
   let m = $derived(linkMessages(data.locale));
+  let x = $derived(linkExtra(data.locale));
   let labels = $derived(detailNavigation[data.locale]);
   let clipboard = $derived(listMessages[data.locale]);
   let analytics = $derived(analyticsMessages(data.locale));
@@ -91,7 +93,29 @@
               {#if data.linkContext.title}
                 <span class="record-name">{data.linkContext.title}</span>
               {/if}
-              <a class="record-url" href={shortUrl}>{shortUrl}</a>
+              <a
+                class="record-url"
+                href={shortUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {shortUrl}
+                <ArrowUpRight size={14} aria-hidden="true" />
+                <span class="sr-only"> · {x.opensInNewTab}</span>
+              </a>
+              {#if data.linkContext.destinationHref}
+                <a
+                  class="record-destination"
+                  href={data.linkContext.destinationHref}
+                  title={data.linkContext.destinationHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {m.destination}
+                  <ArrowUpRight size={14} aria-hidden="true" />
+                  <span class="sr-only"> · {x.opensInNewTab}</span>
+                </a>
+              {/if}
             </div>
           {/if}
         </div>
@@ -187,7 +211,20 @@
     font-size: 0.79rem;
     text-underline-offset: 0.2em;
   }
-  .record-url:hover {
+  .record-destination {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--ui-link);
+    font-size: 0.8rem;
+    text-underline-offset: 0.2em;
+  }
+  .record-url :global(svg) {
+    display: inline;
+    vertical-align: -0.13em;
+  }
+  .record-url:hover,
+  .record-destination:hover {
     text-decoration: underline;
   }
   .link-header .copy-status {

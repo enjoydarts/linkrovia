@@ -7,6 +7,7 @@ import {
   isDemoEditableLink,
   listDomains,
   listLinks,
+  listLinksPage,
   listLinkRules,
   updateLink,
   updateLinkRules,
@@ -70,6 +71,46 @@ beforeAll(async () => {
 afterAll(async () => platform?.dispose());
 
 describe('link management and delivery', () => {
+  it('loads numbered admin pages using the filtered, guest-visible link count', async () => {
+    const db = platform.env.DB;
+    await db.batch([
+      db.prepare(`
+        WITH RECURSIVE sequence(n) AS (VALUES(1) UNION ALL SELECT n + 1 FROM sequence WHERE n < 34)
+        INSERT INTO links (id, domain_id, slug, destination_url, created_at, updated_at, protection_mode, is_active, deleted_at)
+        SELECT printf('numbered-%02d', n), CASE WHEN n = 34 THEN 'b' ELSE 'a' END,
+               printf('numbered-%02d', n), 'https://example.com/', 1, 1,
+               CASE WHEN n = 31 THEN 'one_time' ELSE 'none' END,
+               n <> 32, CASE WHEN n = 33 THEN 100 END
+        FROM sequence
+      `),
+      db.prepare(`INSERT INTO links (id, domain_id, slug, destination_url, created_at, updated_at)
+                  VALUES ('numbered-00', 'a', 'numbered-00', 'https://example.com/', 1, 1)`),
+    ]);
+
+    const loadPage = (page: string, q = 'numbered-') =>
+      listLinksPage(db, {
+        q,
+        page,
+        domain: 'a',
+        status: 'active',
+        sort: 'created_asc',
+        unprotectedOnly: true,
+      });
+
+    const first = await loadPage('2.5');
+    expect(first.pagination).toEqual({ page: 1, totalPages: 2 });
+    expect(first.links).toHaveLength(30);
+    expect(first.links[0].slug).toBe('numbered-00');
+    expect(first.links[29].slug).toBe('numbered-29');
+    const last = await loadPage('999999999999999999999999');
+    expect(last.pagination).toEqual({ page: 2, totalPages: 2 });
+    expect(last.links.map(({ slug }) => slug)).toEqual(['numbered-30']);
+    expect(await loadPage('3', 'missing-numbered-')).toMatchObject({
+      pagination: { page: 1, totalPages: 0 },
+      links: [],
+    });
+  });
+
   it('excludes protected links and redirect destinations from guest queries', async () => {
     const db = platform.env.DB;
     const created = await createLink(db, null, {

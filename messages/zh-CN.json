@@ -488,6 +488,7 @@
     "noMatches": "没有链接符合这些筛选条件。"
   },
   "linkExtra": {
+    "opensInNewTab": "在新标签页中打开",
     "demoLimit": "共享演示的链接数量已达上限。请稍后再试。",
     "utcPreview": "UTC 预览",
     "options": "定时、标签和重定向类型",
@@ -629,6 +630,9 @@
     "inactive": "停用",
     "tag": "标签",
     "empty": "没有找到链接。",
+    "pagination": "分页导航",
+    "previous": "上一页",
+    "page": "第",
     "next": "下一页",
     "destination": "目标网址",
     "title": "标题",
@@ -892,6 +896,8 @@
     "analytics_unavailable": "无法加载分析数据。",
     "aiTitle": "AI 报告",
     "aiIntro": "可选。需要时为这些汇总数据生成简短说明。",
+    "demoIntro": "此报告汇总了示例流量数据。",
+    "reportPeriod": "统计时段",
     "enabled": "已启用",
     "disabled": "已停用",
     "providerUnavailable": "Workers AI 未连接。",
