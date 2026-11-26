@@ -25,7 +25,7 @@ Use your own domain, route visitors to the right destination, and see how each l
 
 ## Tour the workspace
 
-Screenshots show the current `main` branch with example data. Select a thumbnail to open it at full size. [Unreleased changes](CHANGELOG.md#unreleased)
+Screenshots show the current `main` branch with example data. Select a thumbnail to open it at full size.
 
 ### Set up your domain and sign in with a passkey
 

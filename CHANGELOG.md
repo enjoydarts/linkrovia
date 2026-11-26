@@ -4,13 +4,16 @@ This changelog records Linkrovia releases. See the [deployment guide](docs/deplo
 
 ## Unreleased
 
-- Read Open Graph titles and descriptions during link suggestion generation when a private metadata service is connected. Use destination address context when page metadata is unavailable.
-- Expose AI settings in the main navigation and chart daily usage estimates.
-- Add opt-in weekly AI reports, Guardian checks for saved redirects and public DNS, and draft routing tools for MCP.
-- Accept structured Workers AI responses and suggest link details from the destination address.
-- Add Insights for weekly click comparisons and aggregate read-only MCP tools.
-- Add opt-in, budget-capped Workers AI assistance for manual reports and link drafting.
-- Refresh the README walkthrough and operator guides with current screenshots and setup steps.
+## v1.2.0 - 2026-11-26
+
+- Compare two completed weeks of traffic in Insights and access the same aggregates through read-only MCP tools.
+- Opt in to budget-capped Workers AI for link suggestions, Insights explanations, and weekly reports. Review the daily cost chart and model usage in **AI settings**.
+- Generate link titles, slugs, and tags from the destination address. Connect the optional private metadata service to include the page’s Open Graph title and description in the same action.
+- Check saved redirect chains and public DNS on demand in **Guardian**.
+- Validate and simulate draft redirect rules through MCP.
+- Walk through setup, link management, analytics, and integrations with 11 screenshots in the README and updated operator guides.
+
+Upgrades apply two D1 migrations for AI settings, usage, and weekly reports. AI assistance starts disabled for installations that have yet to configure it. [Upgrade guide](docs/upgrading.md) · [AI settings](docs/analytics.md#enable-ai-assistance)
 
 ## v1.1.0 - 2026-11-24
 
