@@ -4,6 +4,7 @@ import { getPlatformProxy, unstable_splitSqlQuery } from 'wrangler';
 import {
   createLink,
   getLink,
+  isDemoEditableLink,
   listDomains,
   listLinks,
   listLinkRules,
@@ -797,4 +798,146 @@ it('preserves retained rule IDs and tracking when replacing admin rules', async 
     ]),
   ).toEqual({ ok: false, code: 'invalid_input' });
   expect(await listLinkRules(db, id)).toHaveLength(2);
+});
+
+describe('shared demo links', () => {
+  const demo = { hostname: 'go.example.com' };
+  const input = { ...draft, slug: 'shared-demo' };
+
+  it('stores guest links in the regular list but limits writes to the demo hostname', async () => {
+    const db = platform.env.DB;
+    const created = await createLink(db, null, input, demo);
+    if (!created.ok) throw new Error(created.code);
+    expect((await listLinks(db, { q: 'shared-demo' })).links).toEqual([
+      expect.objectContaining({ id: created.id, hostname: demo.hostname }),
+    ]);
+    expect(
+      await createLink(db, null, { ...input, domainId: 'b' }, demo),
+    ).toEqual({ ok: false, code: 'missing_domain' });
+
+    const row = (await getLink(db, created.id))!;
+    expect(
+      await updateLink(
+        db,
+        null,
+        created.id,
+        row.updatedAt,
+        { ...input, title: 'Shared edit' },
+        demo,
+      ),
+    ).toEqual({ ok: true, id: created.id });
+    expect((await getLink(db, created.id))?.title).toBe('Shared edit');
+
+    const ordinary = await createLink(db, null, {
+      ...input,
+      slug: 'ordinary-unattributed',
+    });
+    if (!ordinary.ok) throw new Error(ordinary.code);
+    expect(
+      await updateLink(
+        db,
+        null,
+        ordinary.id,
+        (await getLink(db, ordinary.id))!.updatedAt,
+        { ...input, slug: 'ordinary-unattributed' },
+        demo,
+      ),
+    ).toEqual({ ok: false, code: 'stale_link' });
+  });
+
+  it('edits unprotected sample rules and continues pagination past demo links', async () => {
+    const db = platform.env.DB;
+    const sampleId = 'demo-sample-link-001';
+    const created = await createLink(
+      db,
+      null,
+      { ...input, slug: 'paged-guest', title: 'pagination-topic' },
+      demo,
+    );
+    expect(created.ok).toBe(true);
+    await db
+      .prepare(
+        'INSERT INTO links (id, domain_id, slug, title, destination_url) VALUES (?, ?, ?, ?, ?)',
+      )
+      .bind(
+        sampleId,
+        'a',
+        'sample-shared',
+        'pagination-topic',
+        input.destinationUrl,
+      )
+      .run();
+    const sample = (await getLink(db, sampleId))!;
+    expect(await isDemoEditableLink(db, sampleId, demo)).toBe(true);
+    expect(
+      await updateLinkRules(db, null, sampleId, sample.updatedAt, [], demo),
+    ).toEqual({ ok: true, id: sampleId });
+    await db
+      .prepare("UPDATE links SET protection_mode = 'one_time' WHERE id = ?")
+      .bind(sampleId)
+      .run();
+    expect(await isDemoEditableLink(db, sampleId, demo)).toBe(false);
+    expect(
+      await updateLinkRules(
+        db,
+        null,
+        sampleId,
+        (await getLink(db, sampleId))!.updatedAt,
+        [],
+        demo,
+      ),
+    ).toEqual({ ok: false, code: 'stale_link' });
+
+    for (const sort of [
+      'created_desc',
+      'created_asc',
+      'updated_desc',
+    ] as const) {
+      const filter = { q: 'pagination-topic', limit: 1, sort };
+      const first = await listLinks(db, filter);
+      expect(first.nextCursor).toBeTruthy();
+      const second = await listLinks(db, {
+        ...filter,
+        cursor: first.nextCursor!,
+      });
+      expect(second.links).toHaveLength(1);
+      expect(second.links[0].id).not.toBe(first.links[0].id);
+    }
+  });
+
+  it('enforces the anonymous creation cap across concurrent submissions', async () => {
+    const db = platform.env.DB;
+    const demo = { hostname: 'links.example.org' };
+    await db
+      .prepare(
+        `WITH RECURSIVE sequence(n) AS (VALUES(1) UNION ALL SELECT n + 1 FROM sequence WHERE n < 99)
+         INSERT INTO links (id, domain_id, slug, destination_url)
+         SELECT 'demo-guest-link-fixture-' || n, 'b', 'fixture-' || n, ? FROM sequence`,
+      )
+      .bind(input.destinationUrl)
+      .run();
+    const results = await Promise.all(
+      ['final-one', 'final-two'].map((slug) =>
+        createLink(db, null, { ...input, domainId: 'b', slug }, demo),
+      ),
+    );
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toEqual([
+      { ok: false, code: 'demo_limit' },
+    ]);
+    await db
+      .prepare(
+        "UPDATE links SET deleted_at = unixepoch() WHERE domain_id = ? AND slug = 'fixture-1'",
+      )
+      .bind('b')
+      .run();
+    expect(
+      await createLink(
+        db,
+        null,
+        { ...input, domainId: 'b', slug: 'freed-capacity' },
+        demo,
+      ),
+    ).toEqual({ ok: true, id: expect.any(String) });
+  });
 });

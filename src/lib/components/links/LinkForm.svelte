@@ -153,15 +153,17 @@
       role="alert"
       class="rounded-md border border-negative p-3 text-negative"
     >
-      {error === 'conflict'
-        ? m.conflict
-        : error === 'time_gap'
-          ? x.gap
-          : error === 'time_overlap'
-            ? x.overlap
-            : error === 'slug_conflict'
-              ? x.slugConflict
-              : m.error}
+      {error === 'demo_limit'
+        ? x.demoLimit
+        : error === 'conflict'
+          ? m.conflict
+          : error === 'time_gap'
+            ? x.gap
+            : error === 'time_overlap'
+              ? x.overlap
+              : error === 'slug_conflict'
+                ? x.slugConflict
+                : m.error}
     </p>{/if}
   <div class="space-y-2">
     <label for="destinationUrl" class="block font-medium">

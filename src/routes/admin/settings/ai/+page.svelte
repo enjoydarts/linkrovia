@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import DemoSettingsNotice from '../DemoSettingsNotice.svelte';
   import { brand } from '$lib/brand';
   import AiCostChart from '$lib/components/ai/AiCostChart.svelte';
   import { uiMessages } from '$lib/i18n/locale';
@@ -22,9 +23,10 @@
   <header class="context-header">
     <h1>{m.settings}</h1>
     <p class="text-muted">{m.settingsIntro}</p>
+    {#if data.demoGuest}<DemoSettingsNotice locale={data.locale} />{/if}
   </header>
 
-  {#if data.assistance.statusAvailable}
+  {#if data.assistance.statusAvailable && !data.demoGuest}
     <AiCostChart
       locale={data.locale}
       history={data.costHistory}
@@ -32,7 +34,7 @@
     />
   {/if}
 
-  {#if data.assistance.statusAvailable}
+  {#if data.assistance.statusAvailable && !data.demoGuest}
     <section
       class="context-panel admin-section-stack"
       aria-label={m.modelTitle}
@@ -68,7 +70,7 @@
           {m.results.pricing_expired}
         </p>{/if}
       {#if data.assistance.blocked}<p role="status">{m.results.blocked}</p>{/if}
-      {#if data.user.role === 'owner'}
+      {#if data.demoGuest || data.user.role === 'owner'}
         <form
           method="POST"
           class="grid justify-items-start gap-3"
@@ -97,6 +99,7 @@
           />
           <label class="flex min-h-11 items-center gap-2">
             <input
+              disabled={data.demoGuest}
               type="checkbox"
               name="enabled"
               value="yes"
@@ -108,6 +111,7 @@
           <div class="grid gap-1">
             <label class="flex min-h-11 items-center gap-2">
               <input
+                disabled={data.demoGuest}
                 type="checkbox"
                 name="weeklyEnabled"
                 value="yes"
@@ -121,6 +125,7 @@
             {m.budgetLabel}
             <input
               class="admin-control"
+              disabled={data.demoGuest}
               type="number"
               name="monthlyBudget"
               min="0"
@@ -135,7 +140,7 @@
           <button
             type="submit"
             class="admin-button admin-button-primary"
-            disabled={saving}
+            disabled={data.demoGuest || saving}
           >
             {saving ? m.saving : m.save}
           </button>
@@ -166,7 +171,7 @@
       </a>
     {:else}
       <p class="text-muted">{m.pageMetadata.help}</p>
-      {#if data.user.role === 'owner'}
+      {#if data.demoGuest || data.user.role === 'owner'}
         <form
           method="POST"
           class="grid justify-items-start gap-3"
@@ -185,6 +190,7 @@
           <input type="hidden" name="intent" value="pageMetadata" />
           <label class="flex min-h-11 items-center gap-2">
             <input
+              disabled={data.demoGuest}
               type="checkbox"
               name="metadataEnabled"
               value="yes"
@@ -196,7 +202,7 @@
           <button
             type="submit"
             class="admin-button admin-button-primary"
-            disabled={savingMetadata}
+            disabled={data.demoGuest || savingMetadata}
           >
             {savingMetadata ? m.saving : m.pageMetadata.save}
           </button>

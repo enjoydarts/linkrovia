@@ -14,8 +14,23 @@ import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
-  const { db } = requireSession(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
+  if (event.locals.demoGuest) {
+    return {
+      assistance: {
+        ...(await getAssistanceStatus(undefined, undefined)),
+        statusAvailable: true,
+        providerAvailable: true,
+        priceVerified: true,
+      },
+      costHistory: null,
+      metadataConnected: true,
+      metadataEnabled: false,
+      weeklyEnabled: false,
+      maxBudgetUsd: MAX_AI_MONTHLY_BUDGET_MICROUSD / 1_000_000,
+    };
+  }
+  const { db } = requireSession(event);
   const metadataConnected = Boolean(event.locals.env.PAGE_METADATA);
   const [assistance, costHistory, metadataEnabled] = await Promise.all([
     getAssistanceStatus(db, event.locals.env.AI),

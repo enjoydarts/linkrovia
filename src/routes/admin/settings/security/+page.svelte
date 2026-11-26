@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DemoSettingsNotice from '../DemoSettingsNotice.svelte';
   import { brand } from '$lib/brand';
   import '../../admin-context.css';
   import { resolve } from '$app/paths';
@@ -21,6 +22,7 @@
   <header class="context-header">
     <h1>{messages.title}</h1>
     <p>{messages.intro}</p>
+    {#if data.demoGuest}<DemoSettingsNotice locale={data.locale} />{/if}
   </header>
 
   <div class="admin-section-stack">
@@ -51,7 +53,7 @@
       </p>
     {/if}
 
-    {#if form?.reviewSiteKey}
+    {#if !data.demoGuest && form?.reviewSiteKey}
       <form method="POST" action="?/enable" class="context-panel space-y-3">
         <input type="hidden" name="csrfToken" value={data.csrfToken} />
         <input type="hidden" name="siteKey" value={form.reviewSiteKey} />
@@ -62,7 +64,11 @@
           locale={data.locale}
         />
         <div class="admin-form-footer">
-          <button type="submit" class="admin-button admin-button-primary">
+          <button
+            disabled={data.demoGuest}
+            type="submit"
+            class="admin-button admin-button-primary"
+          >
             {data.enabled ? messages.verifySave : messages.verifyEnable}
           </button>
           <a
@@ -108,6 +114,7 @@
           <input
             id="site-key"
             name="siteKey"
+            disabled={data.demoGuest}
             value={data.siteKey}
             maxlength="32"
             autocomplete="off"
@@ -120,7 +127,11 @@
           <p id="site-key-hint" class="text-sm">{messages.siteKeyHint}</p>
         </div>
         <div class="admin-form-footer">
-          <button type="submit" class="admin-button admin-button-primary">
+          <button
+            disabled={data.demoGuest}
+            type="submit"
+            class="admin-button admin-button-primary"
+          >
             {messages.prepare}
           </button>
         </div>
@@ -135,7 +146,7 @@
         <p class="text-sm">{messages.rotate}</p>
         <form method="POST" action="?/disable" class="admin-form-footer">
           <input type="hidden" name="csrfToken" value={data.csrfToken} />
-          <button type="submit" class="admin-button">
+          <button disabled={data.demoGuest} type="submit" class="admin-button">
             {messages.disable}
           </button>
         </form>

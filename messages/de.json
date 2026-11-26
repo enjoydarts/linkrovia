@@ -1,5 +1,9 @@
 {
   "languageName": "Deutsch",
+  "demo": {
+    "sharedLinks": "Alle Besucher der Demo teilen sich dieselben Links.",
+    "settingsReadOnly": "Die Einstellungen in der Demo können nur angezeigt werden."
+  },
   "shared": {
     "home.description": "Open-Source-Verwaltung intelligenter Links in deinem Cloudflare-Konto.",
     "home.status": "Linkrovia befindet sich in Entwicklung.",
@@ -484,6 +488,7 @@
     "noMatches": "Keine Links entsprechen diesen Filtern."
   },
   "linkExtra": {
+    "demoLimit": "Die gemeinsame Demo hat das Linklimit erreicht. Bitte versuchen Sie es später erneut.",
     "utcPreview": "UTC-Vorschau",
     "options": "Zeitplan, Tags und Weiterleitungstyp",
     "permanentCache": "Browser können diese Weiterleitung speichern, auch wenn du das Ziel änderst. Verwende 302 oder 307 für eine temporäre Weiterleitung.",

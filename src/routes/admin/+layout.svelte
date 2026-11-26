@@ -71,7 +71,7 @@
         icon: Sparkles,
       },
       { href: '/admin/settings', label: preferences.settings, icon: Settings },
-      ...(data.user.role === 'owner'
+      ...(data.demoGuest || data.user.role === 'owner'
         ? [
             {
               href: '/admin/settings/security',
@@ -93,6 +93,9 @@
           '/admin/links',
           '/admin/analytics',
           '/admin/guardian',
+          '/admin/settings',
+          '/admin/settings/ai',
+          '/admin/settings/security',
         ].includes(item.href),
     ),
   );
@@ -239,9 +242,7 @@
         </nav>
         {#if data.demoGuest}
           <div class="demo-account">
-            <span>Demo · {analyticsMessages(data.locale).sample}</span><a
-              href="/login"
-            >
+            <span>Demo</span><a href="/login">
               {messages['login.submit']}
             </a>
           </div>
@@ -277,6 +278,9 @@
         {/if}
       </div>
     </header>
+    {#if data.demoGuest}
+      <p class="demo-notice">{uiMessages(data.locale).demo.sharedLinks}</p>
+    {/if}
     <main class="main-content">{@render children()}</main>
   </div>
 </div>
@@ -426,6 +430,13 @@
   .breadcrumbs a:hover {
     color: var(--ui-link);
     text-decoration: underline;
+  }
+  .demo-notice {
+    padding: 9px var(--shell-gutter);
+    border-bottom: 1px solid var(--ui-border);
+    background: var(--ui-accent-surface);
+    color: var(--ui-text);
+    font-size: 13px;
   }
   .demo-account {
     display: flex;

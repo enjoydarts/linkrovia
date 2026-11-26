@@ -47,6 +47,17 @@ function getKeyStatus(
 }
 
 export const load = (async (event) => {
+  if (event.locals.demoGuest) {
+    event.setHeaders({ 'cache-control': 'private, no-store' });
+    return {
+      enabled: true,
+      siteKey: '',
+      status: 'ready' as const,
+      locale: event.locals.locale,
+      csrfToken: '',
+      hostname: 'example.org',
+    };
+  }
   const { session, env } = requireOwner(event);
   const origin = await managementOrigin(env.DB, event.url, {
     development: dev,

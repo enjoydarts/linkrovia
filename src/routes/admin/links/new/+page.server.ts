@@ -5,45 +5,54 @@ import {
   suggestLinkDetails,
 } from '$lib/server/ai/assistance';
 import { isPageMetadataEnabled } from '$lib/server/db/preferences';
-import { createLink, listDomains } from '$lib/server/links/store';
+import { linkFormDomains, requireLinkForm } from '$lib/server/demo/link-form';
+import { requireDemoView } from '$lib/server/demo/view';
+import { createLink } from '$lib/server/links/store';
 import {
   effectiveTimeZone,
   formValues,
   parseLinkForm,
   requireForm,
-  requireSession,
 } from '$lib/server/links/form';
 import { parseDestinationUrl } from '$lib/server/security/url-policy';
 import { allowAuthAttempt } from '$lib/server/security/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = (async (event) => {
-  const { db, session } = requireSession(event);
+  const { db, session } = requireDemoView(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   return {
     metadataAvailable:
+      !event.locals.demoGuest &&
       Boolean(event.locals.env.PAGE_METADATA) &&
       (await isPageMetadataEnabled(db)),
     locale: event.locals.locale,
-    domains: await listDomains(db),
+    domains: await linkFormDomains(event, db),
     link: null,
-    timeZone: await effectiveTimeZone(db, session.user.timezone),
-    assistance: await getAssistanceStatus(db, event.locals.env.AI),
+    timeZone: await effectiveTimeZone(db, session?.user.timezone ?? null),
+    assistance: await getAssistanceStatus(
+      session ? db : undefined,
+      session ? event.locals.env.AI : undefined,
+    ),
   };
 }) satisfies PageServerLoad;
 export const actions = {
   create: async (event) => {
-    const { db, session, form } = await requireForm(event);
+    const { db, form, actorId, userTimezone, demo } =
+      await requireLinkForm(event);
     const parsed = await parseLinkForm(
       form,
       db,
-      await effectiveTimeZone(db, session.user.timezone),
+      await effectiveTimeZone(db, userTimezone),
       false,
     );
     if ('code' in parsed) return fail(400, parsed);
-    const result = await createLink(db, session.user.id, parsed.input);
+    const result = await createLink(db, actorId, parsed.input, demo);
     if (!result.ok)
-      return fail(400, { code: result.code, values: parsed.values });
+      return fail(result.code === 'demo_limit' ? 409 : 400, {
+        code: result.code,
+        values: parsed.values,
+      });
     redirect(303, `/admin/links/${result.id}`);
   },
   suggest: async (event) => {

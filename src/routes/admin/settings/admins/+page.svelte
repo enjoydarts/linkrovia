@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DemoSettingsNotice from '../DemoSettingsNotice.svelte';
   import { brand } from '$lib/brand';
   import { adminInviteMessages } from '$lib/i18n/admin-invites';
   import { messagesFor } from '$lib/i18n/locale';
@@ -32,7 +33,9 @@
   <header class="context-header">
     <h1>{m.title}</h1>
     <p>{m.intro}</p>
-    {#if data.available}
+    {#if data.demoGuest}
+      <DemoSettingsNotice locale={data.locale} />
+    {:else if data.available}
       <a href="#invite-admin" class="admin-button admin-button-primary">
         {m.invite}
       </a>
@@ -83,6 +86,7 @@
         <input
           id="email"
           name="email"
+          disabled={data.demoGuest}
           type="email"
           required
           autocomplete="off"
@@ -97,7 +101,11 @@
                 : messages['error.invalid_input']}
             </p>
           {/if}
-          <button type="submit" class="admin-button admin-button-primary">
+          <button
+            disabled={data.demoGuest}
+            type="submit"
+            class="admin-button admin-button-primary"
+          >
             {m.invite}
           </button>
         </div>
@@ -133,6 +141,7 @@
                   />
                   <input type="hidden" name="id" value={admin.id} />
                   <button
+                    disabled={data.demoGuest}
                     type="submit"
                     class="admin-button admin-button-danger"
                     aria-label={m.disable + ' · ' + admin.email}
@@ -173,6 +182,7 @@
                 <input type="hidden" name="csrfToken" value={data.csrfToken} />
                 <input type="hidden" name="id" value={invitation.id} />
                 <button
+                  disabled={data.demoGuest}
                   type="submit"
                   class="admin-button"
                   aria-label={m.revoke + ' · ' + invitation.email}

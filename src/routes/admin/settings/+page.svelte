@@ -5,6 +5,7 @@
   import { domainMessages } from '../domains/messages';
   import ArrowRight from '@lucide/svelte/icons/arrow-right';
   import { healthMessages } from './health/messages';
+  import DemoSettingsNotice from './DemoSettingsNotice.svelte';
   import { brand } from '$lib/brand';
   import { messagesFor, uiMessages } from '$lib/i18n/locale';
   import '../admin-context.css';
@@ -18,49 +19,65 @@
   let userZone = $derived(data.userZone);
   let defaultZone = $derived(data.defaultZone);
   let settingsGroups = $derived(uiMessages(data.locale).settingsGroups);
-  let directories = $derived([
-    {
-      label: settingsGroups.access,
-      entries: [
-        { href: '/admin/api-keys', label: apiKeyMessages(data.locale).title },
-        ...(data.isOwner
-          ? [
-              {
-                href: '/admin/settings/security',
-                label: messagesFor(data.locale)['admin.security'],
-              },
-              {
-                href: '/admin/settings/admins',
-                label: adminInviteMessages[data.locale].title,
-              },
-              { href: '/admin/integrations/mcp', label: 'MCP' },
-            ]
-          : []),
-      ],
-    },
-    {
-      label: settingsGroups.operations,
-      entries: [
-        {
-          href: '/admin/settings/ai',
-          label: uiMessages(data.locale).aiInsights.settings,
-        },
-        { href: '/admin/domains', label: domainMessages(data.locale).domains },
-        ...(data.isOwner
-          ? [
-              {
-                href: '/admin/settings/health',
-                label: healthMessages(data.locale).title,
-              },
-              {
-                href: '/admin/backup',
-                label: backupMessages(data.locale).title,
-              },
-            ]
-          : []),
-      ],
-    },
-  ]);
+  let showOwnerSettings = $derived(data.isOwner || data.demoGuest);
+  let directories = $derived(
+    [
+      {
+        label: settingsGroups.access,
+        entries: [
+          { href: '/admin/api-keys', label: apiKeyMessages(data.locale).title },
+          ...(showOwnerSettings
+            ? [
+                {
+                  href: '/admin/settings/security',
+                  label: messagesFor(data.locale)['admin.security'],
+                  demoVisible: true,
+                },
+                {
+                  href: '/admin/settings/admins',
+                  label: adminInviteMessages[data.locale].title,
+                  demoVisible: true,
+                },
+                { href: '/admin/integrations/mcp', label: 'MCP' },
+              ]
+            : []),
+        ],
+      },
+      {
+        label: settingsGroups.operations,
+        entries: [
+          {
+            href: '/admin/settings/ai',
+            label: uiMessages(data.locale).aiInsights.settings,
+            demoVisible: true,
+          },
+          {
+            href: '/admin/domains',
+            label: domainMessages(data.locale).domains,
+          },
+          ...(showOwnerSettings
+            ? [
+                {
+                  href: '/admin/settings/health',
+                  label: healthMessages(data.locale).title,
+                  demoVisible: true,
+                },
+                {
+                  href: '/admin/backup',
+                  label: backupMessages(data.locale).title,
+                },
+              ]
+            : []),
+        ],
+      },
+    ].map((directory) => ({
+      ...directory,
+      entries: directory.entries.filter(
+        (entry) =>
+          !data.demoGuest || ('demoVisible' in entry && entry.demoVisible),
+      ),
+    })),
+  );
 
   function zoneExamples(zone: string) {
     if (!data.timeZones.includes(zone)) return [];
@@ -93,6 +110,7 @@
 <div class="admin-page">
   <header class="context-header">
     <h1>{m.settings}</h1>
+    {#if data.demoGuest}<DemoSettingsNotice locale={data.locale} />{/if}
   </header>
   <div class="admin-section-stack">
     <form
@@ -113,7 +131,12 @@
       <div class="space-y-2">
         <label for="locale" class="block font-medium">
           {m.language}
-        </label><select id="locale" name="locale" class="admin-control w-full">
+        </label><select
+          disabled={data.demoGuest}
+          id="locale"
+          name="locale"
+          class="admin-control w-full"
+        >
           {#each locales as locale (locale)}<option
               value={locale}
               lang={locale}
@@ -129,6 +152,7 @@
         </label><TimeZoneInput
           id="timezone"
           name="timezone"
+          disabled={data.demoGuest}
           zones={data.timeZones}
           bind:value={userZone}
           describedby="user-zone-help user-zone-example"
@@ -146,7 +170,12 @@
       </div>
       <div class="space-y-2">
         <label for="theme" class="block font-medium">{m.appearance}</label>
-        <select id="theme" name="theme" class="admin-control w-full">
+        <select
+          disabled={data.demoGuest}
+          id="theme"
+          name="theme"
+          class="admin-control w-full"
+        >
           {#each themes as theme (theme)}
             <option value={theme} selected={theme === data.theme}>
               {m[`${theme}Theme`]}
@@ -160,12 +189,16 @@
         {:else if data.saved === 'personal'}
           <p role="status">{m.saved}</p>
         {/if}
-        <button type="submit" class="admin-button admin-button-primary">
+        <button
+          disabled={data.demoGuest}
+          type="submit"
+          class="admin-button admin-button-primary"
+        >
           {m.save}
         </button>
       </div>
     </form>
-    {#if data.isOwner}<form
+    {#if showOwnerSettings}<form
         method="POST"
         action="?/defaultZone"
         aria-labelledby="instance-defaults-heading"
@@ -181,6 +214,7 @@
           </label><TimeZoneInput
             id="default-timezone"
             name="timezone"
+            disabled={data.demoGuest}
             required
             zones={data.timeZones}
             bind:value={defaultZone}
@@ -202,6 +236,7 @@
             {m.defaultLanguage}
           </label>
           <select
+            disabled={data.demoGuest}
             id="default-locale"
             name="defaultLocale"
             aria-describedby="default-locale-help"
@@ -225,7 +260,11 @@
           {:else if data.saved === 'global'}
             <p role="status">{m.globalSaved}</p>
           {/if}
-          <button type="submit" class="admin-button admin-button-primary">
+          <button
+            disabled={data.demoGuest}
+            type="submit"
+            class="admin-button admin-button-primary"
+          >
             {m.save}
           </button>
         </div>

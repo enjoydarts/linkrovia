@@ -1,5 +1,9 @@
 {
   "languageName": "English",
+  "demo": {
+    "sharedLinks": "Links are shared with all demo visitors.",
+    "settingsReadOnly": "Settings are read-only in the demo."
+  },
   "shared": {
     "home.description": "Open-source smart link management on your Cloudflare account.",
     "home.status": "Linkrovia is in development.",
@@ -484,6 +488,7 @@
     "noMatches": "No links match these filters."
   },
   "linkExtra": {
+    "demoLimit": "The shared demo has reached its link limit. Please try again later.",
     "utcPreview": "UTC preview",
     "options": "Schedule, tags, and redirect type",
     "permanentCache": "Browsers may cache this redirect after you change its destination. Use 302 or 307 for a temporary redirect.",

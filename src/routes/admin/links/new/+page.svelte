@@ -67,79 +67,83 @@
   values={form && 'values' in form ? form.values : undefined}
 >
   {#snippet suggestions()}
-    {#if applied}<p class="text-sm text-muted" role="status">
-        {ai.applied}
-      </p>{/if}
-    <details class="suggestions" open={Boolean(suggestion)}>
-      <summary>{ai.title}<ChevronDown size={17} aria-hidden="true" /></summary>
-      <div class="suggestion-fields">
-        {#if suggestion && !result && suggestion.code !== 'generated' && suggestion.code !== 'cached'}
-          <p role="alert">
-            {suggestion.code === 'missing_destination'
-              ? ai.missingDestination
-              : copy.aiInsights.results[suggestion.code]}
-          </p>
-        {/if}
-        {#if result}
-          <div class="suggestion-preview">
-            <h2>{ai.suggestions}</h2>
-            <dl>
-              <dt>{m.title}</dt>
-              <dd>{result.title}</dd>
-              <dt>{m.slug}</dt>
-              <dd><code>{result.slug}</code></dd>
-              {#if result.tags.length}<dt>{m.tags}</dt>
-                <dd>{result.tags.join(', ')}</dd>{/if}
-            </dl>
-            <input
-              type="hidden"
-              name="aiSuggestions"
-              value={JSON.stringify(result)}
-            />
+    {#if !data.demoGuest}
+      {#if applied}<p class="text-sm text-muted" role="status">
+          {ai.applied}
+        </p>{/if}
+      <details class="suggestions" open={Boolean(suggestion)}>
+        <summary>
+          {ai.title}<ChevronDown size={17} aria-hidden="true" />
+        </summary>
+        <div class="suggestion-fields">
+          {#if suggestion && !result && suggestion.code !== 'generated' && suggestion.code !== 'cached'}
+            <p role="alert">
+              {suggestion.code === 'missing_destination'
+                ? ai.missingDestination
+                : copy.aiInsights.results[suggestion.code]}
+            </p>
+          {/if}
+          {#if result}
+            <div class="suggestion-preview">
+              <h2>{ai.suggestions}</h2>
+              <dl>
+                <dt>{m.title}</dt>
+                <dd>{result.title}</dd>
+                <dt>{m.slug}</dt>
+                <dd><code>{result.slug}</code></dd>
+                {#if result.tags.length}<dt>{m.tags}</dt>
+                  <dd>{result.tags.join(', ')}</dd>{/if}
+              </dl>
+              <input
+                type="hidden"
+                name="aiSuggestions"
+                value={JSON.stringify(result)}
+              />
+              <button
+                type="submit"
+                class="admin-button"
+                formaction="?/applySuggestions"
+                formnovalidate
+              >
+                {ai.use}
+              </button>
+            </div>
+          {:else if !blockedReason}
+            <p id="ai-description-help">
+              {data.metadataAvailable
+                ? ai.automaticDescription
+                : ai.destinationDescription}
+            </p>
+            <label for="ai-description">{ai.inputDescription}</label>
+            <textarea
+              id="ai-description"
+              name="aiDescription"
+              class="admin-control w-full"
+              maxlength="700"
+              rows="3"
+              aria-describedby="ai-description-help"
+              value={suggestion?.description ?? ''}
+              placeholder={ai.descriptionPlaceholder}></textarea>
+            <p>
+              {copy.aiInsights.maxCost} · {money.format(
+                data.assistance.maxRunCostMicrousd / 1_000_000,
+              )}
+            </p>
             <button
               type="submit"
               class="admin-button"
-              formaction="?/applySuggestions"
+              formaction="?/suggest"
               formnovalidate
             >
-              {ai.use}
+              {generating ? copy.aiInsights.generating : ai.generate}
             </button>
-          </div>
-        {:else if !blockedReason}
-          <p id="ai-description-help">
-            {data.metadataAvailable
-              ? ai.automaticDescription
-              : ai.destinationDescription}
-          </p>
-          <label for="ai-description">{ai.inputDescription}</label>
-          <textarea
-            id="ai-description"
-            name="aiDescription"
-            class="admin-control w-full"
-            maxlength="700"
-            rows="3"
-            aria-describedby="ai-description-help"
-            value={suggestion?.description ?? ''}
-            placeholder={ai.descriptionPlaceholder}></textarea>
-          <p>
-            {copy.aiInsights.maxCost} · {money.format(
-              data.assistance.maxRunCostMicrousd / 1_000_000,
-            )}
-          </p>
-          <button
-            type="submit"
-            class="admin-button"
-            formaction="?/suggest"
-            formnovalidate
-          >
-            {generating ? copy.aiInsights.generating : ai.generate}
-          </button>
-        {:else}
-          <p>{blockedReason}</p>
-          <a href="/admin/settings/ai">{copy.aiInsights.settings}</a>
-        {/if}
-      </div>
-    </details>
+          {:else}
+            <p>{blockedReason}</p>
+            <a href="/admin/settings/ai">{copy.aiInsights.settings}</a>
+          {/if}
+        </div>
+      </details>
+    {/if}
   {/snippet}
 </LinkForm>
 

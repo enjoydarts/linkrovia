@@ -1,5 +1,9 @@
 {
   "languageName": "日本語",
+  "demo": {
+    "sharedLinks": "リンクはすべてのデモ利用者に共有されます。",
+    "settingsReadOnly": "デモでは設定の閲覧のみ可能です。"
+  },
   "shared": {
     "home.description": "自分のCloudflareアカウントで運用できる、オープンソースのスマートリンク管理。",
     "home.status": "Linkrovia は開発中です。",
@@ -484,6 +488,7 @@
     "noMatches": "条件に一致するリンクがありません。"
   },
   "linkExtra": {
+    "demoLimit": "共有デモのリンク数が上限に達しました。しばらくしてからお試しください。",
     "utcPreview": "UTC プレビュー",
     "options": "公開期間・タグ・転送方式",
     "permanentCache": "転送先を変更しても、ブラウザーに以前の転送先が残ることがあります。一時的な転送には 302 または 307 を選んでください。",

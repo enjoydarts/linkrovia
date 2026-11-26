@@ -1,5 +1,9 @@
 {
   "languageName": "Español",
+  "demo": {
+    "sharedLinks": "Los enlaces se comparten con todas las personas que visitan la demostración.",
+    "settingsReadOnly": "Los ajustes son de solo lectura en la demostración."
+  },
   "shared": {
     "home.description": "Gestión inteligente de enlaces de código abierto en tu cuenta de Cloudflare.",
     "home.status": "Linkrovia está en desarrollo.",
@@ -484,6 +488,7 @@
     "noMatches": "Ningún enlace coincide con estos filtros."
   },
   "linkExtra": {
+    "demoLimit": "La demostración compartida ha alcanzado el límite de enlaces. Inténtalo de nuevo más tarde.",
     "utcPreview": "Vista previa en UTC",
     "options": "Programación, etiquetas y redirección",
     "permanentCache": "Los navegadores pueden conservar esta redirección aunque cambies el destino. Usa 302 o 307 para una redirección temporal.",

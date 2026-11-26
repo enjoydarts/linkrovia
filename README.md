@@ -15,7 +15,7 @@ Use your own domain, route visitors to the right destination, and see how each l
 
 [Live demo](https://demo.linkrovia.com/) · [Latest release](https://github.com/enjoydarts/linkrovia/releases/latest) · [Changelog](CHANGELOG.md) · [Deployment guide](docs/deployment.md)
 
-Open the live demo to browse 180 sample links, compare traffic reports, and try the rule simulator without signing in. Sample short links lead to public documentation.
+Open the live demo to create and edit shared short links, explore traffic reports, and try redirect rules without signing in. The demo starts with 180 sample links to public documentation. Settings can be previewed with their save controls disabled.
 
 Start on Workers Free with a passkey and one D1 database. Check the limits for click analytics, password features, and optional AI before choosing a plan. [Cloudflare plans and costs](docs/cloudflare-plans.md)
 

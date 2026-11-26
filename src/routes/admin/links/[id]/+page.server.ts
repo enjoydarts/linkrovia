@@ -1,8 +1,13 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import {
+  demoLinkScope,
+  linkFormDomains,
+  requireLinkForm,
+} from '$lib/server/demo/link-form';
 import { requireDemoView } from '$lib/server/demo/view';
 import {
   getLink,
-  listDomains,
+  isDemoEditableLink,
   removeLink,
   updateLink,
 } from '$lib/server/links/store';
@@ -18,10 +23,12 @@ export const load = (async (event) => {
   const { db, session, unprotectedOnly } = requireDemoView(event);
   const link = await getLink(db, event.params.id, { unprotectedOnly });
   if (!link) error(404, 'Not found');
+  const demo = demoLinkScope(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   return {
     locale: event.locals.locale,
-    domains: await listDomains(db),
+    canEditLink: !demo || (await isDemoEditableLink(db, link.id, demo)),
+    domains: await linkFormDomains(event, db),
     link: { ...link, shortUrl: shortUrl(link, event.url) },
     timeZone: await effectiveTimeZone(db, session?.user.timezone ?? null),
   };
@@ -31,12 +38,13 @@ function expected(value: string | null) {
 }
 export const actions = {
   save: async (event) => {
-    const { db, session, form } = await requireForm(event);
+    const { db, form, actorId, userTimezone, demo } =
+      await requireLinkForm(event);
     const stamp = expected(form.get('updatedAt'));
     const parsed = await parseLinkForm(
       form,
       db,
-      await effectiveTimeZone(db, session.user.timezone),
+      await effectiveTimeZone(db, userTimezone),
       true,
     );
     if ('code' in parsed) return fail(400, parsed);
@@ -44,10 +52,11 @@ export const actions = {
       return fail(400, { code: 'invalid_input', values: parsed.values });
     const result = await updateLink(
       db,
-      session.user.id,
+      actorId,
       event.params.id,
       stamp,
       parsed.input,
+      demo,
     );
     if (!result.ok)
       return fail(result.code === 'stale_link' ? 409 : 400, {

@@ -1,9 +1,10 @@
 import { error, fail } from '@sveltejs/kit';
+import { demoLinkScope, requireLinkForm } from '$lib/server/demo/link-form';
 import { requireDemoView } from '$lib/server/demo/view';
 import { parseRule } from '$lib/server/links/api-input';
-import { requireForm } from '$lib/server/links/form';
 import {
   getLink,
+  isDemoEditableLink,
   listLinkRules,
   updateLinkRules,
 } from '$lib/server/links/store';
@@ -21,9 +22,11 @@ export const load = (async (event) => {
   const { db, unprotectedOnly } = requireDemoView(event);
   const link = await getLink(db, event.params.id, { unprotectedOnly });
   if (!link) error(404, 'Not found');
+  const demo = demoLinkScope(event);
   const rules = await listLinkRules(db, link.id, { unprotectedOnly });
   return {
     locale: event.locals.locale,
+    canEditLink: !demo || (await isDemoEditableLink(db, link.id, demo)),
     linkId: link.id,
     updatedAt: link.updatedAt,
     destinationUrl: link.destinationUrl,
@@ -50,7 +53,10 @@ export const load = (async (event) => {
 
 export const actions = {
   default: async (event) => {
-    const { db, session, form } = await requireForm(event, maxFormBytes);
+    const { db, actorId, form, demo } = await requireLinkForm(
+      event,
+      maxFormBytes,
+    );
     const stamp = form.get('updatedAt');
     if (!stamp || !/^\d{1,12}$/.test(stamp))
       return fail(400, { code: 'invalid_input' as const });
@@ -86,10 +92,11 @@ export const actions = {
 
     const result = await updateLinkRules(
       db,
-      session.user.id,
+      actorId,
       event.params.id,
       Number(stamp),
       rules,
+      demo,
     );
     if (!result.ok)
       return fail(result.code === 'stale_link' ? 409 : 400, {

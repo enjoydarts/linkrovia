@@ -134,7 +134,7 @@
   <div class="link-workspace admin-page">
     <header class="workspace-intro">
       <h1>{isNew ? m.create : m.links}</h1>
-      {#if !isNew && !data.demoGuest}
+      {#if !isNew}
         <a href="/admin/links/new" class="admin-button admin-button-primary">
           <Plus size={17} aria-hidden="true" />{m.create}
         </a>

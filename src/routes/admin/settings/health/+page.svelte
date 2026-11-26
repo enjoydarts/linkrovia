@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DemoSettingsNotice from '../DemoSettingsNotice.svelte';
   import { brand } from '$lib/brand';
   import {
     analyticsActivationMessages,
@@ -9,6 +10,7 @@
   import { healthMessages } from './messages';
 
   let { data }: PageProps = $props();
+  let analyticsDeferred = $derived(!data.demoGuest && data.analyticsDeferred);
   let activation = $derived(analyticsActivationMessages[data.locale]);
   let m = $derived(healthMessages(data.locale));
   let format = $derived(
@@ -38,6 +40,7 @@
   <header class="context-header">
     <h1>{m.title}</h1>
     <p>{m.intro}</p>
+    {#if data.demoGuest}<DemoSettingsNotice locale={data.locale} />{/if}
   </header>
   <div class="admin-section-stack">
     <section class="context-panel space-y-4" aria-labelledby="storage-heading">
@@ -56,12 +59,18 @@
           {m.size}: {size.format(data.health.database.sizeBytes / 1_000_000)}
         </p>
       {/if}
-      <a
-        class="admin-button block w-fit"
-        href="https://dash.cloudflare.com/?to=/:account/workers-and-pages"
-      >
-        {m.checkCloudflare}
-      </a>
+      {#if data.demoGuest}
+        <button type="button" class="admin-button" disabled>
+          {m.checkCloudflare}
+        </button>
+      {:else}
+        <a
+          class="admin-button block w-fit"
+          href="https://dash.cloudflare.com/?to=/:account/workers-and-pages"
+        >
+          {m.checkCloudflare}
+        </a>
+      {/if}
     </section>
     <section
       class="context-panel space-y-3"
@@ -75,13 +84,13 @@
       <p
         class="inline-block rounded-md border border-line bg-canvas px-2.5 py-1 text-sm font-medium"
       >
-        {data.analyticsDeferred
+        {analyticsDeferred
           ? m.unconfigured
           : data.health.analytics === 'available'
             ? m.connected
             : m[data.health.analytics]}
       </p>
-      {#if data.analyticsDeferred}
+      {#if analyticsDeferred}
         <p class="text-sm text-muted">{activation.steps}</p>
         <a
           class="admin-button"
@@ -100,7 +109,7 @@
       <p
         class="inline-block rounded-md border border-line bg-canvas px-2.5 py-1 text-sm font-medium"
       >
-        {data.analyticsDeferred ? m.unconfigured : m[data.health.clicks.status]}
+        {analyticsDeferred ? m.unconfigured : m[data.health.clicks.status]}
       </p>
       <dl class="space-y-2 text-sm">
         <div>
@@ -111,7 +120,7 @@
           <dt class="font-medium">{m.completed}</dt>
           <dd>{date(data.health.clicks.completedAt)}</dd>
         </div>
-        {#if !data.analyticsDeferred && data.health.clicks.missingDays.length}
+        {#if !analyticsDeferred && data.health.clicks.missingDays.length}
           <div>
             <dt class="font-medium">{m.missing}</dt>
             <dd class="break-words">
@@ -120,7 +129,11 @@
           </div>
         {/if}
       </dl>
-      {#if !data.analyticsDeferred}
+      {#if data.demoGuest}
+        <button type="button" class="admin-button" disabled>
+          {m.recovery}
+        </button>
+      {:else if !analyticsDeferred}
         <a
           class="admin-button block w-fit"
           href="/admin/analytics#click-history-recovery"

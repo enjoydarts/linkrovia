@@ -5,6 +5,7 @@ import {
   getDefaultLocale,
   parseDefaultLocale,
 } from '$lib/server/db/preferences';
+import { requireDemoView } from '$lib/server/demo/view';
 import { readSmallForm, requireSameOrigin } from '$lib/server/security/request';
 import { setThemeCookie } from '$lib/server/theme';
 import { isTheme, resolveTheme } from '$lib/theme/theme';
@@ -26,7 +27,7 @@ async function authorizeForm(event: RequestEvent) {
   return { ...auth, form };
 }
 export const load = (async (event) => {
-  const { db, session } = authorize(event);
+  const { db, session } = requireDemoView(event);
   const { results } = await db
     .prepare(
       "SELECT key, json_value FROM app_settings WHERE key IN ('default_timezone', 'default_locale')",
@@ -42,14 +43,14 @@ export const load = (async (event) => {
   event.setHeaders({ 'cache-control': 'private, no-store' });
   return {
     locale: event.locals.locale,
-    userZone: session.user.timezone ?? '',
-    theme: resolveTheme(session.user.theme, undefined),
+    userZone: session?.user.timezone ?? '',
+    theme: resolveTheme(session?.user.theme, undefined),
     defaultZone: isTimeZone(defaultZone) ? defaultZone : 'UTC',
     defaultLocale: parseDefaultLocale(defaults.get('default_locale')),
     timeZones,
     previewAt: Date.now(),
-    isOwner: session.user.role === 'owner',
-    saved: event.url.searchParams.get('saved'),
+    isOwner: session?.user.role === 'owner',
+    saved: session ? event.url.searchParams.get('saved') : null,
   };
 }) satisfies PageServerLoad;
 export const actions = {

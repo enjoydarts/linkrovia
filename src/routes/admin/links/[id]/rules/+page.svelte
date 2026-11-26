@@ -19,7 +19,7 @@
     <p role="status" class="text-sm text-positive">{m.saved}</p>
   {/if}
 
-  {#if data.demoGuest}
+  {#if !data.canEditLink}
     {#if data.rules.length}
       {#each data.rules as rule, index (rule.id)}
         <section class="context-panel">

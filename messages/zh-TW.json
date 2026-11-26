@@ -1,5 +1,9 @@
 {
   "languageName": "繁體中文",
+  "demo": {
+    "sharedLinks": "所有示範訪客皆可查看共用連結。",
+    "settingsReadOnly": "示範中的設定僅供檢視。"
+  },
   "shared": {
     "home.description": "在自己的 Cloudflare 帳戶上運作的開放原始碼智慧連結管理工具。",
     "home.status": "Linkrovia 正在開發中。",
@@ -484,6 +488,7 @@
     "noMatches": "沒有連結符合這些篩選條件。"
   },
   "linkExtra": {
+    "demoLimit": "共享示範的連結數量已達上限。請稍後再試。",
     "utcPreview": "UTC 預覽",
     "options": "排程、標籤與重新導向類型",
     "permanentCache": "變更目的地後，瀏覽器可能仍會使用已快取的重新導向。暫時重新導向請選擇 302 或 307。",

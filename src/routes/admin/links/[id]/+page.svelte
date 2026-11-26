@@ -17,7 +17,7 @@
       {protection.temporaryRedirect}
     </p>
   {/if}
-  {#if data.demoGuest && data.link}
+  {#if data.demoGuest && !data.canEditLink && data.link}
     <section class="context-panel">
       <dl class="demo-details">
         <div>
@@ -45,7 +45,7 @@
       error={form?.code === 'temporary_redirect' ? undefined : form?.code}
       values={form && 'values' in form ? form.values : undefined}
     />
-    {#if data.link}
+    {#if data.link && !data.demoGuest}
       <details class="context-panel">
         <summary class="cursor-pointer font-medium text-negative">
           {x.deleteHelp}

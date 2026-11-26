@@ -32,6 +32,22 @@ async function ownerForm(event: RequestEvent) {
 }
 
 export const load = (async (event) => {
+  if (event.locals.demoGuest) {
+    event.setHeaders({ 'cache-control': 'private, no-store' });
+    return {
+      available: true,
+      admins: [
+        { id: 'sample-admin', email: 'admin@example.org', disabled_at: null },
+      ],
+      invitations: [
+        {
+          id: 'sample-invite',
+          email: 'invite@example.org',
+          expires_at: Math.floor(Date.now() / 1000) + 86_400,
+        },
+      ],
+    };
+  }
   const { db } = requireOwner(event);
   const origin = await managementOrigin(db, event.url, { development: dev });
   return {

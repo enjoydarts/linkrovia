@@ -83,7 +83,7 @@ export const handle: Handle = async ({ event, resolve }) => {
       event.url.search,
     );
     if (decision !== 'outside' && (await setupComplete(event.locals.env.DB))) {
-      if (decision !== 'view') {
+      if (decision !== 'allow') {
         return new Response(null, {
           status: decision === 'forbidden' ? 403 : 404,
           headers: { 'cache-control': 'private, no-store' },

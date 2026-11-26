@@ -47,7 +47,10 @@ type MutationResult =
   | { ok: false; code: 'slug_conflict' | 'missing_domain' | 'stale_link' };
 type UpdateMutationResult =
   MutationResult | { ok: false; code: 'temporary_redirect' };
+type DemoCreateMutationResult =
+  MutationResult | { ok: false; code: 'demo_limit' };
 
+export type DemoLinkScope = { hostname: string };
 export type LinkVisibility = { unprotectedOnly?: boolean };
 export type LinkFilter = LinkVisibility & {
   q?: string;
@@ -77,6 +80,19 @@ const linkFields = `
 `;
 const linkSource = 'FROM links l JOIN domains d ON d.id = l.domain_id';
 const defaultPageSize = 30;
+const guestLinkPrefix = 'demo-guest-link-';
+const demoGuestLinkLimit = 100;
+const availableDomain = 'backup_archived_at IS NULL';
+const demoDomain = `${availableDomain} AND hostname = ? AND is_active = 1 AND connection_status = 'active'`;
+const demoEditable = `
+  created_by IS NULL AND protection_mode = 'none'
+  AND (id GLOB 'demo-sample-link-[0-9][0-9][0-9]' OR id GLOB '${guestLinkPrefix}*')
+  AND EXISTS (SELECT 1 FROM domains WHERE id = links.domain_id AND ${demoDomain})
+`;
+const demoBelowLimit = `(
+  SELECT COUNT(*) FROM links
+  WHERE id GLOB '${guestLinkPrefix}*' AND domain_id = ? AND deleted_at IS NULL
+) < ?`;
 
 function mapLink(row: LinkRow): LinkSummary {
   return {
@@ -99,6 +115,21 @@ export async function getLink(
     .bind(id)
     .first<LinkRow>();
   return row ? mapLink(row) : null;
+}
+
+export async function isDemoEditableLink(
+  db: D1Database,
+  id: string,
+  demo: DemoLinkScope,
+): Promise<boolean> {
+  return (
+    (await db
+      .prepare(
+        `SELECT 1 FROM links WHERE id = ? AND deleted_at IS NULL AND ${demoEditable}`,
+      )
+      .bind(id, demo.hostname)
+      .first()) !== null
+  );
 }
 
 export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
@@ -138,10 +169,12 @@ export async function listLinks(db: D1Database, filter: LinkFilter = {}) {
   // Keep accepting the original cursor for API/MCP clients using the default order.
   const legacyCursor =
     sort === 'created_desc'
-      ? /^(\d{1,12}):([0-9a-f-]{36})$/i.exec(cursorValue)
+      ? /^(\d{1,12}):((?:demo-guest-link-)?[0-9a-f-]{36}|demo-sample-link-\d{3})$/i.exec(
+          cursorValue,
+        )
       : null;
   const sortedCursor =
-    /^v1\.(created_desc|created_asc|updated_desc)\.(\d{1,12})\.([0-9a-f-]{36})$/i.exec(
+    /^v1\.(created_desc|created_asc|updated_desc)\.(\d{1,12})\.((?:demo-guest-link-)?[0-9a-f-]{36}|demo-sample-link-\d{3})$/i.exec(
       cursorValue,
     );
   const cursor = legacyCursor
@@ -335,6 +368,7 @@ export async function updateLinkRules(
   linkId: string,
   expected: number,
   rules: (LinkRuleInput & { id: string | null })[],
+  demo?: DemoLinkScope,
 ): Promise<
   { ok: true; id: string } | { ok: false; code: 'stale_link' | 'invalid_input' }
 > {
@@ -363,6 +397,7 @@ export async function updateLinkRules(
           conversion_tracking = 0,
           updated_at = MAX(unixepoch(), updated_at + 1)
         WHERE id = ? AND updated_at = ? AND deleted_at IS NULL
+          ${demo ? `AND ${demoEditable}` : ''}
           AND NOT EXISTS (
             SELECT 1 FROM json_each(?) AS retained
             WHERE NOT EXISTS (
@@ -370,8 +405,14 @@ export async function updateLinkRules(
             )
           )`,
       )
-      .bind(retainedJson, linkId, expected, retainedJson),
-    writeAudit(db, audit, actorId, 'link.updated', linkId),
+      .bind(
+        retainedJson,
+        linkId,
+        expected,
+        ...(demo ? [demo.hostname] : []),
+        retainedJson,
+      ),
+    writeAudit(db, audit, demo ? null : actorId, 'link.updated', linkId),
     db
       .prepare(
         `DELETE FROM redirect_rules
@@ -385,6 +426,8 @@ export async function updateLinkRules(
   ]);
 
   if (update.meta.changes > 0) return { ok: true, id: linkId };
+  if (demo && !(await isDemoEditableLink(db, linkId, demo)))
+    return { ok: false, code: 'stale_link' };
   const current = await getLink(db, linkId);
   return {
     ok: false,
@@ -392,31 +435,56 @@ export async function updateLinkRules(
   };
 }
 
-const availableDomain =
-  'SELECT 1 FROM domains WHERE id = ? AND backup_archived_at IS NULL';
-
 export async function isAvailableLinkDomain(db: D1Database, id: string) {
-  return (await db.prepare(availableDomain).bind(id).first()) !== null;
+  return (
+    (await db
+      .prepare(`SELECT 1 FROM domains WHERE id = ? AND ${availableDomain}`)
+      .bind(id)
+      .first()) !== null
+  );
 }
 
+export function createLink(
+  db: D1Database,
+  actorId: string | null,
+  input: LinkInput,
+): Promise<MutationResult>;
+export function createLink(
+  db: D1Database,
+  actorId: string | null,
+  input: LinkInput,
+  demo: DemoLinkScope | undefined,
+): Promise<DemoCreateMutationResult>;
 export async function createLink(
   db: D1Database,
   actorId: string | null,
   input: LinkInput,
-): Promise<MutationResult> {
-  if (!(await isAvailableLinkDomain(db, input.domainId))) {
+  demo?: DemoLinkScope,
+): Promise<DemoCreateMutationResult> {
+  const domain = `SELECT 1 FROM domains WHERE id = ? AND ${demo ? demoDomain : availableDomain}`;
+  const domainParams = demo
+    ? [input.domainId, demo.hostname]
+    : [input.domainId];
+  const actor = demo ? null : actorId;
+  if (
+    !(await db
+      .prepare(domain)
+      .bind(...domainParams)
+      .first())
+  ) {
     return { ok: false, code: 'missing_domain' };
   }
 
   for (let attempt = 0; attempt < (input.slug ? 1 : 5); attempt++) {
-    const id = uuidV7();
+    const id = demo ? guestLinkPrefix + uuidV7() : uuidV7();
     const audit = uuidV7();
     const [insert] = await db.batch([
       db
         .prepare(
           `INSERT INTO links (id, domain_id, slug, destination_url, title, redirect_type, is_active, starts_at, expires_at, created_by, utm_config_json)
          SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-         WHERE EXISTS (${availableDomain}) ON CONFLICT(domain_id, slug) DO NOTHING`,
+         WHERE EXISTS (${domain}) ${demo ? `AND ${demoBelowLimit}` : ''}
+         ON CONFLICT(domain_id, slug) DO NOTHING`,
         )
         .bind(
           id,
@@ -428,22 +496,33 @@ export async function createLink(
           Number(input.isActive),
           input.startsAt,
           input.expiresAt,
-          actorId,
+          actor,
           input.utmConfigJson ?? null,
-          input.domainId,
+          ...domainParams,
+          ...(demo ? [input.domainId, demoGuestLinkLimit] : []),
         ),
-      writeAudit(db, audit, actorId, 'link.created', id),
+      writeAudit(db, audit, actor, 'link.created', id),
       ...tagStatements(db, audit, id, input.tags),
       ...ruleStatements(db, audit, id, input.rules),
     ]);
     if (insert.meta.changes > 0) return { ok: true, id };
   }
-  return {
-    ok: false,
-    code: (await isAvailableLinkDomain(db, input.domainId))
-      ? 'slug_conflict'
-      : 'missing_domain',
-  };
+  if (
+    !(await db
+      .prepare(domain)
+      .bind(...domainParams)
+      .first())
+  )
+    return { ok: false, code: 'missing_domain' };
+  if (
+    demo &&
+    !(await db
+      .prepare(`SELECT 1 WHERE ${demoBelowLimit}`)
+      .bind(input.domainId, demoGuestLinkLimit)
+      .first())
+  )
+    return { ok: false, code: 'demo_limit' };
+  return { ok: false, code: 'slug_conflict' };
 }
 
 export async function updateLink(
@@ -452,9 +531,19 @@ export async function updateLink(
   id: string,
   expected: number,
   input: LinkInput,
+  demo?: DemoLinkScope,
 ): Promise<UpdateMutationResult> {
   if (!input.slug) return { ok: false, code: 'slug_conflict' };
-  if (!(await isAvailableLinkDomain(db, input.domainId))) {
+  const domain = `SELECT 1 FROM domains WHERE id = ? AND ${demo ? demoDomain : availableDomain}`;
+  const domainParams = demo
+    ? [input.domainId, demo.hostname]
+    : [input.domainId];
+  if (
+    !(await db
+      .prepare(domain)
+      .bind(...domainParams)
+      .first())
+  ) {
     return { ok: false, code: 'missing_domain' };
   }
 
@@ -475,7 +564,8 @@ export async function updateLink(
         END,
         updated_at = MAX(unixepoch(), updated_at + 1)
        WHERE id = ? AND updated_at = ? AND deleted_at IS NULL
-         AND EXISTS (${availableDomain})
+         AND EXISTS (${domain})
+         ${demo ? `AND ${demoEditable}` : ''}
          AND (protection_mode = 'none' OR ? IN (302, 307))
          AND NOT EXISTS (SELECT 1 FROM links other WHERE other.domain_id = ? AND other.slug = ? AND other.id <> ?)`,
       )
@@ -497,13 +587,14 @@ export async function updateLink(
         Number(input.rules !== undefined),
         id,
         expected,
-        input.domainId,
+        ...domainParams,
+        ...(demo ? [demo.hostname] : []),
         input.redirectType,
         input.domainId,
         input.slug,
         id,
       ),
-    writeAudit(db, audit, actorId, 'link.updated', id),
+    writeAudit(db, audit, demo ? null : actorId, 'link.updated', id),
     db
       .prepare(
         'DELETE FROM link_tags WHERE link_id = ? AND EXISTS (SELECT 1 FROM audit_events WHERE id = ?)',
@@ -513,9 +604,16 @@ export async function updateLink(
     ...ruleStatements(db, audit, id, input.rules),
   ]);
   if (update.meta.changes > 0) return { ok: true, id };
-  if (!(await isAvailableLinkDomain(db, input.domainId))) {
+  if (
+    !(await db
+      .prepare(domain)
+      .bind(...domainParams)
+      .first())
+  ) {
     return { ok: false, code: 'missing_domain' };
   }
+  if (demo && !(await isDemoEditableLink(db, id, demo)))
+    return { ok: false, code: 'stale_link' };
   const row = await getLink(db, id);
   if (
     row?.updatedAt === expected &&

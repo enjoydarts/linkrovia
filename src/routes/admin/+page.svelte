@@ -20,12 +20,9 @@
 <div class="admin-page">
   <header class="workspace-intro">
     <h1>{messages['admin.overview']}</h1>
-    {#if !data.demoGuest}<a
-        href="/admin/links/new"
-        class="admin-button admin-button-primary"
-      >
-        <Plus size={17} aria-hidden="true" />{links.create}
-      </a>{/if}
+    <a href="/admin/links/new" class="admin-button admin-button-primary">
+      <Plus size={17} aria-hidden="true" />{links.create}
+    </a>
   </header>
   {#if data.report}
     <section
