@@ -15,6 +15,8 @@ Use your own domain, route visitors to the right destination, and see how each l
 
 [Latest release](https://github.com/enjoydarts/linkrovia/releases/latest) · [Changelog](CHANGELOG.md) · [Deployment guide](docs/deployment.md)
 
+Start on Workers Free with a passkey and one D1 database. Check the limits for click analytics, password features, and optional AI before choosing a plan. [Cloudflare plans and costs](docs/cloudflare-plans.md)
+
 ![Links workspace with search, short URLs, tags, and status](docs/screenshots/links.webp)
 
 ## Get started
