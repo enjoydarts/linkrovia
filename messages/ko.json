@@ -461,7 +461,7 @@
     "backToDomains": "도메인 목록으로 돌아가기"
   },
   "landing": {
-    "headline": ["모든 링크를", "올바른 목적지로."],
+    "headline": ["Your links.", "Your rules."],
     "features": [
       "단축",
       "내 호스트 이름으로 짧은 링크와 QR 코드를 만드세요.",

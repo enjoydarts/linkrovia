@@ -82,9 +82,9 @@ test('renders the branded landing in all locales, two themes, and two widths', a
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', locale);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      landingCopy[locale].headline.join(' '),
-    );
+    const headline = page.getByRole('heading', { level: 1 });
+    await expect(headline).toHaveText('Your links. Your rules.');
+    await expect(headline).toHaveAttribute('lang', 'en');
     await expect(page.locator('figcaption')).toHaveText(
       landingCopy[locale].example,
     );

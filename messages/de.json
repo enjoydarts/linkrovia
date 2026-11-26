@@ -461,7 +461,7 @@
     "backToDomains": "Zurück zu den Domains"
   },
   "landing": {
-    "headline": ["Jeder Link.", "Das richtige Ziel."],
+    "headline": ["Your links.", "Your rules."],
     "features": [
       "Kürzen",
       "Erstelle Kurzlinks und QR-Codes auf deinem eigenen Hostnamen.",

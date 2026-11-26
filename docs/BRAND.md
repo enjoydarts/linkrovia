@@ -4,7 +4,7 @@ This guide describes the identity used by the Linkrovia open-source project. A s
 
 ## Identity
 
-Use the name `Linkrovia` with that capitalization. The recommended product line is **Every link. The right destination.** The short description is **Open-source smart link management on your Cloudflare account.** Avoid claims that imply Cloudflare sponsorship, guaranteed cost, or perfectly accurate analytics.
+Use the name `Linkrovia` with that capitalization. The official tagline is **Your links. Your rules.** The short description is **Open-source smart link management on your Cloudflare account.** Avoid claims that imply Cloudflare sponsorship, guaranteed cost, or perfectly accurate analytics.
 
 The route monogram represents a primary path with a mint branch to another destination. Do not add arrows, text, cloud imagery, chain imagery, or extra gradients to the mark.
 

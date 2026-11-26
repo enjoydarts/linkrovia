@@ -461,7 +461,7 @@
     "backToDomains": "返回網域"
   },
   "landing": {
-    "headline": ["每個連結，", "都通往正確的目的地。"],
+    "headline": ["Your links.", "Your rules."],
     "features": [
       "縮短",
       "使用自己的主機名稱建立短連結和 QR 碼。",

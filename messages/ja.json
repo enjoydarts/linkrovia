@@ -461,7 +461,7 @@
     "backToDomains": "ドメイン一覧に戻る"
   },
   "landing": {
-    "headline": ["リンクを、", "最適な行き先へ。"],
+    "headline": ["Your links.", "Your rules."],
     "features": [
       "短縮",
       "自分のホスト名で短縮リンクとQRコードを作成できます。",

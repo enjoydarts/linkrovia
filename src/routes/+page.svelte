@@ -56,7 +56,7 @@
     <section class="hero landing-inner">
       <div class="hero-copy">
         <p class="hero-kicker">LINKROVIA / OPEN SOURCE</p>
-        <h1>{copy.headline[0]} <span>{copy.headline[1]}</span></h1>
+        <h1 lang="en">{copy.headline[0]} <span>{copy.headline[1]}</span></h1>
         <p class="description">{messages['home.description']}</p>
         {#if data.canSignIn}
           <a

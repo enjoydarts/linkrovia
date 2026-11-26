@@ -6,7 +6,7 @@
 
 # Linkrovia
 
-**Self-hosted short links, smart redirects, and analytics on Cloudflare.**
+**Your links. Your rules.**
 
 Use your own domain, route visitors to the right destination, and see how each link performs. A Cloudflare Worker serves the admin dashboard, handles redirects, and runs scheduled analytics jobs.
 

@@ -461,7 +461,7 @@
     "backToDomains": "Volver a dominios"
   },
   "landing": {
-    "headline": ["Cada enlace.", "El destino adecuado."],
+    "headline": ["Your links.", "Your rules."],
     "features": [
       "Acorta",
       "Crea enlaces cortos y códigos QR en tu propio dominio.",

@@ -33,7 +33,7 @@ try {
       figure { box-sizing: border-box; margin: 0; display: grid; place-items: center; height: 260px;
         background: var(--brand-ink-panel); border: 1px solid var(--brand-ink-border); border-radius: 32px; }
     </style></head><body><main>
-      <div><p id="brand"></p><h1>Every link.<span>The right destination.</span></h1></div>
+      <div><p id="brand"></p><h1>Your links.<span>Your rules.</span></h1></div>
       <figure><img alt="" width="168" height="168" src="data:image/svg+xml;base64,${mark.toString('base64')}"></figure>
     </main></body></html>`);
   await page.evaluate((name) => {
