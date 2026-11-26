@@ -951,7 +951,11 @@
     "applied": "Suggestions applied to the form. Save the link to keep them.",
     "descriptionPlaceholder": "For example: A guide to summer events",
     "destinationDescription": "Use the destination address to suggest a title, slug and tags. You can add your own description.",
-    "missingDestination": "Enter the destination URL first."
+    "missingDestination": "Enter the destination URL first.",
+    "captureTitle": "Import page information",
+    "captureHelp": "While signed in, drag this link to your bookmarks bar, then click it on the page you want to add.",
+    "captureBookmark": "Add to Linkrovia",
+    "captureImported": "Page information imported. Review the fields before continuing."
   },
   "guardian": {
     "title": "Guardian",

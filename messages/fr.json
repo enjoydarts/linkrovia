@@ -951,7 +951,11 @@
     "applied": "Suggestions appliquées au formulaire. Enregistrez le lien pour les conserver.",
     "descriptionPlaceholder": "Exemple : Guide des événements d’été",
     "destinationDescription": "Utilisez l’adresse de destination pour suggérer un titre, un chemin court et des étiquettes. Vous pouvez ajouter une description.",
-    "missingDestination": "Saisissez d’abord l’URL de destination."
+    "missingDestination": "Saisissez d’abord l’URL de destination.",
+    "captureTitle": "Importer les informations de la page",
+    "captureHelp": "Une fois connecté, faites glisser ce lien vers la barre de favoris, puis cliquez dessus sur la page à ajouter.",
+    "captureBookmark": "Ajouter à Linkrovia",
+    "captureImported": "Informations importées. Vérifiez les champs avant de continuer."
   },
   "guardian": {
     "title": "Guardian",

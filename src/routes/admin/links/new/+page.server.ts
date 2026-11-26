@@ -19,6 +19,7 @@ export const load = (async (event) => {
   const { db, session } = requireSession(event);
   event.setHeaders({ 'cache-control': 'private, no-store' });
   return {
+    origin: event.url.origin,
     locale: event.locals.locale,
     domains: await listDomains(db),
     link: null,

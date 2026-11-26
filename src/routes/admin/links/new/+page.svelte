@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import {
+    buildPageCaptureBookmarklet,
+    readPageCapture,
+  } from '$lib/links/page-capture';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import { brand } from '$lib/brand';
   import LinkForm from '$lib/components/links/LinkForm.svelte';
@@ -18,6 +25,23 @@
   );
   let applied = $derived(Boolean(form && 'applied' in form && form.applied));
   let generating = $state(false);
+  let prefill = $state<{
+    destinationUrl: string;
+    title: string;
+    description: string;
+  } | null>(null);
+  let bookmarklet = $derived(buildPageCaptureBookmarklet(data.origin));
+  onMount(() => {
+    const captured = readPageCapture(window.location.hash);
+    if (captured) {
+      prefill = captured;
+      void goto(`${window.location.pathname}${window.location.search}`, {
+        state: page.state,
+        shallow: true,
+        replace: true,
+      });
+    }
+  });
   let blockedReason = $derived.by(() => {
     const status = data.assistance;
     const messages = copy.aiInsights;
@@ -65,14 +89,35 @@
   busy={generating}
   error={form && 'code' in form ? form.code : undefined}
   values={form && 'values' in form ? form.values : undefined}
+  {prefill}
 >
   {#snippet suggestions()}
     {#if applied}<p class="text-sm text-muted" role="status">
         {ai.applied}
       </p>{/if}
-    <details class="suggestions" open={Boolean(suggestion)}>
+    <details class="suggestions" open={Boolean(suggestion || prefill)}>
       <summary>{ai.title}<ChevronDown size={17} aria-hidden="true" /></summary>
       <div class="suggestion-fields">
+        {#if prefill}<p id="page-capture-imported" role="status">
+            {ai.captureImported}
+          </p>{/if}
+        <details id="page-capture-setup" class="capture-setup">
+          <summary>
+            {ai.captureTitle}<ChevronDown size={17} aria-hidden="true" />
+          </summary>
+          <div class="capture-content">
+            <p>{ai.captureHelp}</p>
+            <a
+              id="page-capture-bookmarklet"
+              class="admin-button"
+              href={bookmarklet}
+              draggable="true"
+              onclick={(event) => event.preventDefault()}
+            >
+              {ai.captureBookmark}
+            </a>
+          </div>
+        </details>
         {#if suggestion && !result && suggestion.code !== 'generated' && suggestion.code !== 'cached'}
           <p role="alert">
             {suggestion.code === 'missing_destination'
@@ -105,7 +150,7 @@
               {ai.use}
             </button>
           </div>
-        {:else if !blockedReason}
+        {:else}
           <p id="ai-description-help">{ai.destinationDescription}</p>
           <label for="ai-description">{ai.inputDescription}</label>
           <textarea
@@ -115,24 +160,25 @@
             maxlength="700"
             rows="3"
             aria-describedby="ai-description-help"
-            value={suggestion?.description ?? ''}
+            value={suggestion?.description ?? prefill?.description ?? ''}
             placeholder={ai.descriptionPlaceholder}></textarea>
-          <p>
-            {copy.aiInsights.maxCost} · {money.format(
-              data.assistance.maxRunCostMicrousd / 1_000_000,
-            )}
-          </p>
-          <button
-            type="submit"
-            class="admin-button"
-            formaction="?/suggest"
-            formnovalidate
-          >
-            {generating ? copy.aiInsights.generating : ai.generate}
-          </button>
-        {:else}
-          <p>{blockedReason}</p>
-          <a href="/admin/settings/ai">{copy.aiInsights.settings}</a>
+          {#if !blockedReason}<p>
+              {copy.aiInsights.maxCost} · {money.format(
+                data.assistance.maxRunCostMicrousd / 1_000_000,
+              )}
+            </p>
+            <button
+              type="submit"
+              class="admin-button"
+              formaction="?/suggest"
+              formnovalidate
+            >
+              {generating ? copy.aiInsights.generating : ai.generate}
+            </button>
+          {:else}
+            <p>{blockedReason}</p>
+            <a href="/admin/settings/ai">{copy.aiInsights.settings}</a>
+          {/if}
         {/if}
       </div>
     </details>
@@ -176,6 +222,26 @@
   }
   .suggestion-fields a {
     text-decoration: underline;
+  }
+  .capture-setup {
+    width: 100%;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+  }
+  .capture-setup summary {
+    font-size: 0.875rem;
+    min-height: 44px;
+  }
+  .capture-content {
+    display: grid;
+    justify-items: start;
+    gap: 0.75rem;
+    padding: 0.75rem 0.85rem;
+    border-top: 1px solid var(--ui-border);
+  }
+  .capture-content a {
+    cursor: grab;
+    text-decoration: none;
   }
   textarea {
     resize: vertical;

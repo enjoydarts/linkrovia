@@ -951,7 +951,11 @@
     "applied": "建议已应用到表单。请保存链接以保留更改。",
     "descriptionPlaceholder": "例如：夏季活动指南",
     "destinationDescription": "使用目标地址建议标题、短路径和标签。您也可以添加自己的描述。",
-    "missingDestination": "请先输入目标 URL。"
+    "missingDestination": "请先输入目标 URL。",
+    "captureTitle": "导入网页信息",
+    "captureHelp": "登录后，将此链接拖到书签栏，然后在要添加的网页上点击它。",
+    "captureBookmark": "添加到 Linkrovia",
+    "captureImported": "已导入网页信息。继续前请检查字段。"
   },
   "guardian": {
     "title": "Guardian",

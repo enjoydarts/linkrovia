@@ -951,7 +951,11 @@
     "applied": "Sugerencias aplicadas al formulario. Guarda el enlace para conservarlas.",
     "descriptionPlaceholder": "Ejemplo: Guía de eventos de verano",
     "destinationDescription": "Usa la dirección de destino para sugerir un título, una ruta corta y etiquetas. Puedes añadir tu propia descripción.",
-    "missingDestination": "Introduce primero la URL de destino."
+    "missingDestination": "Introduce primero la URL de destino.",
+    "captureTitle": "Importar información de la página",
+    "captureHelp": "Con la sesión iniciada, arrastra este enlace a la barra de marcadores y púlsalo en la página que quieras añadir.",
+    "captureBookmark": "Añadir a Linkrovia",
+    "captureImported": "Información importada. Revisa los campos antes de continuar."
   },
   "guardian": {
     "title": "Guardian",

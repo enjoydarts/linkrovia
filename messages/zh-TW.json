@@ -951,7 +951,11 @@
     "applied": "建議已套用至表單。請儲存連結以保留變更。",
     "descriptionPlaceholder": "例如：夏季活動指南",
     "destinationDescription": "使用目的地位址建議標題、短路徑和標籤。您也可以新增自己的描述。",
-    "missingDestination": "請先輸入目的地 URL。"
+    "missingDestination": "請先輸入目的地 URL。",
+    "captureTitle": "匯入網頁資訊",
+    "captureHelp": "登入後，將此連結拖曳至書籤列，再於要新增的網頁上點擊它。",
+    "captureBookmark": "新增至 Linkrovia",
+    "captureImported": "已匯入網頁資訊。繼續前請檢查欄位。"
   },
   "guardian": {
     "title": "Guardian",

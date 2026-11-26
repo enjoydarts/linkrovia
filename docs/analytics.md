@@ -20,6 +20,12 @@ The initial monthly budget is $0 and blocks new model calls. The **AI costs** ch
 
 Standard deployments include the Workers AI binding. Requests use the `@cf/meta/llama-3.3-70b-instruct-fp8-fast` model and pause if the bundled pricing catalog expires. If a custom Worker configuration does not connect it, follow the [Workers AI binding instructions](https://developers.cloudflare.com/workers-ai/configuration/bindings/) and use the binding name `AI`.
 
+### Import page information for link suggestions
+
+In the new-link form, open **Suggest link details → Import page information** and drag **Add to Linkrovia** to your browser’s bookmarks bar. While signed in to Linkrovia, open the destination page and click that bookmark. The browser reads `og:title` and `og:description`, falling back to the document title and standard description. The destination address and metadata appear in the draft before you generate suggestions or save it.
+
+Pasting an address also works. That path uses address hints and any metadata you enter. Browser bookmarklets may be restricted on some pages or by browser policies.
+
 ## Weekly reports and Guardian
 
 An owner can opt in to the weekly AI report in **AI settings**. The existing scheduled Worker runs it on Monday at 04:15 UTC when the comparison has sufficient data and the remaining budget covers it. Open **Analytics → Insights** for the latest weekly report, including the dates it covers.

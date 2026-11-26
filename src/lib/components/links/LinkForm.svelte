@@ -31,6 +31,7 @@
     timeZone,
     error,
     values,
+    prefill,
     formAction,
     onsubmit,
     busy = false,
@@ -46,6 +47,7 @@
     onsubmit?: (event: SubmitEvent) => void;
     busy?: boolean;
     suggestions?: Snippet;
+    prefill?: { destinationUrl: string; title: string } | null;
     values?: {
       domainId: string;
       slug: string;
@@ -171,7 +173,10 @@
       name="destinationUrl"
       type="url"
       required
-      value={values?.destinationUrl ?? link?.destinationUrl ?? ''}
+      value={values?.destinationUrl ??
+        link?.destinationUrl ??
+        prefill?.destinationUrl ??
+        ''}
       class="admin-control w-full"
     />
   </div>
@@ -180,7 +185,7 @@
       <label for="title" class="block font-medium">{m.title}</label><input
         id="title"
         name="title"
-        value={values?.title ?? link?.title ?? ''}
+        value={values?.title ?? link?.title ?? prefill?.title ?? ''}
         class="admin-control w-full"
       />
     </div>
