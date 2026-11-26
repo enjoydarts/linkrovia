@@ -23,7 +23,22 @@ beforeAll(async () => {
     configPath: 'wrangler.local.jsonc',
     persist: false,
   });
-  db = platform.env.DB;
+  // Miniflare's test proxy passes prepared statements by reference. Retain
+  // each batch until its request settles, including concurrent cache writes.
+  const pendingBatches = new Set<D1PreparedStatement[]>();
+  db = new Proxy(platform.env.DB, {
+    get(target, key) {
+      if (key !== 'batch') return Reflect.get(target, key);
+      return async <T>(statements: D1PreparedStatement[]) => {
+        pendingBatches.add(statements);
+        try {
+          return await target.batch<T>(statements);
+        } finally {
+          pendingBatches.delete(statements);
+        }
+      };
+    },
+  });
   for (const name of [
     '0001_initial.sql',
     '0015_ai.sql',
@@ -111,24 +126,8 @@ it('admits only one of 100 concurrent requests and rejects duplicate execution a
     monthlyBudgetMicrousd: 10_000,
   });
   const ids = Array.from({ length: 100 }, (_, index) => String(index));
-  // Wrangler passes prepared statements to Miniflare by reference. Keep the
-  // handles alive until each concurrent batch returns from the test proxy.
-  const pendingBatches = new Set<D1PreparedStatement[]>();
-  const retainedDb = new Proxy(db, {
-    get(target, key) {
-      if (key !== 'batch') return Reflect.get(target, key);
-      return async <T>(statements: D1PreparedStatement[]) => {
-        pendingBatches.add(statements);
-        try {
-          return await target.batch<T>(statements);
-        } finally {
-          pendingBatches.delete(statements);
-        }
-      };
-    },
-  });
   const results = await Promise.all(
-    ids.map((id) => reserveAiUsage(retainedDb, quote(id, settings.revision))),
+    ids.map((id) => reserveAiUsage(db, quote(id, settings.revision))),
   );
   expect(results.filter(({ ok }) => ok)).toHaveLength(1);
   expect(
