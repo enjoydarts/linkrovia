@@ -4,12 +4,13 @@ This changelog records Linkrovia releases. See the [deployment guide](docs/deplo
 
 ## Unreleased
 
+- Read Open Graph titles and descriptions during link suggestion generation when a private metadata service is connected. Use destination address context when page metadata is unavailable.
 - Expose AI settings in the main navigation and chart daily usage estimates.
 - Add opt-in weekly AI reports, Guardian checks for saved redirects and public DNS, and draft routing tools for MCP.
 - Accept structured Workers AI responses and suggest link details from the destination address.
-
 - Add Insights for weekly click comparisons and aggregate read-only MCP tools.
 - Add opt-in, budget-capped Workers AI assistance for manual reports and link drafting.
+- Refresh the README walkthrough and operator guides with current screenshots and setup steps.
 
 ## v1.1.0 - 2026-11-24
 

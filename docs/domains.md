@@ -14,7 +14,7 @@ If another provider manages DNS, you can use `workers.dev` or move the zone to C
 
 1. Enter the custom hostname and scoped API token. Confirm the hostname and choose **Connect hostname**.
 2. Choose **Open setup on your custom hostname**, then enter the setup token again on that hostname. Wait and try again if Cloudflare is still preparing HTTPS. If the connection result could not be confirmed, wait a moment and retry the same hostname in setup so Linkrovia can check the existing mapping. You can also continue setup on `workers.dev`.
-3. Register your owner passkey on the address you selected. Use that address to sign in.
+3. Once setup opens on the custom hostname, register your owner passkey there. Use that hostname for future sign-ins. If you finish setup on `workers.dev`, you can [enable management access on a custom hostname later](#enable-admin-access-on-an-existing-custom-hostname) and keep using the original hostname for passkey sign-in.
 
 ## Add a short-link hostname after setup
 

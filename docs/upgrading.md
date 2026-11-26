@@ -2,10 +2,14 @@
 
 Your GitHub deployment copy has its own history. Follow the [upstream repository](https://github.com/enjoydarts/linkrovia) for changes and release instructions. To bring in an update, use GitHub's **Sync fork** if your copy is a fork and can be updated directly, or merge the upstream changes in a pull request. If your copy is an independent repository, track the upstream repository as a separate Git remote and bring the changes in through a pull request. Review changes before merging to the branch connected to your Worker.
 
-1. Read the release notes and review the changes under `migrations/`. Preserve the Worker name, `DB` database ID, and any installation-specific settings in your configuration.
+1. Read the [release notes](https://github.com/enjoydarts/linkrovia/releases) and review the changes under `migrations/`. If you deploy from `main`, review [Unreleased](../CHANGELOG.md#unreleased) as well. Preserve the Worker name, `DB` database ID, and any installation-specific settings in your configuration.
 2. Download a Linkrovia configuration backup and record a D1 recovery point before updating. The configuration backup covers selected settings and records. D1 recovery can restore database state across a failed upgrade. [Backup and restore](backup.md)
 3. Merge the update into the deployment branch. Cloudflare Workers Builds runs the configured build and deploy commands for that branch. The deploy script applies pending D1 migrations before uploading the application and halts if a migration fails.
 4. After a successful build, check `/health`, sign in with an existing owner passkey, and follow an existing short link. If the dashboard uses a custom hostname, verify sign-in from that address. For a custom dashboard enabled after setup on `workers.dev`, verify the return to the custom dashboard after using the passkey on the original sign-in host. Check Analytics if you use it. [Management hostnames](domains.md#enable-admin-access-on-an-existing-custom-hostname)
+
+## Upgrade to a build with AI assistance
+
+The AI migrations add instance settings, usage records, and weekly reports to the existing D1 database. The deployment script applies them during the upgrade. AI assistance starts disabled for installations that have yet to configure it. To use it, sign in as the owner, open **AI settings**, and set a budget. Bring forward the `AI` binding if you maintain a custom Wrangler configuration. The private page metadata service is a separate optional installation. [AI settings](analytics.md#enable-ai-assistance) · [Metadata setup](analytics.md#retrieve-page-information-automatically)
 
 ## Move scheduled jobs to the application Worker
 
