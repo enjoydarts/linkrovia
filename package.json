@@ -32,6 +32,8 @@
     "format": "prettier --write .",
     "test": "svelte-kit sync && vitest run",
     "test:e2e": "playwright test",
+    "demo:local": "node scripts/e2e-server.mjs --demo",
+    "demo:check": "node scripts/e2e-server.mjs --demo --smoke",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.local.jsonc",
     "db:seed:local": "node scripts/seed-local.mjs",
     "brand:render": "node scripts/render-brand-card.mjs",

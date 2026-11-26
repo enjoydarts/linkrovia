@@ -4,6 +4,9 @@ This changelog records Linkrovia releases. See the [deployment guide](docs/deplo
 
 ## Unreleased
 
+- Use **Your links. Your rules.** as the official Linkrovia tagline.
+- Add a read-only local demo with fictional data, sample analytics, and working rule simulation.
+
 ## v1.2.0 - 2026-11-26
 
 - Compare two completed weeks of traffic in Insights and access the same aggregates through read-only MCP tools.

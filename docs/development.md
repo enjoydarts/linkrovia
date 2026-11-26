@@ -38,6 +38,8 @@ On Linux, use `npx playwright install --with-deps chromium` if the host also nee
 
 ## Commands
 
+Use `npm run demo:local` for a guided view of the real admin pages with fresh fictional data. Use `npm run demo:check` for the same demo’s headless smoke test. [Local demo](local-demo.md)
+
 | Command                    | Purpose                                                            |
 | -------------------------- | ------------------------------------------------------------------ |
 | `npm run dev`              | Start the local development server.                                |
